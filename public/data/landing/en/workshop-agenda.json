@@ -1,11 +1,11 @@
 {
   "slug": "workshop-agenda",
-  "title": "Workshop Agenda Builder – Free Visual Session Planner",
-  "metaTitle": "Workshop Agenda Builder – Free Visual Session Planner",
-  "metaDescription": "Build workshop agendas visually on a drag-and-drop timeline. Free, no sign-up required. Perfect for trainers, facilitators and Scrum Masters.",
-  "heroTitle": "Build your *workshop agenda* – visual, flexible, free",
-  "heroDescription": "Plan workshops, trainings and team sessions on an interactive timeline. Drag, drop, adjust – your agenda takes shape in minutes. No account, no login, no cost.",
-  "ctaText": "Create your agenda",
+  "title": "Example: Workshop Agenda Builder",
+  "metaTitle": "Example: Workshop Agenda Builder",
+  "metaDescription": "Example landing page for a workshop agenda builder tool.",
+  "heroTitle": "Example: Build your workshop agenda",
+  "heroDescription": "This is example content. Replace with actual marketing copy.",
+  "ctaText": "Get started",
   "exampleSlug": "en/templates/intensive-workshop",
   "alternates": {
     "de": "/workshop-agenda-erstellen"
@@ -15,176 +15,39 @@
       {
         "type": "features",
         "tint": "default",
-        "title": "Why trainers and facilitators love Sessionplan",
-        "content": "<p>Spreadsheets and sticky notes get the job done – until you need to move something. Sessionplan gives you a proper visual workspace for session design:</p>",
+        "title": "Example features section",
+        "content": "<p>Example features description. Replace with actual content.</p>",
         "items": [
-          {
-            "title": "Visual timeline",
-            "icon": "Calendar",
-            "description": "See your entire workshop at a glance on an interactive schedule"
-          },
-          {
-            "title": "Drag & drop",
-            "icon": "GitBranch",
-            "description": "Reorder blocks instantly – start times update automatically"
-          },
-          {
-            "title": "No sign-up required",
-            "icon": "Shield",
-            "description": "Open the tool, start planning. Your data lives in your browser."
-          },
-          {
-            "title": "Share via link",
-            "icon": "Share2",
-            "description": "Send your complete agenda as a single shareable URL"
-          }
+          { "title": "Example Feature 1", "icon": "Calendar", "description": "Description of example feature 1." },
+          { "title": "Example Feature 2", "icon": "GitBranch", "description": "Description of example feature 2." }
         ],
         "columns": 2
       },
       {
-        "title": "Everything you need to plan a great session",
-        "content": "<h3>Flexible block types</h3>
-<p>Use the built-in categories or create your own to match your facilitation style:</p>
-<ul>
-<li>
-<strong>Input &amp; Presentation</strong> – Knowledge transfer and expert input</li>
-<li>
-<strong>Exercises &amp; Activities</strong> – Hands-on learning and practice</li>
-<li>
-<strong>Discussion</strong> – Structured conversation and reflection</li>
-<li>
-<strong>Breaks</strong> – Rest, coffee, transition time</li>
-<li>
-<strong>Energisers</strong> – Re-engage the room between heavy sessions</li>
-</ul>
-<h3>Groups &amp; Breakout Sessions</h3>
-<ul>
-<li>
-<strong>Groups</strong> – Collapse related blocks into named phases for a cleaner view</li>
-<li>
-<strong>Breakout sessions</strong> – Plan parallel tracks for different groups simultaneously</li>
-</ul>
-<h3>Auto-calculated timing</h3>
-<ul>
-<li>
-<strong>Live clock</strong> – Set a start time and Sessionplan shows exactly when every block begins and ends. Total duration updates as you edit.</li>
-</ul>
-<h3>Live Mode</h3>
-<ul>
-<li>
-<strong>Run your session</strong> – Activate Live Mode during your workshop. A slim bar shows the current block, time remaining, and what's coming next – so you can focus on the room, not the clock.</li>
-</ul>
-<h3>Block library &amp; templates</h3>
-<ul>
-<li>
-<strong>Library</strong> – Save favourite blocks and reuse them across sessions</li>
-<li>
-<strong>Templates</strong> – Store recurring formats and spin up new agendas in seconds</li>
-</ul>
-<h3>Export &amp; sharing</h3>
-<ul>
-<li>
-<strong>Share link</strong> – Encode your entire agenda in a single URL. No file attachments.</li>
-<li>
-<strong>JSON export/import</strong> – Back up your work or transfer it to another device</li>
-</ul>"
-      },
-      {
-        "type": "callout",
-        "tint": "info",
-        "title": "Sessionplan vs. SessionLab – what's the difference?",
-        "content": "<p>SessionLab is a solid tool for teams with budget. Sessionplan is built for facilitators who want to get started immediately – for free, without friction:</p>
-<p>For a more detailed breakdown of where Sessionplan fits in the wider tool landscape, see our <a href=\"/en/blog/workshop-planning-tools-comparison\">workshop planning tools comparison</a>.</p>
-<ul class=\"list-checkmark\">
-<li>
-<strong>100% free</strong> – No trial period, no freemium limits, no credit card</li>
-<li>
-<strong>No account needed</strong> – Your first agenda is one click away</li>
-<li>
-<strong>Privacy-first</strong> – Everything stays in your browser by default; optional server sync via Dynamic Link.</li>
-<li>
-<strong>Fast to learn</strong> – Intuitive enough to use without reading a manual</li>
-</ul>"
-      },
-      {
-        "title": "Who is Sessionplan for?",
-        "content": "<p>Anyone who designs and runs structured sessions will feel at home:</p>
-<ul>
-<li>
-<strong>Trainers &amp; coaches</strong> – Structure multi-day programmes and one-off sessions</li>
-<li>
-<strong>Facilitators &amp; consultants</strong> – Design workshops from strategy days to design sprints</li>
-<li>
-<strong>Scrum Masters &amp; Agile coaches</strong> – Plan retrospectives, sprint plannings and PI ceremonies</li>
-<li>
-<strong>Teachers &amp; lecturers</strong> – Prep lesson plans with clear phases and timings</li>
-</ul>
-<p>Teachers get a dedicated experience through our <a href=\"/en/lesson-planning\">lesson planning tool</a>, which uses the same visual-timeline engine with phase types tuned for the classroom. Agile teams running regular ceremonies will find our <a href=\"/en/retrospective-planning\">retrospective planner</a> useful too.</p>"
+        "title": "Example content section",
+        "content": "<p>Example content. Replace with actual details.</p>"
       },
       {
         "type": "faq",
-        "title": "Frequently asked questions",
+        "title": "Example FAQ",
         "items": [
-          {
-            "question": "Is Sessionplan really free?",
-            "answer": "<p>Yes – completely. No hidden fees, no premium tier, no expiring trial. All features are available from day one at sessionplan.de.</p>"
-          },
-          {
-            "question": "Do I need to create an account?",
-            "answer": "<p>No. Open Sessionplan.de and start building. Your agendas are saved locally in your browser by default. Use Dynamic Link to save your plan to the server for a stable URL.</p>"
-          },
-          {
-            "question": "How do I share my agenda with co-facilitators or clients?",
-            "answer": "<p>Use the Share button to generate a link. Anyone with the link can open your full agenda in their browser. You can also export to JSON and import it on any device.</p>"
-          },
-          {
-            "question": "Can I use Sessionplan offline?",
-            "answer": "<p>Once loaded, the app runs entirely in your browser – no internet connection required. Plan your next workshop on the train.</p>"
-          },
-          {
-            "question": "What happens if I close the tab?",
-            "answer": "<p>Your work is auto-saved to localStorage. The next time you open Sessionplan.de, you'll be offered to restore your last session.</p>
-<p>Further reading: <a href=\"/en/blog/energizers-for-workshops\">15 Energizers to Keep Your Workshop Moving</a> &middot; <a href=\"/en/blog/sessionplan-tips-and-tricks\">tips and tricks for power features</a> &middot; <a href=\"/en/templates/intensive-workshop\">the intensive workshop template</a> &middot; <a href=\"/en/facilitation-plan\">the facilitation plan guide</a> &middot; <a href=\"/en/blog/how-to-run-great-workshops\">how to run great workshops</a></p>"
-          }
+          { "question": "Example question?", "answer": "<p>Example answer.</p>" }
         ]
       },
       {
         "type": "cta",
-        "title": "Ready to plan your next workshop?",
-        "buttonText": "Add your first block",
-        "buttonNote": "Free forever. No account required.",
-        "content": "Add your first block, drag it into place, and you're already planning. No setup, no onboarding – just your agenda."
+        "title": "Example CTA",
+        "buttonText": "Start now",
+        "buttonNote": "Free forever.",
+        "content": "Example CTA description."
       }
     ]
   },
   "prefillData": {
     "workshopTitle": "New Workshop",
     "blockTypes": [
-      {
-        "id": "input",
-        "name": "🎤 Lecture/Input",
-        "color": "#3B82F6"
-      },
-      {
-        "id": "activity",
-        "name": "🏃 Exercise/Activity",
-        "color": "#22C55E"
-      },
-      {
-        "id": "break",
-        "name": "☕ Break",
-        "color": "#6B7280"
-      },
-      {
-        "id": "discussion",
-        "name": "💬 Discussion",
-        "color": "#F97316"
-      },
-      {
-        "id": "energizer",
-        "name": "⚡ Energiser",
-        "color": "#A855F7"
-      }
+      { "id": "input", "name": "Lecture/Input", "color": "#3B82F6" },
+      { "id": "break", "name": "Break", "color": "#6B7280" }
     ]
   },
   "structuredData": {
@@ -193,34 +56,8 @@
       {
         "@type": "WebApplication",
         "name": "Workshop Agenda Builder",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web Browser",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "description": "Build workshop agendas visually on a drag-and-drop timeline. Free, no sign-up required.",
-        "featureList": [
-          "Visual timeline",
-          "Drag & drop",
-          "No sign-up required",
-          "Share via link",
-          "Auto-calculated timing",
-          "Block library & templates",
-          "Live Mode"
-        ],
-        "author": {
-          "@type": "Person",
-          "@id": "https://www.timjpeters.com/#person",
-          "name": "Tim J. Peters",
-          "url": "https://www.timjpeters.com/"
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "5",
-          "ratingCount": "3"
-        }
+        "description": "Example description.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     ]
   },
