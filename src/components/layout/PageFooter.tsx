@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Github } from 'lucide-react';
 import { useLanguageSwitcher } from '@/hooks/useLanguageSwitcher';
 import { cn } from '@/lib/utils';
+
+const GITHUB_REPO_URL = 'https://github.com/tim-peters/sessionplan';
+const GITHUB_REPO_LABEL = 'tim-peters/sessionplan';
 
 interface PageFooterProps {
   /** Optional content (e.g. "Saved to browser") rendered before the links. */
@@ -14,6 +18,9 @@ interface PageFooterProps {
   /** Override or extend the outer wrapper's Tailwind classes. */
   className?: string;
 }
+
+const footerLinkClass =
+  'text-sm text-muted-foreground transition-colors hover:text-foreground';
 
 export const PageFooter = ({
   leadingContent,
@@ -27,52 +34,88 @@ export const PageFooter = ({
   const landingPagesPath = locale === 'en' ? '/en/landing-pages' : '/landing-pages';
   const templatesPath = locale === 'en' ? '/en/templates' : '/templates';
   const blogPath = locale === 'en' ? '/en/blog' : '/blog';
+  const year = new Date().getFullYear();
 
   return (
-    <div className={cn('max-w-4xl mx-auto px-6 pb-12 text-center border-t mt-8 pt-8', className)}>
-      {leadingContent && (
-        <span className="block sm:inline text-xs text-muted-foreground sm:mr-4 mb-2 sm:mb-0">{leadingContent}</span>
+    <footer
+      className={cn(
+        'mt-8 -mx-6 sm:mx-0 border-t bg-muted/30 text-left print:hidden',
+        className,
       )}
-      <Link
-        to={landingPagesPath}
-        onClick={() => onBeforeNavigate?.(landingPagesPath)}
-        className="text-sm text-muted-foreground hover:text-foreground mr-4"
-      >
-        {t('footer.mode')}
-      </Link>
-      <Link
-        to={templatesPath}
-        onClick={() => onBeforeNavigate?.(templatesPath)}
-        className="text-sm text-muted-foreground hover:text-foreground mr-4"
-      >
-        {t('footer.templates')}
-      </Link>
-      <Link
-        to={blogPath}
-        onClick={() => onBeforeNavigate?.(blogPath)}
-        className="text-sm text-muted-foreground hover:text-foreground mr-4"
-      >
-        {t('footer.blog')}
-      </Link>
-      {showLanguageSwitcher && (
-        <>
-          <span className="text-sm text-muted-foreground">|</span>
-          <Link
-            to={getTargetUrl('de')}
-            className={cn('text-sm ml-4 mr-1', locale === 'de' ? 'font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground')}
-          >
-            DE
-          </Link>
-          <span className="text-sm text-muted-foreground">/</span>
-          <Link
-            to={getTargetUrl('en')}
-            className={cn('text-sm ml-1', locale === 'en' ? 'font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground')}
-          >
-            EN
-          </Link>
-        </>
-      )}
-    </div>
+    >
+      <div className="mx-auto max-w-5xl px-6 py-10">
+        <nav
+          className="mt-10 grid grid-cols-2 gap-8 sm:grid-cols-3"
+          aria-label="Footer"
+        >
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t('footer.explore')}
+            </h2>
+            <ul className="mt-3 space-y-2">
+              <li>
+                <Link
+                  to={landingPagesPath}
+                  onClick={() => onBeforeNavigate?.(landingPagesPath)}
+                  className={footerLinkClass}
+                >
+                  {t('footer.mode')}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to={templatesPath}
+                  onClick={() => onBeforeNavigate?.(templatesPath)}
+                  className={footerLinkClass}
+                >
+                  {t('footer.templates')}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to={blogPath}
+                  onClick={() => onBeforeNavigate?.(blogPath)}
+                  className={footerLinkClass}
+                >
+                  {t('footer.blog')}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+
+          <div className="col-span-2 sm:col-span-1">
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex shrink-0 items-center gap-3 rounded-xl bg-muted px-4 py-3 mb-6 -ml-4 md:-mt-2 shadow-sm transition-colors hover:bg-muted/50"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/5 dark:bg-black/15 text-foreground">
+                <Github className="h-4 w-4" aria-hidden />
+              </span>
+              <span className="text-left">
+                <span className="block text-sm font-medium text-foreground">
+                  {t('footer.openSource')}
+                </span>
+                <span className="block text-xs text-muted-foreground group-hover:text-foreground/80">
+                  {GITHUB_REPO_LABEL}
+                </span>
+              </span>
+            </a>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('footer.language')}</h2>
+              <Link to={getTargetUrl('de')} className={cn('rounded-md px-2.5 py-1 text-sm transition-colors', locale === 'de' ? 'bg-foreground font-semibold text-background' : 'text-muted-foreground hover:bg-muted hover:text-foreground')} aria-current={locale === 'de' ? 'true' : undefined}>DE</Link>
+              <Link to={getTargetUrl('en')} className={cn('rounded-md px-2.5 py-1 text-sm transition-colors', locale === 'en' ? 'bg-foreground font-semibold text-background' : 'text-muted-foreground hover:bg-muted hover:text-foreground')} aria-current={locale === 'en' ? 'true' : undefined}>EN</Link>
+            </div>
+          </div>
+        </nav>
+
+        <div className="mt-10 flex flex-col gap-2 border-t border-border/80 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <p>© {year} Sessionplan</p>
+          <p>{leadingContent ? leadingContent : t('footer.freeOpenSource')}</p>
+        </div>
+      </div>
+    </footer>
   );
 };
-

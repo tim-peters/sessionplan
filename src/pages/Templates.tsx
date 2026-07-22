@@ -69,8 +69,8 @@ const Templates = () => {
             </div>
           )}
 
-          <PageFooter />
         </div>
+        <PageFooter />
       </div>
     </>
   );

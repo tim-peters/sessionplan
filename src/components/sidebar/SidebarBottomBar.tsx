@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Settings, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Locale } from '@/lib/i18n';
@@ -15,11 +15,12 @@ export const LanguageSwitcher = ({
   getTargetUrl,
   size = 'inline',
 }: LanguageSwitcherProps) => {
+  const navigate = useNavigate();
   const { t: _t } = useTranslation('common');
   if (size === 'stacked') {
     return (
       <button
-        onClick={() => window.location.assign(getTargetUrl(locale === 'de' ? 'en' : 'de'))}
+        onClick={() => navigate(getTargetUrl(locale === 'de' ? 'en' : 'de'))}
         className="icon-button text-xs font-semibold"
         title={locale === 'de' ? 'Switch to English' : 'Zu Deutsch wechseln'}
       >
@@ -29,24 +30,24 @@ export const LanguageSwitcher = ({
   }
   return (
     <div className="flex items-center gap-1 px-3 border-l shrink-0">
-      <Link
-        to={getTargetUrl('de')}
+      <button
+        onClick={() => navigate(getTargetUrl('de'))}
         className={cn(
           'px-2 py-0.5 rounded text-xs font-medium transition-colors',
           locale === 'de' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
         )}
       >
         DE
-      </Link>
-      <Link
-        to={getTargetUrl('en')}
+      </button>
+      <button
+        onClick={() => navigate(getTargetUrl('en'))}
         className={cn(
           'px-2 py-0.5 rounded text-xs font-medium transition-colors',
           locale === 'en' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
         )}
       >
         EN
-      </Link>
+      </button>
     </div>
   );
 };

@@ -314,8 +314,6 @@ export const Timeline = ({
     };
     const newId = onInsertItemAfter(reference.id, defaults[reference.type]);
     if (newId) {
-
-
       focusBlockTitleInput(newId);
     }
   }, [onInsertItemAfter, t]);
@@ -418,11 +416,6 @@ export const Timeline = ({
       }
     }
 
-    // Track duplication
-    if (item.type === 'block') {
-    } else if (item.type === 'group') {
-    } else if (item.type === 'breakout') {
-    }
   }, [items, onReorder, onUpdateItem, onAddItem, t]);
 
   const getBlockType = useCallback((typeId: string | null) => {
@@ -443,7 +436,7 @@ export const Timeline = ({
   }, [startTime, items]);
 
   return (
-    <div className="py-6 md:min-h-[calc(100vh_-_20rem)]">
+    <div className="py-6 min-h-[calc(100vh_-_11rem)] md:min-h-[calc(100vh_-_7rem)]">
       {description !== undefined && items.length > 0 && (
         <div className="max-w-5xl mx-auto px-0 md:px-6 mb-3 print:block sm:pl-[6rem] md:pl-[8rem]">
           <WorkshopDescription

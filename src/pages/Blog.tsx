@@ -85,8 +85,8 @@ const Blog = () => {
             </div>
           )}
 
-          <PageFooter />
         </div>
+        <PageFooter />
       </div>
     </>
   );

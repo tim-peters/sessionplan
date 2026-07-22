@@ -23,7 +23,13 @@
     "blog": "Blog",
     "imprint": "Imprint",
     "privacy": "Privacy",
-    "language": "Language"
+    "author": "Developer",
+    "language": "Language",
+    "tagline": "Free agenda planner for workshops, trainings and events — offline, no account needed.",
+    "openSource": "Open Source on GitHub",
+    "explore": "Explore",
+    "legal": "Legal",
+    "freeOpenSource": "100% free · Open Source"
   },
   "settings": {
     "sectionTitle": "Settings",

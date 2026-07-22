@@ -120,7 +120,7 @@ export const EmptyStateSEO = ({ onAddBlock, landingPageContent }: EmptyStateSEOP
   const sections = emptyStateContent?.seoContent?.sections;
 
   return (
-    <div id="seo-content" className="pb-16">
+    <div id="seo-content">
       <div className="my-8 flex justify-center">
         <a
           href="#seo-content"

@@ -23,7 +23,13 @@
     "blog": "Blog",
     "imprint": "Impressum",
     "privacy": "Datenschutz",
-    "language": "Sprache"
+    "author": "Entwickler",
+    "language": "Sprache",
+    "tagline": "Kostenloser Ablaufplaner für Workshops, Trainings und Events — offline, ohne Account.",
+    "openSource": "Open Source auf GitHub",
+    "explore": "Entdecken",
+    "legal": "Rechtliches",
+    "freeOpenSource": "100% kostenlos · Open Source"
   },
   "settings": {
     "sectionTitle": "Einstellungen",

@@ -563,7 +563,7 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
           )}
 
         {/* Timeline */}
-        <main className="mx-auto px-6 overflow-x-clip lg:overflow-x-visible">
+        <main className="mx-auto px-6 sm:px-0 overflow-x-clip lg:overflow-x-visible">
           <Timeline
             items={workshop.items}
             blockTypes={workshop.blockTypes}
@@ -598,7 +598,7 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
 
           {/* Footer */}
           <PageFooter
-            className="mt-12 py-8 pb-8 max-w-5xl border-t print:hidden"
+            className="mt-12"
             showLanguageSwitcher={false}
             leadingContent={serverKey ? undefined : t('planner.savedToBrowser')}
             onBeforeNavigate={(path) => {

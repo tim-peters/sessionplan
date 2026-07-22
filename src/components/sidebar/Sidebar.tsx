@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BlockType, WorkshopItem, Person } from '@/types/workshop';
 import {
@@ -93,7 +92,6 @@ export const Sidebar = ({
 
   const { locale, getTargetUrl } = useLanguageSwitcher();
   const { t: _t } = useTranslation('common');
-  const navigate = useNavigate();
 
   const isLg = useIsLg();
   const collapsed = isCollapsed && isLg;
@@ -209,7 +207,7 @@ export const Sidebar = ({
         ref={sidebarRef}
         className={cn(
           'fixed left-0 p-0 z-50',
-          'bg-sidebar/85 backdrop-blur-md border-r lg:border lg:rounded-r-2xl shadow-sm',
+          'bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/70 border-r lg:border lg:rounded-r-2xl shadow-sm',
           'transform transition-all duration-200 ease-out',
           'flex flex-col overflow-hidden',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
@@ -334,13 +332,7 @@ export const Sidebar = ({
             isCollapsed={collapsed}
             locale={locale}
             isSettingsOpen={expandedSections.settings}
-            getTargetUrl={(target) => {
-              if (collapsed) {
-                navigate(getTargetUrl(target));
-                return '';
-              }
-              return getTargetUrl(target);
-            }}
+            getTargetUrl={(target) => getTargetUrl(target)}
             onToggleSettings={() => handleSectionClick('settings')}
           />
         </div>

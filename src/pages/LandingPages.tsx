@@ -112,8 +112,8 @@ const LandingPages = () => {
             </Await>
           </Suspense>
 
-          <PageFooter />
         </div>
+        <PageFooter />
       </div>
     </>
   );
