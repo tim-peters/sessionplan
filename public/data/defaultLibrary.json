@@ -1,0 +1,375 @@
+{
+    "blocks": [
+        {
+            "id": "default-block-1",
+            "name": "Begrüßung & Check-In",
+            "item": {
+                "id": "item-default-block-1",
+                "type": "block",
+                "title": "Begrüßung & Check-In",
+                "duration": 15,
+                "blockTypeId": "input",
+                "notes": "Willkommensrunde mit Vorstellungsrunde der Teilnehmenden. \nDann [Check-In Frage](https:\/\/studies.timjpeters.com\/shuffler)",
+                "material": "Namensschilder, Moderationskarten"
+            }
+        },
+        {
+            "id": "default-block-2",
+            "name": "Energizer",
+            "item": {
+                "id": "item-default-block-2",
+                "type": "block",
+                "title": "Energizer",
+                "duration": 10,
+                "blockTypeId": "energizer",
+                "notes": "Kurze aktivierende Übung zur Auflockerung",
+                "material": "Entweder-Oder-Fragen -> [Generator](https:\/\/studies.timjpeters.com\/shuffler)"
+            }
+        },
+        {
+            "id": "default-block-3",
+            "name": "Pause",
+            "item": {
+                "id": "default-item-3",
+                "type": "block",
+                "title": "Pause",
+                "duration": 30,
+                "blockTypeId": "break",
+                "notes": "Kaffeepause mit Getränken und Snacks",
+                "material": "Kaffee, Tee, Snacks"
+            }
+        },
+        {
+            "id": "default-block-4",
+            "name": "Gruppenarbeit",
+            "item": {
+                "id": "default-item-4",
+                "type": "block",
+                "title": "Gruppenarbeit",
+                "duration": 45,
+                "blockTypeId": "activity",
+                "notes": "Arbeit in Kleingruppen zu spezifischem Thema",
+                "material": "Flipcharts, Marker, Post-Its"
+            }
+        },
+        {
+            "id": "default-block-5",
+            "name": "Präsentation der Ergebnisse",
+            "item": {
+                "id": "default-item-5",
+                "type": "block",
+                "title": "Präsentation der Ergebnisse",
+                "duration": 30,
+                "blockTypeId": "activity",
+                "notes": "Vorstellung der Gruppenergebnisse im Plenum",
+                "material": "Beamer, Flipcharts"
+            }
+        },
+        {
+            "id": "default-block-6",
+            "name": "Reflexion & Feedback",
+            "item": {
+                "id": "default-item-6",
+                "type": "block",
+                "title": "Reflexion & Feedback",
+                "duration": 20,
+                "blockTypeId": "discussion",
+                "notes": "Gemeinsame Reflexion der Lerninhalte und Feedback-Runde",
+                "material": "Feedback-Karten"
+            }
+        }
+    ],
+    "templates": [
+        {
+            "id": "default-template-1",
+            "name": "Halbtägiger Workshop (4 Stunden)",
+            "data": {
+                "workshop": {
+                    "title": "Workshop",
+                    "date": "",
+                    "location": "",
+                    "participants": 0,
+                    "facilitator": "",
+                    "startTime": "09:00",
+                    "description": ""
+                },
+                "blockTypes": [
+                    {
+                        "id": "input",
+                        "name": "🎤 Vortrag\/Input",
+                        "color": "#3B82F6"
+                    },
+                    {
+                        "id": "activity",
+                        "name": "🏃 Übung\/Aktivität",
+                        "color": "#22C55E"
+                    },
+                    {
+                        "id": "break",
+                        "name": "☕ Pause",
+                        "color": "#6B7280"
+                    },
+                    {
+                        "id": "discussion",
+                        "name": "💬 Diskussion",
+                        "color": "#F97316"
+                    },
+                    {
+                        "id": "energizer",
+                        "name": "⚡ Energizer",
+                        "color": "#A855F7"
+                    }
+                ],
+                "items": [
+                    {
+                        "id": "item-1770152421686",
+                        "type": "block",
+                        "title": "Begrüßung & Agenda",
+                        "duration": 15,
+                        "blockTypeId": "",
+                        "notes": "Schneller Check-In, Frage generiert [hier mit](https:\/\/studies.timjpeters.com\/shuffler)\nVorstellung und Überblick über den Tag",
+                        "material": "Agenda-Folien"
+                    },
+                    {
+                        "id": "item-2",
+                        "type": "block",
+                        "title": "Einführung ins Thema",
+                        "duration": 45,
+                        "blockTypeId": "input",
+                        "notes": "Theoretische Grundlagen vermitteln",
+                        "material": "Präsentation"
+                    },
+                    {
+                        "id": "item-3",
+                        "type": "block",
+                        "title": "Pause",
+                        "duration": 15,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": "Kaffee, Tee"
+                    },
+                    {
+                        "id": "item-4",
+                        "type": "block",
+                        "title": "Praktische Übung",
+                        "duration": 60,
+                        "blockTypeId": "activity",
+                        "notes": "Hands-on Übung in Kleingruppen",
+                        "material": "Arbeitsmaterialien"
+                    },
+                    {
+                        "id": "item-5",
+                        "type": "block",
+                        "title": "Mittagspause",
+                        "duration": 60,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-6",
+                        "type": "block",
+                        "title": "Ergebnisse & Diskussion",
+                        "duration": 45,
+                        "blockTypeId": "discussion",
+                        "notes": "Vorstellung und Diskussion der Ergebnisse",
+                        "material": "Flipchart"
+                    },
+                    {
+                        "id": "item-7",
+                        "type": "block",
+                        "title": "Abschluss & Feedback",
+                        "duration": 20,
+                        "blockTypeId": "discussion",
+                        "notes": "Zusammenfassung und Feedback",
+                        "material": "Feedback-Bögen"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "default-template-2",
+            "name": "Ganztägiger Workshop (8 Stunden)",
+            "data": {
+                "workshop": {
+                    "title": "Intensiv-Workshop",
+                    "description": "",
+                    "date": "",
+                    "startTime": "09:00",
+                    "showFullPreviewText": false,
+                    "lastModified": "2026-04-01T14:35:16.773Z",
+                    "targetDuration": null,
+                    "durationLocked": null
+                },
+                "blockTypes": [
+                    {
+                        "id": "input",
+                        "name": "🎤 Vortrag\/Input",
+                        "color": "#3B82F6"
+                    },
+                    {
+                        "id": "activity",
+                        "name": "🏃 Übung\/Aktivität",
+                        "color": "#22C55E"
+                    },
+                    {
+                        "id": "break",
+                        "name": "☕ Pause",
+                        "color": "#6B7280"
+                    },
+                    {
+                        "id": "discussion",
+                        "name": "💬 Diskussion",
+                        "color": "#F97316"
+                    },
+                    {
+                        "id": "energizer",
+                        "name": "⚡ Energizer",
+                        "color": "#A855F7"
+                    }
+                ],
+                "persons": [],
+                "items": [
+                    {
+                        "id": "item-1770152442848",
+                        "type": "block",
+                        "title": "Ankommen & Begrüßung",
+                        "duration": 30,
+                        "blockTypeId": "input",
+                        "notes": "Warm-Up und Tagesagenda",
+                        "material": "[Check-In-Frage](https:\/\/studies.timjpeters.com\/shuffler)"
+                    },
+                    {
+                        "id": "item-2",
+                        "type": "group",
+                        "title": "Vormittags-Session 1",
+                        "duration": 90,
+                        "children": [
+                            {
+                                "id": "item-2-1",
+                                "type": "block",
+                                "title": "Theoretischer Input",
+                                "duration": 45,
+                                "blockTypeId": "input",
+                                "notes": "",
+                                "material": ""
+                            },
+                            {
+                                "id": "item-2-2",
+                                "type": "block",
+                                "title": "Erste Übung",
+                                "duration": 45,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            }
+                        ]
+                    },
+                    {
+                        "id": "item-3",
+                        "type": "block",
+                        "title": "Kaffeepause",
+                        "duration": 15,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-4",
+                        "type": "block",
+                        "title": "Vertiefung",
+                        "duration": 60,
+                        "blockTypeId": "activity",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-5",
+                        "type": "block",
+                        "title": "Mittagspause",
+                        "duration": 60,
+                        "blockTypeId": "",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-6",
+                        "type": "breakout",
+                        "title": "Breakout-Session",
+                        "duration": 60,
+                        "lanes": 3,
+                        "sameInAllBreakouts": false,
+                        "children": [
+                            {
+                                "id": "item-6-1",
+                                "type": "block",
+                                "title": "Thema A",
+                                "duration": 60,
+                                "laneIndex": 0,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            },
+                            {
+                                "id": "item-6-2",
+                                "type": "block",
+                                "title": "Thema B",
+                                "duration": 60,
+                                "laneIndex": 1,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            },
+                            {
+                                "id": "item-6-3",
+                                "type": "block",
+                                "title": "Thema C",
+                                "duration": 60,
+                                "laneIndex": 2,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            }
+                        ]
+                    },
+                    {
+                        "id": "item-7",
+                        "type": "block",
+                        "title": "Zusammenführung",
+                        "duration": 45,
+                        "blockTypeId": "discussion",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-8",
+                        "type": "block",
+                        "title": "Pause",
+                        "duration": 15,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-9",
+                        "type": "block",
+                        "title": "Transfer & Ausblick",
+                        "duration": 45,
+                        "blockTypeId": "discussion",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-10",
+                        "type": "block",
+                        "title": "Abschluss & Evaluation",
+                        "duration": 30,
+                        "blockTypeId": "",
+                        "notes": "",
+                        "material": ""
+                    }
+                ]
+            }
+        }
+    ]
+}

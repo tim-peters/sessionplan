@@ -1,0 +1,23 @@
+export const PLAY_MODE_TICK_MS = 5_000;
+
+export const POLLING_INTERVALS = {
+  ACTIVE: 8_000,
+  COOLING: 30_000,
+  IDLE: 60_000,
+} as const;
+
+export const POLLING_AGE_THRESHOLDS = {
+  ACTIVE_MS: 60_000,
+  COOLING_MS: 300_000,
+} as const;
+
+export const DEBOUNCE_TIMES = {
+  HASH_WRITE: 500,
+  SERVER_PUT: 1_000,
+  TEMP_SAVE: 350,
+  METADATA_TRACKING: 1_000,
+  FOCUS_FIXED_START: 150,
+} as const;
+
+export const RECENT_INDICATOR_MS = 10 * 60_000;
+export const SESSION_HISTORY_RETENTION_MS = 3 * 30 * 24 * 60 * 60_000;

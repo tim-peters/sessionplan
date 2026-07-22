@@ -1,0 +1,376 @@
+{
+    "blocks": [
+        {
+            "id": "default-block-1",
+            "name": "Welcome & Check-In",
+            "item": {
+                "id": "item-default-block-1",
+                "type": "block",
+                "title": "Welcome & Check-In",
+                "duration": 15,
+                "blockTypeId": "input",
+                "notes": "Welcome round with participant introductions. \nThen [Check-In question](https:\/\/studies.timjpeters.com\/shuffler)",
+                "material": "Name tags, index cards"
+            }
+        },
+        {
+            "id": "default-block-2",
+            "name": "Energizer",
+            "item": {
+                "id": "item-default-block-2",
+                "type": "block",
+                "title": "Energizer",
+                "duration": 10,
+                "blockTypeId": "energizer",
+                "notes": "Short activating exercise to energize the group",
+                "material": "Either-Or questions -> [Generator](https:\/\/studies.timjpeters.com\/shuffler)"
+            }
+        },
+        {
+            "id": "default-block-3",
+            "name": "Break",
+            "item": {
+                "id": "default-item-3",
+                "type": "block",
+                "title": "Break",
+                "duration": 30,
+                "blockTypeId": "break",
+                "notes": "Coffee break with drinks and snacks",
+                "material": "Coffee, tea, snacks"
+            }
+        },
+        {
+            "id": "default-block-4",
+            "name": "Group Work",
+            "item": {
+                "id": "default-item-4",
+                "type": "block",
+                "title": "Group Work",
+                "duration": 45,
+                "blockTypeId": "activity",
+                "notes": "Work in small groups on a specific topic",
+                "material": "Flipcharts, markers, sticky notes"
+            }
+        },
+        {
+            "id": "default-block-5",
+            "name": "Presentation of Results",
+            "item": {
+                "id": "default-item-5",
+                "type": "block",
+                "title": "Presentation of Results",
+                "duration": 30,
+                "blockTypeId": "activity",
+                "notes": "Presenting group results in plenary",
+                "material": "Projector, flipcharts"
+            }
+        },
+        {
+            "id": "default-block-6",
+            "name": "Reflection & Feedback",
+            "item": {
+                "id": "default-item-6",
+                "type": "block",
+                "title": "Reflection & Feedback",
+                "duration": 20,
+                "blockTypeId": "discussion",
+                "notes": "Shared reflection on learning content and feedback round",
+                "material": "Feedback cards"
+            }
+        }
+    ],
+    "templates": [
+        {
+            "id": "default-template-1",
+            "name": "Half-Day Workshop (4 Hours)",
+            "data": {
+                "workshop": {
+                    "title": "Workshop",
+                    "date": "",
+                    "location": "",
+                    "participants": 0,
+                    "facilitator": "",
+                    "startTime": "09:00",
+                    "description": ""
+                },
+                "blockTypes": [
+                    {
+                        "id": "input",
+                        "name": "🎤 Lecture\/Input",
+                        "color": "#3B82F6"
+                    },
+                    {
+                        "id": "activity",
+                        "name": "🏃 Exercise\/Activity",
+                        "color": "#22C55E"
+                    },
+                    {
+                        "id": "break",
+                        "name": "☕ Break",
+                        "color": "#6B7280"
+                    },
+                    {
+                        "id": "discussion",
+                        "name": "💬 Discussion",
+                        "color": "#F97316"
+                    },
+                    {
+                        "id": "energizer",
+                        "name": "⚡ Energizer",
+                        "color": "#A855F7"
+                    }
+                ],
+                "persons": [],
+                "items": [
+                    {
+                        "id": "item-1770152421686",
+                        "type": "block",
+                        "title": "Welcome & Agenda",
+                        "duration": 15,
+                        "blockTypeId": "",
+                        "notes": "Quick check-in, question generated [here](https:\/\/studies.timjpeters.com\/shuffler)\nIntroduction and overview of the day",
+                        "material": "Agenda slides"
+                    },
+                    {
+                        "id": "item-2",
+                        "type": "block",
+                        "title": "Introduction to the Topic",
+                        "duration": 45,
+                        "blockTypeId": "input",
+                        "notes": "Convey theoretical foundations",
+                        "material": "Presentation"
+                    },
+                    {
+                        "id": "item-3",
+                        "type": "block",
+                        "title": "Break",
+                        "duration": 15,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": "Coffee, tea"
+                    },
+                    {
+                        "id": "item-4",
+                        "type": "block",
+                        "title": "Hands-On Exercise",
+                        "duration": 60,
+                        "blockTypeId": "activity",
+                        "notes": "Hands-on exercise in small groups",
+                        "material": "Work materials"
+                    },
+                    {
+                        "id": "item-5",
+                        "type": "block",
+                        "title": "Lunch Break",
+                        "duration": 60,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-6",
+                        "type": "block",
+                        "title": "Results & Discussion",
+                        "duration": 45,
+                        "blockTypeId": "discussion",
+                        "notes": "Presentation and discussion of results",
+                        "material": "Flipchart"
+                    },
+                    {
+                        "id": "item-7",
+                        "type": "block",
+                        "title": "Closing & Feedback",
+                        "duration": 20,
+                        "blockTypeId": "discussion",
+                        "notes": "Summary and feedback",
+                        "material": "Feedback forms"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "default-template-2",
+            "name": "Full-Day Workshop (8 Hours)",
+            "data": {
+                "workshop": {
+                    "title": "Intensive Workshop",
+                    "description": "",
+                    "date": "",
+                    "startTime": "09:00",
+                    "showFullPreviewText": false,
+                    "lastModified": "2026-04-01T14:35:16.773Z",
+                    "targetDuration": null,
+                    "durationLocked": null
+                },
+                "blockTypes": [
+                    {
+                        "id": "input",
+                        "name": "🎤 Lecture\/Input",
+                        "color": "#3B82F6"
+                    },
+                    {
+                        "id": "activity",
+                        "name": "🏃 Exercise\/Activity",
+                        "color": "#22C55E"
+                    },
+                    {
+                        "id": "break",
+                        "name": "☕ Break",
+                        "color": "#6B7280"
+                    },
+                    {
+                        "id": "discussion",
+                        "name": "💬 Discussion",
+                        "color": "#F97316"
+                    },
+                    {
+                        "id": "energizer",
+                        "name": "⚡ Energizer",
+                        "color": "#A855F7"
+                    }
+                ],
+                "persons": [],
+                "items": [
+                    {
+                        "id": "item-1770152442848",
+                        "type": "block",
+                        "title": "Arrival & Welcome",
+                        "duration": 30,
+                        "blockTypeId": "input",
+                        "notes": "Warm-up and daily agenda",
+                        "material": "[Check-In question](https:\/\/studies.timjpeters.com\/shuffler)"
+                    },
+                    {
+                        "id": "item-2",
+                        "type": "group",
+                        "title": "Morning Session 1",
+                        "duration": 90,
+                        "children": [
+                            {
+                                "id": "item-2-1",
+                                "type": "block",
+                                "title": "Theoretical Input",
+                                "duration": 45,
+                                "blockTypeId": "input",
+                                "notes": "",
+                                "material": ""
+                            },
+                            {
+                                "id": "item-2-2",
+                                "type": "block",
+                                "title": "First Exercise",
+                                "duration": 45,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            }
+                        ]
+                    },
+                    {
+                        "id": "item-3",
+                        "type": "block",
+                        "title": "Coffee Break",
+                        "duration": 15,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-4",
+                        "type": "block",
+                        "title": "Deep Dive",
+                        "duration": 60,
+                        "blockTypeId": "activity",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-5",
+                        "type": "block",
+                        "title": "Lunch Break",
+                        "duration": 60,
+                        "blockTypeId": "",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-6",
+                        "type": "breakout",
+                        "title": "Breakout Session",
+                        "duration": 60,
+                        "lanes": 3,
+                        "sameInAllBreakouts": false,
+                        "children": [
+                            {
+                                "id": "item-6-1",
+                                "type": "block",
+                                "title": "Topic A",
+                                "duration": 60,
+                                "laneIndex": 0,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            },
+                            {
+                                "id": "item-6-2",
+                                "type": "block",
+                                "title": "Topic B",
+                                "duration": 60,
+                                "laneIndex": 1,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            },
+                            {
+                                "id": "item-6-3",
+                                "type": "block",
+                                "title": "Topic C",
+                                "duration": 60,
+                                "laneIndex": 2,
+                                "blockTypeId": "activity",
+                                "notes": "",
+                                "material": ""
+                            }
+                        ]
+                    },
+                    {
+                        "id": "item-7",
+                        "type": "block",
+                        "title": "Convergence",
+                        "duration": 45,
+                        "blockTypeId": "discussion",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-8",
+                        "type": "block",
+                        "title": "Break",
+                        "duration": 15,
+                        "blockTypeId": "break",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-9",
+                        "type": "block",
+                        "title": "Transfer & Outlook",
+                        "duration": 45,
+                        "blockTypeId": "discussion",
+                        "notes": "",
+                        "material": ""
+                    },
+                    {
+                        "id": "item-10",
+                        "type": "block",
+                        "title": "Closing & Evaluation",
+                        "duration": 30,
+                        "blockTypeId": "",
+                        "notes": "",
+                        "material": ""
+                    }
+                ]
+            }
+        }
+    ]
+}

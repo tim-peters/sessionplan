@@ -1,0 +1,532 @@
+@import '@fontsource-variable/familjen-grotesk/wght.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 10%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 20% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.625rem;
+
+    /* Block type colors */
+    --block-input: 217 91% 60%;
+    --block-input-bg: 217 91% 97%;
+    --block-activity: 142 71% 45%;
+    --block-activity-bg: 142 71% 97%;
+    --block-break: 220 9% 46%;
+    --block-break-bg: 220 9% 96%;
+    --block-discussion: 25 95% 53%;
+    --block-discussion-bg: 25 95% 97%;
+    --block-energizer: 270 91% 65%;
+    --block-energizer-bg: 270 91% 97%;
+    --block-group: 258 90% 66%;
+    --block-group-bg: 258 91% 98.5%;
+    --block-breakout: 330 81% 60%;
+    --block-breakout-bg: 330 41% 97%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 10%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 92%;
+    --sidebar-accent-foreground: 220 20% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 221 83% 53%;
+
+    /* Custom properties */
+    --header-height: 4rem;
+    --sidebar-width: 280px;
+    --timeline-max-width: 800px;
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 18% 14%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 18% 14%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 220 20% 10%;
+
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 14% 18%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 220 14% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 14% 20%;
+    --input: 220 14% 20%;
+    --ring: 217 91% 60%;
+
+    /* Block type colors - dark mode */
+    --block-input-bg: 217 91% 15%;
+    --block-activity-bg: 142 71% 12%;
+    --block-break-bg: 220 9% 18%;
+    --block-discussion-bg: 25 95% 15%;
+    --block-energizer-bg: 270 91% 15%;
+    --block-group-bg: 258 30% 10%;
+    --block-breakout-bg: 330 30% 8%;
+
+    --sidebar-background: 220 18% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 220 20% 10%;
+    --sidebar-accent: 220 14% 18%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 14% 20%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Familjen Grotesk', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .timeline-connector {
+    @apply absolute left-6 top-0 bottom-0 w-0.5 bg-border;
+  }
+
+  .block-card {
+    @apply relative bg-card rounded-lg border shadow-sm transition-all duration-200;
+  }
+
+  .block-card:hover {
+    @apply shadow-md;
+  }
+
+  .block-card.dragging {
+    @apply shadow-xl ring-2 ring-primary/20;
+  }
+
+  .block-type-indicator {
+    @apply absolute left-0 top-0 bottom-0 w-1 rounded-l-lg;
+  }
+
+  .sidebar-section {
+    @apply mt-3 space-y-1 bg-black/5 dark:bg-black/15 -mx-4 pl-4 py-2 border-b border-sidebar-border;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 mr-2 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer;
+  }
+
+  .sidebar-item:hover {
+    @apply bg-sidebar-accent;
+  }
+
+  .inline-edit {
+    @apply bg-transparent border-none outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 -mx-1;
+  }
+
+  .time-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-muted-foreground;
+  }
+
+  .time-badge.is-clickable {
+    @apply cursor-pointer hover:underline;
+  }
+
+  .duration-input {
+    @apply w-16 text-center bg-muted/50 border-none rounded-md text-sm font-medium print:pb-0;
+  }
+
+  .icon-button {
+    @apply flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors;
+  }
+
+  /* Group Container Styles */
+  .group-container {
+    @apply relative;
+  }
+
+  .group-title-area {
+    @apply bg-card;
+  }
+
+  .group-children-area {
+    @apply relative;
+  }
+
+  /* Blog Content Boxes - must work within prose */
+  .prose .cta-box {
+    @apply -mx-6 my-6 mt-10 p-6 md:pr-10 md:rounded-md bg-primary/10 md:border-2 border-primary/30 shadow-sm;
+  }
+
+  .prose .cta-box > *:first-child {
+    margin-top: 0 !important;
+  }
+
+  .prose .cta-box > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .prose .cta-box p {
+    font-weight: 500;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .prose .cta-box p:first-child {
+    margin-top: 0;
+  }
+
+  .prose .cta-box p:last-child {
+    margin-bottom: 0;
+  }
+
+  .prose .cta-box a:not(.minor) {
+    @apply font-semibold text-primary hover:text-primary/80 no-underline px-4 py-2 rounded my-2 mt-4 bg-background inline-block shadow-md transition-colors;
+  }
+
+  .prose .cta-box a:hover {
+    @apply no-underline;
+  }
+
+  .prose .cta-box a:not(.minor):hover {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .prose .at-a-glance-box {
+    @apply my-6 p-6 rounded-lg bg-card border-2 border-border shadow-sm prose-sm;
+  }
+
+  .prose .at-a-glance-box > *:first-child {
+    margin-top: 0 !important;
+  }
+
+  .prose .at-a-glance-box > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .prose .at-a-glance-box p,
+  .prose .at-a-glance-box h3,
+  .prose .at-a-glance-box h4 {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .prose .at-a-glance-box p:first-child,
+  .prose .at-a-glance-box h3:first-child,
+  .prose .at-a-glance-box h4:first-child {
+    margin-top: 0;
+  }
+
+  .prose .at-a-glance-box ul {
+    margin-top: 0.75rem !important;
+    @apply space-y-1 list-disc sm:max-w-[85%];
+  }
+
+  .prose .at-a-glance-box li {
+    margin-left: -.68rem !important;
+  }
+
+  .prose .tldr-box {
+    @apply my-6 p-6 md:pr-10 rounded-lg bg-muted/50 border-l-4 border-primary;
+  }
+
+  .prose .tldr-box > *:first-child {
+    margin-top: 0 !important;
+  }
+
+  .prose .tldr-box > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .prose h2 {
+    @apply mt-16 mb-8;
+  }
+
+  .prose .tldr-box p,
+  .prose .tldr-box h3,
+  .prose .tldr-box h4 {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .prose .tldr-box p:first-child,
+  .prose .tldr-box h3:first-child,
+  .prose .tldr-box h4:first-child {
+    margin-top: 0;
+  }
+
+  .prose .tldr-box p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* CTA Button */
+  .prose .cta-button {
+    display: inline-block;
+    padding: 0.875rem 2rem;
+    margin: 1.5rem 0;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .prose .cta-button:hover {
+    background: hsl(var(--primary));
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+    color: hsl(var(--primary-foreground));
+  }
+
+  .prose .cta-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* CTA Button centered */
+  .prose .text-center .cta-button,
+  .prose p.text-center .cta-button {
+    display: inline-block;
+  }
+
+  /* Dark mode adjustments for blog boxes */
+  .dark .prose .cta-box {
+    @apply bg-primary/20 border-primary/40;
+  }
+
+  .dark .prose .at-a-glance-box {
+    @apply bg-card/80 border-border/60;
+  }
+
+  .dark .prose .tldr-box {
+    @apply bg-muted/30 border-primary/80;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .slide-in-right {
+    animation: slideInRight 0.25s ease-out;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  body {
+    @apply text-sm;
+  }
+
+  /* Hide unnecessary elements */
+  .print\\:hidden,
+  button[class*="cursor-grab"],
+  button[class*="cursor-grabbing"],
+  [data-drag-handle],
+  [role="menu"],
+  [role="menubar"],
+  header nav,
+  .sidebar,
+  footer button {
+    display: none !important;
+  }
+
+  /* Adjust block cards for print */
+  .block-card {
+    @apply shadow-none border-gray-300;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .block-card:hover {
+    @apply shadow-none;
+  }
+
+  /* Ensure proper spacing */
+  .timeline-connector {
+    @apply hidden;
+  }
+
+  /* Optimize text for print */
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Force black text for better print quality */
+  body, p, span, div {
+    color: #000 !important;
+  }
+
+  /* Keep color indicators visible but muted */
+  .block-type-indicator {
+    opacity: 0.7;
+  }
+
+  /* Expand all containers */
+  .block-card[class*="border-dashed"] {
+    border-style: solid !important;
+  }
+
+  /* Remove hover effects */
+  *:hover {
+    @apply shadow-none;
+  }
+
+  /* Better spacing for nested items */
+  .space-y-2 {
+    @apply space-y-1;
+  }
+
+  .space-y-3 {
+    @apply space-y-2;
+  }
+
+  /* Ensure all content is visible */
+  [data-block-title-input] {
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* Make inputs look like plain text */
+  input[type="text"],
+  input[type="number"],
+  textarea {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+  }
+
+  /* Hide number input spinners */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield !important;
+  }
+
+  /* Hide input focus indicators */
+  input:focus,
+  textarea:focus {
+    outline: none !important;
+    ring: none !important;
+  }
+
+  /* Hide dropdown arrows in selects */
+  button[role="combobox"] svg,
+  [role="combobox"] svg {
+    display: none !important;
+  }
+
+  /* Ensure icons are visible but muted */
+  svg {
+    opacity: 0.6;
+  }
+
+  /* Force expand all collapsible sections */
+  [data-state="closed"] {
+    display: block !important;
+  }
+}

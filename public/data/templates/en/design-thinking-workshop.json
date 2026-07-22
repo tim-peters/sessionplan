@@ -1,0 +1,265 @@
+{
+    "type": "template",
+    "slug": "design-thinking-workshop",
+    "title": "Design Thinking Workshop",
+    "metaTitle": "Design Thinking Workshop",
+    "metaDescription": "Workshop Template",
+    "heroTitle": "Design Thinking Workshop",
+    "heroDescription": "Vorgefertigtes Workshop-Template",
+    "ctaText": "Template nutzen",
+    "prefillData": {
+        "workshopTitle": "Design Thinking Workshop (Full Day)",
+        "workshopDescription": "A full-day Design Thinking workshop covering all five phases: Empathize, Define, Ideate, Prototype, Test.",
+        "date": "",
+        "startTime": "09:00",
+        "targetDuration": null,
+        "durationLocked": null,
+        "blockTypes": [
+            {
+                "id": "input",
+                "name": "🎤 Input/Presentation",
+                "color": "#3B82F6"
+            },
+            {
+                "id": "activity",
+                "name": "🏃 Activity",
+                "color": "#22C55E"
+            },
+            {
+                "id": "break",
+                "name": "☕ Break",
+                "color": "#6B7280"
+            },
+            {
+                "id": "discussion",
+                "name": "💬 Discussion",
+                "color": "#F97316"
+            },
+            {
+                "id": "energizer",
+                "name": "⚡ Energizer",
+                "color": "#A855F7"
+            },
+            {
+                "id": "empathize",
+                "name": "🔍 Empathize",
+                "color": "#06B6D4"
+            },
+            {
+                "id": "define",
+                "name": "🎯 Define",
+                "color": "#8B5CF6"
+            },
+            {
+                "id": "ideate",
+                "name": "💡 Ideate",
+                "color": "#F59E0B"
+            },
+            {
+                "id": "prototype",
+                "name": "🛠️ Prototype",
+                "color": "#EC4899"
+            },
+            {
+                "id": "test",
+                "name": "🧪 Test",
+                "color": "#10B981"
+            }
+        ],
+        "persons": [],
+        "items": [
+            {
+                "id": "1782743716954-74vjwz2dz",
+                "type": "block",
+                "title": "Welcome & Agenda Overview",
+                "duration": 20,
+                "blockTypeId": "input",
+                "notes": "Introductions, present the day's agenda, set ground rules.",
+                "material": ""
+            },
+            {
+                "id": "1782743716954-4wggkjkn8",
+                "type": "block",
+                "title": "Introduction to Design Thinking",
+                "duration": 25,
+                "blockTypeId": "input",
+                "notes": "What is Design Thinking? Explain the 5 phases. Introduce the problem space. More in our guide: [Design Thinking Workshop](https://sessionplan.de/en/blog/design-thinking-workshop).",
+                "material": "Slides, handout"
+            },
+            {
+                "id": "1782743716954-0gms5lgx9",
+                "type": "block",
+                "title": "Warm-up Energizer",
+                "duration": 10,
+                "blockTypeId": "energizer",
+                "notes": "Short activation exercise to warm up the group.",
+                "material": ""
+            },
+            {
+                "id": "1782743716954-aediz62pa",
+                "type": "group",
+                "title": "Phase 1: Empathize",
+                "duration": 90,
+                "notes": "Conduct user interviews and cluster insights.",
+                "material": "Interview guide, observation sheets",
+                "durationLocked": true,
+                "children": [
+                    {
+                        "id": "1782743716954-cp189ngu3",
+                        "type": "block",
+                        "title": "User Interviews (pairs)",
+                        "duration": 60,
+                        "blockTypeId": "empathize",
+                        "notes": "Interviews using prepared question guides. Two people per user.",
+                        "material": "Interview guide"
+                    },
+                    {
+                        "id": "1782743716954-9gtdlwfo0",
+                        "type": "block",
+                        "title": "Cluster & Share Insights",
+                        "duration": 30,
+                        "blockTypeId": "empathize",
+                        "notes": "Write insights on Post-its, cluster together, share key findings in plenary.",
+                        "material": "Post-its, markers, pin board"
+                    }
+                ]
+            },
+            {
+                "id": "1782743716954-s1oy62k9m",
+                "type": "group",
+                "title": "Phase 2: Define",
+                "duration": 45,
+                "notes": "Formulate Point of View and develop How Might We statements.",
+                "material": "POV template, HMW cards",
+                "durationLocked": true,
+                "children": [
+                    {
+                        "id": "1782743716954-lhxhto5j2",
+                        "type": "block",
+                        "title": "Point of View (POV) Statement",
+                        "duration": 20,
+                        "blockTypeId": "define",
+                        "notes": "Condense user + need + insight into a POV statement.",
+                        "material": "POV template"
+                    },
+                    {
+                        "id": "1782743716954-iu0hbn7lx",
+                        "type": "block",
+                        "title": "How Might We (HMW) Questions",
+                        "duration": 25,
+                        "blockTypeId": "define",
+                        "notes": "Derive 5–10 HMW questions from the POV, select the best one.",
+                        "material": "HMW cards, Post-its"
+                    }
+                ]
+            },
+            {
+                "id": "1782743716954-w4o9ka4as",
+                "type": "block",
+                "title": "Lunch Break",
+                "duration": 60,
+                "blockTypeId": "break",
+                "notes": "",
+                "material": ""
+            },
+            {
+                "id": "1782743716954-v5vyjpph1",
+                "type": "block",
+                "title": "Post-Lunch Energizer",
+                "duration": 10,
+                "blockTypeId": "energizer",
+                "notes": "Short movement exercise to beat the afternoon slump.",
+                "material": ""
+            },
+            {
+                "id": "1782743716954-ni8l8ptix",
+                "type": "group",
+                "title": "Phase 3: Ideate",
+                "duration": 80,
+                "notes": "Generate, cluster, and prioritize ideas.",
+                "material": "Post-its, markers, timer",
+                "durationLocked": true,
+                "children": [
+                    {
+                        "id": "1782743716954-z6ecwr431",
+                        "type": "block",
+                        "title": "Brainstorming & Crazy 8s",
+                        "duration": 40,
+                        "blockTypeId": "ideate",
+                        "notes": "Silent brainwriting first (Crazy 8s: 8 ideas in 8 minutes), then sharing.",
+                        "material": "Paper, markers"
+                    },
+                    {
+                        "id": "1782743716954-xlqh8zp30",
+                        "type": "block",
+                        "title": "Clustering & Prioritization",
+                        "duration": 40,
+                        "blockTypeId": "ideate",
+                        "notes": "Cluster ideas, dot-voting to prioritize, select 1–2 ideas for prototyping.",
+                        "material": "Post-its, dot stickers"
+                    }
+                ]
+            },
+            {
+                "id": "1782743716954-dmw779njt",
+                "type": "block",
+                "title": "Coffee Break",
+                "duration": 15,
+                "blockTypeId": "break",
+                "notes": "",
+                "material": ""
+            },
+            {
+                "id": "1782743716954-brkfo4m4j",
+                "type": "block",
+                "title": "Phase 4: Prototype",
+                "duration": 50,
+                "blockTypeId": "prototype",
+                "notes": "Build paper prototypes. Goal: fast, rough, testable. No perfectionism.",
+                "material": "Paper, scissors, tape, pens"
+            },
+            {
+                "id": "1782743716954-p979noxof",
+                "type": "block",
+                "title": "Phase 5: Test",
+                "duration": 40,
+                "blockTypeId": "test",
+                "notes": "Test prototypes with each other. Observe, don't explain. Document feedback.",
+                "material": "Observation sheets"
+            },
+            {
+                "id": "1782743716954-vl688c0ly",
+                "type": "group",
+                "title": "Closing",
+                "duration": 35,
+                "notes": "Summarize insights and define next steps.",
+                "material": "",
+                "durationLocked": true,
+                "children": [
+                    {
+                        "id": "1782743716954-rzpz4fm2i",
+                        "type": "block",
+                        "title": "Reflection & Next Steps",
+                        "duration": 25,
+                        "blockTypeId": "discussion",
+                        "notes": "What did we learn? Top 3 insights? Who does what by when?",
+                        "material": ""
+                    },
+                    {
+                        "id": "1782743716954-d57jh3tsi",
+                        "type": "block",
+                        "title": "Feedback Round & Outlook",
+                        "duration": 10,
+                        "blockTypeId": "discussion",
+                        "notes": "Quick lightning round: one word or sentence about the day.",
+                        "material": ""
+                    }
+                ]
+            }
+        ]
+    },
+    "lastModified": "2026-06-29",
+    "alternates": {
+        "de": "/templates/design-thinking-workshop"
+    }
+}

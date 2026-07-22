@@ -1,0 +1,202 @@
+{
+  "excludeFromIndex": true,
+  "slug": "home",
+  "metaDescription": "Create workshop agendas with an intuitive timeline. Blocks, groups, breakouts – all via drag & drop. Save & share via link, no account required.",
+  "heroTitle": "Plan your workshop schedule as a *visual timeline*",
+  "ctaText": "Create session",
+  "title": "Free Visual Session Planner for Workshops, Trainings & Events | Sessionplan",
+  "metaTitle": "Free Visual Session Planner for Workshops, Trainings & Events | Sessionplan",
+  "heroDescription": "A free, browser-based planner for facilitators, trainers, coaches and DMs. Build your agenda on a visual timeline, share via link and run it live. No sign-up, no subscription.",
+  "exampleSlug": "en/templates/intensive-workshop",
+  "alternates": {
+    "de": "/"
+  },
+  "seoContent": {
+    "sections": [
+      {
+        "title": "Why Sessionplan works better than a spreadsheet",
+        "content": "<p>Spreadsheets and Word documents are how most people start planning sessions. They work – until you move something. Change one block's duration and you're manually recalculating every start time that follows.</p>
+<p>Sessionplan gives you a proper planning workspace built around time:</p>
+<ul>
+<li>
+<strong>Visual timeline</strong>: Every block sits on a real timeline. You see your full session at a glance.</li>
+<li>
+<strong>Drag &amp; drop</strong>: Move a block and every start time after it updates instantly. No maths, no reformatting.</li>
+<li>
+<strong>Auto-calculated totals</strong>: The running duration and end time update in real time as you build your plan</li>
+<li>
+<strong>No sign-up</strong>: Open the app and start. Your plans are saved in your browser – nothing in the cloud.</li>
+<li>
+<strong>Share via link</strong>: One URL sends your complete session plan to anyone who needs it</li>
+</ul>"
+      },
+      {
+        "type": "features",
+        "tint": "info",
+        "title": "Everything you need to plan and run a session",
+        "items": [
+          {
+            "icon": "Mic",
+            "title": "Flexible block types",
+            "description": "Create custom block categories to match your format – or start from the defaults like input, activity, discussion, break and energiser."
+          },
+          {
+            "icon": "Layers",
+            "title": "Groups and breakouts",
+            "description": "Bundle related blocks into collapsible phases, or plan parallel tracks for subgroups and teams."
+          },
+          {
+            "icon": "Play",
+            "title": "Live Mode",
+            "description": "Activate Live Mode when the session starts. A slim overlay shows you the active block, time remaining and what comes next."
+          },
+          {
+            "icon": "Library",
+            "title": "Block library and templates",
+            "description": "Save frequently used blocks and drop them into any new plan, or save full session structures to reuse across formats."
+          },
+          {
+            "icon": "Share2",
+            "title": "Share via link",
+            "description": "Send your complete session plan as a single URL. No files, no email attachments."
+          },
+          {
+            "icon": "Download",
+            "title": "JSON export and import",
+            "description": "Save plans locally or transfer to another device with a portable JSON file."
+          }
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Sessionplan vs. SessionLab",
+        "content": "<p>SessionLab is a well-known paid tool for workshop design. Here's how Sessionplan compares for people who need something lighter:</p>
+<ul class=\"list-checkmark\">
+<li>
+<strong>Completely free</strong> – SessionLab's free tier is limited; Sessionplan has no tiers</li>
+<li>
+<strong>No account required</strong> – Start immediately, nothing to sign up for</li>
+<li>
+<strong>Private by default</strong> – Data stays in your browser; optional server sync via Dynamic Link</li>
+<li>
+<strong>Faster to start</strong> – No onboarding, no tutorial required</li>
+</ul>
+<p>If you need team collaboration features or a library tied to a cloud account, SessionLab may be worth the cost. If you want something fast, private and free, Sessionplan is purpose-built for that.</p>"
+      },
+      {
+        "title": "Who uses Sessionplan",
+        "content": "<p>Anyone who plans time-structured sessions:</p>
+<ul>
+<li>
+<strong>Trainers and coaches</strong> – Professional training days, coaching workshops, seminars</li>
+<li>
+<strong>Facilitators and Scrum Masters</strong> – Retrospectives, sprint plannings, team offsites</li>
+<li>
+<strong>Teachers and lecturers</strong> – Lesson plans, lecture schedules, course modules</li>
+<li>
+<strong>Event producers</strong> – Run-of-show documents, conference agendas, live show plans</li>
+<li>
+<strong>Podcast producers</strong> – Episode outlines with segment timings</li>
+<li>
+<strong>Dungeon Masters</strong> – D&amp;D session prep with encounter timings and act structure</li>
+</ul>"
+      },
+      {
+        "type": "checklist",
+        "title": "Free, ad-free and private by design",
+        "items": [
+          {
+            "label": "100% free",
+            "description": "No subscription, no premium tier, no expiry."
+          },
+          {
+            "label": "No account needed",
+            "description": "Start immediately without signing up."
+          },
+          {
+            "label": "Your data stays with you",
+            "description": "By default, everything stays in your browser."
+          },
+          {
+            "label": "No ads",
+            "description": "Plan without distractions."
+          }
+        ]
+      },
+      {
+        "type": "faq",
+        "title": "Frequently asked questions",
+        "items": [
+          {
+            "question": "Is Sessionplan really free?",
+            "answer": "<p>Yes – completely. No subscription, no premium features gated behind a paywall, no trial period. Everything is available from the moment you open Sessionplan.de.</p>"
+          },
+          {
+            "question": "Do I need to create an account?",
+            "answer": "<p>No. Open Sessionplan.de and start planning. Your sessions are saved in your browser's local storage – no email, no password.</p>"
+          },
+          {
+            "question": "What happens if I close the tab?",
+            "answer": "<p>Your work is saved automatically in your browser's local storage and can be restored when you come back – as long as you're on the same device and haven't cleared browser data. Use the share link or JSON export to back up plans you want to keep long-term.</p>"
+          },
+          {
+            "question": "How do I share a session plan?",
+            "answer": "<p>Use the Share button to generate a link. Anyone who opens the link sees your full plan in their browser. You can also export as JSON in the settings for offline backups or to import on another device.</p>"
+          },
+          {
+            "question": "Does it work offline?",
+            "answer": "<p>Yes. Once the app has loaded, you can plan without an internet connection. Useful for workshops in locations with unreliable WiFi.</p>"
+          },
+          {
+            "question": "Can I use it for things other than workshops?",
+            "answer": "<p>Yes – anything with a time structure works: <a href=\"/en/retrospective-planning\">retrospectives</a>, <a href=\"/en/run-of-show\">run-of-show documents</a>, <a href=\"/en/podcast-planning\">podcast episodes</a>, <a href=\"/en/dnd-session-planning\">D&amp;D sessions</a>, <a href=\"/en/lesson-planning\">lesson plans</a>. The underlying structure is the same: blocks, timings, a timeline.</p>"
+          }
+        ]
+      },
+      {
+        "type": "cta",
+        "title": "Start planning your first session",
+        "buttonText": "Add your first block",
+        "buttonNote": "Free forever. No account required.",
+        "content": "Add your first block, set the duration and your session starts taking shape. No setup, no onboarding – just start building."
+      }
+    ]
+  },
+  "structuredData": {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "Sessionplan",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Free visual session planner for workshops, trainings and events. Build agendas on a drag-and-drop timeline, share via link. No account, no login, no cost.",
+        "featureList": [
+          "Visual timeline",
+          "Drag & drop",
+          "Live Mode",
+          "Groups & breakouts",
+          "Block library",
+          "Share via link",
+          "No sign-up required"
+        ],
+        "author": {
+          "@type": "Person",
+          "@id": "https://www.timjpeters.com/#person",
+          "name": "Tim J. Peters",
+          "url": "https://www.timjpeters.com/"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5",
+          "ratingCount": "3"
+        }
+      }
+    ]
+  }
+}

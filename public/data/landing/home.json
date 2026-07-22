@@ -1,0 +1,188 @@
+{
+  "excludeFromIndex": true,
+  "slug": "home",
+  "alternates": {
+    "en": "/en"
+  },
+  "title": "Plane deine Sessions, Workshops oder Agenda kostenlos | Sessionplan",
+  "metaTitle": "Plane deine Sessions, Workshops oder Agenda kostenlos | Sessionplan",
+  "metaDescription": "Erstelle Workshop-Agendas mit einer intuitiven Timeline. Blöcke, Gruppen, Breakouts – alles per Drag & Drop. Speichern & Teilen per Link, ohne Account",
+  "heroTitle": "Plane deinen Workshop-Ablauf als *visuelle Timeline*",
+  "heroDescription": "Der kostenlose Session-Planer für alle. Einfach Agenda per Drag-and-Drop erstellen. Private by Design & komplett flexibel – für Workshops, Trainings und Seminare.",
+  "ctaText": "Session erstellen",
+  "exampleSlug": "templates/intensiv-workshop",
+  "seoContent": {
+    "sections": [
+      {
+        "title": "Sessionplan Vorteile: Warum das Tool nutzen?",
+        "content": "<p>Schluss mit Notizen-Chaos und Excel-Tabellen! Sessionplan.de wurde speziell für die Bedürfnisse von Solo-Trainern und Workshop-Teams entwickelt:</p>
+<ul>
+<li>
+<strong>Visuelle Timeline</strong>: Strukturiere deinen Workshop-Ablauf übersichtlich auf einer interaktiven Zeitleiste</li>
+<li>
+<strong>Drag & Drop</strong>: Verschiebe Blöcke per Mausklick – die Zeiten passen sich automatisch an</li>
+<li>
+<strong>Keine Anmeldung nötig</strong>: Starte sofort, deine Daten bleiben lokal in deinem Browser</li>
+<li>
+<strong>Teilen per Link</strong>: Exportiere und teile deine Agenda einfach über einen einzigen Link</li>
+</ul>"
+      },
+      {
+        "type": "features",
+        "title": "Funktionen für deine Workshop-Planung",
+        "items": [
+          {
+            "icon": "Mic",
+            "title": "Flexible Blocktypen",
+            "description": "Plane mit vordefinierten Kategorien wie Input, Übung, Diskussion, Pause und Energizer – oder erstelle deine eigenen."
+          },
+          {
+            "icon": "Layers",
+            "title": "Gruppen & Breakouts",
+            "description": "Fasse zusammengehörige Blöcke in Gruppen zusammen oder plane parallele Sessions für verschiedene Teilnehmergruppen."
+          },
+          {
+            "icon": "Calculator",
+            "title": "Automatische Zeitberechnung",
+            "description": "Definiere eine Startzeit und sieh sofort, wann jeder Block beginnt und endet – die Gesamtdauer wird automatisch berechnet."
+          },
+          {
+            "icon": "Play",
+            "title": "Live-Modus",
+            "description": "Aktiviere den Live-Modus während deiner Session und sieh, welcher Block gerade läuft, wie viel Zeit bleibt und was als Nächstes kommt."
+          },
+          {
+            "icon": "Library",
+            "title": "Block-Bibliothek & Vorlagen",
+            "description": "Speichere häufig genutzte Blöcke in deiner Bibliothek und erstelle Vorlagen für wiederkehrende Formate."
+          },
+          {
+            "icon": "Share2",
+            "title": "Export & Teilen",
+            "description": "Teile deine komplette Agenda als Link oder sichere sie als JSON – lokal, ohne Cloud-Zwang."
+          }
+        ]
+      },
+      {
+        "title": "Sessionplan vs. SessionLab – Der Vergleich",
+        "content": "<p>Warum Sessionplan.de die bessere Wahl für viele Trainer ist im <a href=\"/blog/workshop-planung-tools-vergleich\" title=\"Die besten Workshop-Planungstools im Vergleich\">schnellen Vergleich</a>:</p>
+<ul class=\"list-checkmark\">
+<li>
+<strong>Komplett kostenlos</strong> – SessionLab bietet nur begrenzte Free-Version</li>
+<li>
+<strong>Ohne Account</strong> – Keine Registrierung erforderlich</li>
+<li>
+<strong>Datenschutz</strong> – Deine Daten bleiben lokal, keine Cloud nötig</li>
+<li>
+<strong>Schneller Start</strong> – Sofort loslegen ohne Einarbeitung</li>
+</ul>"
+      },
+      {
+        "title": "Für wen eignet sich das Planungstool?",
+        "content": "<p>Sessionplan.de eignet sich ideal für:</p>
+<ul>
+<li>
+<strong>Trainer & Coaches</strong> – Seminare und Trainings professionell strukturieren</li>
+<li>
+<strong>Moderatoren & Facilitatoren</strong> – Meetings und Workshops visuell planen</li>
+<li>
+<strong>Scrum Master & Agile Coaches</strong> – Retrospektiven und Sprint Plannings vorbereiten</li>
+<li>
+<strong>Lehrkräfte & Dozenten</strong> – Unterrichtseinheiten und Kurse organisieren</li>
+</ul>"
+      },
+      {
+        "type": "checklist",
+        "title": "Kostenlos, werbefrei, datenschutzfreundlich",
+        "items": [
+          {
+            "label": "100% kostenlos",
+            "description": "Keine versteckten Kosten, kein Abo."
+          },
+          {
+            "label": "Keine Registrierung",
+            "description": "Sofort loslegen ohne Account."
+          },
+          {
+            "label": "Daten bleiben bei dir",
+            "description": "Standardmäßig alles lokal im Browser."
+          },
+          {
+            "label": "Werbefrei",
+            "description": "Fokus auf deine Planung."
+          }
+        ]
+      },
+      {
+        "type": "faq",
+        "title": "Häufige Fragen zum Sessionplan",
+        "items": [
+          {
+            "question": "Was kostet der Session Planer?",
+            "answer": "<p>Sessionplan.de ist komplett kostenlos – ohne versteckte Kosten, Abo-Modelle oder Premium-Features. Alle Funktionen stehen dir dauerhaft zur Verfügung.</p>"
+          },
+          {
+            "question": "Brauche ich einen Account oder Registrierung?",
+            "answer": "<p>Nein! Du kannst sofort starten ohne Anmeldung. Deine Workshop-Agendas werden standardmäßig lokal in deinem Browser gespeichert.</p>"
+          },
+          {
+            "question": "Wie teile ich meine Workshop-Agenda mit anderen?",
+            "answer": "<p>Nutze die \"Teilen\"-Funktion, um einen Link zu generieren. Alternativ kannst du deine Agenda als JSON-Datei exportieren und per E-Mail versenden.</p>"
+          },
+          {
+            "question": "Funktioniert sessionplan.de offline?",
+            "answer": "<p>Ja, nach dem ersten Laden läuft die Anwendung lokal in deinem Browser. Du kannst Workshops auch ohne Internetverbindung planen.</p>"
+          },
+          {
+            "question": "Kann ich meine Daten sichern?",
+            "answer": "<p>Absolut! Nutze den JSON-Export, um deine Workshop-Agendas lokal auf deinem Computer zu speichern und bei Bedarf wieder zu importieren.</p>"
+          }
+        ]
+      },
+      {
+        "type": "cta",
+        "title": "Jetzt Workshop-Zeitplan erstellen",
+        "buttonText": "Starte jetzt mit deiner Planung",
+        "buttonNote": "Für immer kostenlos und ohne Registrierung",
+        "content": "Erstelle deine erste professionelle Workshop-Agenda in wenigen Minuten. Einfach Blöcke hinzufügen, per Drag & Drop anordnen und los geht's!"
+      }
+    ]
+  },
+  "structuredData": {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "Sessionplan",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR"
+        },
+        "description": "Kostenloser Ablauf Planer für Trainer, Coaches und Moderatoren. Erstelle professionelle Workshop-Agendas per Drag & Drop – ohne Registrierung, ohne Cloud, ohne Kosten.",
+        "featureList": [
+          "Visuelle Timeline",
+          "Drag & Drop",
+          "Keine Anmeldung nötig",
+          "Teilen per Link",
+          "Automatische Zeitberechnung",
+          "Block-Bibliothek & Vorlagen"
+        ],
+        "author": {
+          "@type": "Person",
+          "@id": "https://www.timjpeters.com/#person",
+          "name": "Tim J. Peters",
+          "url": "https://www.timjpeters.com/"
+        },
+        "applicationSubCategory": "Project Management",
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5",
+          "ratingCount": "4"
+        }
+      }
+    ]
+  }
+}

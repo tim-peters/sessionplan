@@ -1,0 +1,4 @@
+sitemap: https://sessionplan.de/sitemap.xml
+
+User-agent: *
+Allow: /
