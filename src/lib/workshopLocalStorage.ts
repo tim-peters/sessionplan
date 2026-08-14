@@ -366,16 +366,21 @@ export const clearAllData = async (): Promise<void> => {
 interface UIPrefs {
   sidebarCollapsed: boolean;
   showFullPreviewText: boolean;
+  playModeSounds: boolean;
 }
 
-const DEFAULT_PREFS: UIPrefs = { sidebarCollapsed: true, showFullPreviewText: true };
+const DEFAULT_PREFS: UIPrefs = {
+  sidebarCollapsed: true,
+  showFullPreviewText: true,
+  playModeSounds: false,
+};
 
 export const getDefaultPrefs = (): UIPrefs => DEFAULT_PREFS;
 
 const getPrefs = (): UIPrefs => {
   try {
     const stored = localStorage.getItem(KEYS.prefs);
-    if (stored) return JSON.parse(stored) as UIPrefs;
+    if (stored) return { ...DEFAULT_PREFS, ...JSON.parse(stored) } as UIPrefs;
   } catch {
     /* ignore */
   }
@@ -408,6 +413,12 @@ export const getShowFullPreviewText = (): boolean => getPrefs().showFullPreviewT
 
 export const setShowFullPreviewText = (value: boolean): void => {
   savePrefs({ showFullPreviewText: value });
+};
+
+export const getPlayModeSounds = (): boolean => getPrefs().playModeSounds;
+
+export const setPlayModeSounds = (value: boolean): void => {
+  savePrefs({ playModeSounds: value });
 };
 
 // ── Export / Import ───────────────────────────────────────────────────────────

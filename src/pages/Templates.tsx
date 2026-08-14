@@ -8,12 +8,15 @@ import { Link, useLoaderData } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TemplateSummary } from '@/lib/routeLoaders';
 import { PageFooter } from '@/components/layout/PageFooter';
-import { TemplateHeader } from '@/components/sections/TemplateHeader';
+import { TemplateHeader } from '@/components/layout/TemplateHeader';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { Button } from '@/components/primitives/button';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalizedPath, getLocaleRoot, createSymmetricAlternates } from '@/lib/localeUtils';
+import { decodeHtmlEntities } from '@/lib/htmlEntities';
+import { getCanonicalUrl } from '@/lib/metaConfig';
+import { createCollectionPageSchema } from '@/lib/collectionStructuredData';
 
 const Templates = () => {
   const { t } = useTranslation('common');
@@ -22,6 +25,18 @@ const Templates = () => {
 
   const canonicalPath = getLocalizedPath(locale, '/templates');
   const templatesAlternates = createSymmetricAlternates('/templates');
+  const structuredData = createCollectionPageSchema({
+    url: getCanonicalUrl(canonicalPath),
+    name: t('templates.title'),
+    description: t('templates.description'),
+    locale,
+    items: (templates ?? []).map((template) => ({
+      url: getCanonicalUrl(getLocalizedPath(locale, `/templates/${template.slug}`)),
+      name: decodeHtmlEntities(template.title),
+      description: decodeHtmlEntities(template.excerpt),
+      itemType: 'CreativeWork',
+    })),
+  });
 
   return (
     <>
@@ -31,6 +46,7 @@ const Templates = () => {
         canonicalPath={canonicalPath}
         locale={locale}
         alternates={templatesAlternates}
+        structuredData={structuredData}
       />
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-6 py-12">
@@ -52,11 +68,11 @@ const Templates = () => {
                   <CardHeader>
                     <CardTitle className="text-2xl">
                       <Link to={getLocalizedPath(locale, `/templates/${template.slug}`)} className="hover:underline">
-                        {template.title}
+                        {decodeHtmlEntities(template.title)}
                       </Link>
                     </CardTitle>
                     <CardDescription className="text-base line-clamp-3">
-                      {template.excerpt}
+                      {decodeHtmlEntities(template.excerpt)}
                     </CardDescription>
                   </CardHeader>
                   <CardFooter>
@@ -70,11 +86,12 @@ const Templates = () => {
           )}
 
         </div>
-        <PageFooter />
+        <div className="mx-6 sm:mx-0">
+          <PageFooter />
+        </div>
       </div>
     </>
   );
 };
 
 export default Templates;
-

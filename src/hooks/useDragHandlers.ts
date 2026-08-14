@@ -215,6 +215,13 @@ export const useDragHandlers = ({
 
       const { newBlock, sidebarBlockTypeName } = buildNewItem(activeDataCurrent, t);
 
+      const trackSidebarCreated = () => {
+        if (newBlock.type === 'block') {
+        } else if (newBlock.type === 'group') {
+        } else if (newBlock.type === 'breakout') {
+        }
+      };
+
       const overData = over.data?.current as ActiveData | undefined;
       if (overData?.type === 'breakout-lane') {
         if (newBlock.type !== 'block') return;
@@ -222,6 +229,7 @@ export const useDragHandlers = ({
           { ...newBlock, laneIndex: overData.laneIndex },
           overData.parentId,
         );
+        trackSidebarCreated();
         return;
       }
 
@@ -230,11 +238,13 @@ export const useDragHandlers = ({
         const newItemWithId = { ...newBlock, id: generateId() };
         newItems.splice(0, 0, newItemWithId);
         reorderItems(newItems);
+        trackSidebarCreated();
         return;
       }
 
       if (over.id === 'drop-zone-bottom') {
         addItem(newBlock);
+        trackSidebarCreated();
         return;
       }
 
@@ -244,6 +254,7 @@ export const useDragHandlers = ({
         if (newBlock.type === 'group') return;
         if (newBlock.type === 'breakout' && targetContainer?.type === 'breakout') return;
         addItem(newBlock, containerId);
+        trackSidebarCreated();
         return;
       }
 

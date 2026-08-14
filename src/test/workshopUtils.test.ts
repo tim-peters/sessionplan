@@ -11,6 +11,7 @@ import {
   updateGroupDurations,
   calculateTotalDuration,
   getBlockTypeName,
+  getWorkshopTitle,
 } from '@/lib/workshopUtils';
 import { WorkshopItem, BlockType } from '@/types/workshop';
 import { makeBlock, makeGroup, makeBreakout } from './test-helpers';
@@ -244,5 +245,15 @@ describe('getBlockTypeName', () => {
       fakeT,
     );
     expect(result).toBe('Custom');
+  });
+});
+
+describe('getWorkshopTitle', () => {
+  it('returns the translated default title', () => {
+    expect(getWorkshopTitle('Neuer Workshop', fakeT)).toBe('t:planner.defaultWorkshopTitle');
+  });
+
+  it('returns a custom title unchanged', () => {
+    expect(getWorkshopTitle('Design Sprint', fakeT)).toBe('Design Sprint');
   });
 });

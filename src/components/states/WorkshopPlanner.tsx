@@ -8,8 +8,9 @@
  * Used by: Index, LandingPage
  */
 import { useState, useCallback, useEffect, useMemo, useRef, useContext, useLayoutEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'next-themes';
 import { useLocale } from '@/contexts/LocaleContext';
 import { Helmet } from 'react-helmet-async';
 import { LOCALE_PREFIX, formatTitle } from '@/lib/metaConfig';
@@ -29,7 +30,6 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { DragDropProvider } from '@/hooks/useDragDropContext';
 import { useDragHandlers } from '@/hooks/useDragHandlers';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { LandingPageContent } from '@/types/landingPage';
 import {
   calculateEffectiveDuration,
   exportWorkshopAsJson,
@@ -42,35 +42,43 @@ import {
   WorkshopTemplate,
   encodeWorkshopToUrl,
 } from '@/lib/workshopStorage';
-import { getSidebarCollapsed, setSidebarCollapsed as persistSidebarCollapsed, hasSidebarPreference, getShowFullPreviewText, setShowFullPreviewText as persistShowFullPreviewText, getDefaultPrefs } from '@/lib/workshopLocalStorage';
+import { getSidebarCollapsed, setSidebarCollapsed as persistSidebarCollapsed, hasSidebarPreference, getShowFullPreviewText, setShowFullPreviewText as persistShowFullPreviewText, getPlayModeSounds, setPlayModeSounds as persistPlayModeSounds, getDefaultPrefs, upsertSessionToHistory, getTempWorkshopStore, getSessionHistory } from '@/lib/workshopLocalStorage';
 import { WorkshopPageContext } from '@/contexts/WorkshopPageContext';
-import { WorkshopItem, generateId } from '@/types/workshop';
+import { WorkshopItem, WorkshopPrefillData, generateId } from '@/types/workshop';
 import {
   DEFAULT_BLOCK_DURATION,
   DEFAULT_BREAKOUT_DURATION,
   DEFAULT_LANES,
 } from '@/lib/workshopDefaults';
-import { WorkshopHeader } from '../layout/WorkshopHeader';
-import { Timeline } from '../layout/Timeline';
-import { Sidebar } from '../sidebar/Sidebar';
-import { DragOverlayContent } from '../atoms/DragOverlayContent';
-import { PlayModeBar } from '../layout/PlayModeBar';
+import { WorkshopHeader } from '@/modules/planner/WorkshopHeader';
+import { Timeline } from '@/modules/timeline/Timeline';
+import { Sidebar } from '@/modules/sidebar/Sidebar';
+import { DragOverlayContent } from '@/modules/timeline/DragOverlayContent';
+import { PlayModeBar } from '@/modules/planner/PlayModeBar';
 import { PageFooter } from '../layout/PageFooter';
 import { usePlayMode } from '@/hooks/usePlayMode';
-import { focusSessionInput, focusSessionElement } from '@/lib/domUtils';
-import { HeaderActionButtons } from '../layout/HeaderActionButtons';
-import { IncomingUpdateBanner } from '../atoms/IncomingUpdateBanner';
+import { focusSessionInput, focusSessionElement, focusLastBlockTitleInput, scrollToLastBlock } from '@/lib/domUtils';
+import { getWorkshopTitle } from '@/lib/workshopUtils';
+import { HeaderActionButtons } from '@/modules/planner/HeaderActionButtons';
+import { IncomingUpdateBanner } from '@/modules/planner/IncomingUpdateBanner';
 import { Button } from '@/components/primitives/button';
 import { toast } from 'sonner';
-import { PlannerDialogs } from '../sections/planner/PlannerDialogs';
+import { PlannerDialogs } from '@/modules/planner/PlannerDialogs';
 
 interface WorkshopPlannerProps {
-  landingPageContent?: LandingPageContent;
+  prefillData?: WorkshopPrefillData;
+  renderEmptyState?: (props: EmptyStateRenderProps) => ReactNode;
+  onReset?: () => void;
 }
 
-export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {}) => {
-  const navigate = useNavigate();
+export interface EmptyStateRenderProps {
+  onAddBlock: () => void;
+  onReopenSession: ReturnType<typeof useWorkshop>['loadSessionFromHistory'];
+}
+
+export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: WorkshopPlannerProps = {}) => {
   const { t } = useTranslation('common');
+  const { setTheme } = useTheme();
   const { locale } = useLocale();
   const localePrefix = LOCALE_PREFIX[locale];
   const {
@@ -103,17 +111,27 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
     incomingUpdate,
     acceptIncomingUpdate,
     forkSession,
-  } = useWorkshop(landingPageContent?.prefillData);
+    undo,
+    redo,
+    canUndo,
+  } = useWorkshop(prefillData);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [emptyStateRevision, setEmptyStateRevision] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getSidebarCollapsed);
   const [showFullPreviewText, setShowFullPreviewTextState] = useState(getShowFullPreviewText);
+  const [playModeSounds, setPlayModeSoundsState] = useState(getPlayModeSounds);
   const [startTimePopoverOpen, setStartTimePopoverOpen] = useState(false);
   const [saveTemplateDialog, setSaveTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [showDisableServerDialog, setShowDisableServerDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkshopItem | null>(null);
   const dateLocale = locale === 'en' ? 'en-GB' : 'de-DE';
+
+  const handleSetPlayModeSounds = useCallback((value: boolean) => {
+    setPlayModeSoundsState(value);
+    persistPlayModeSounds(value);
+  }, []);
 
   const workshopPageRef = useContext(WorkshopPageContext);
   useLayoutEffect(() => {
@@ -131,7 +149,7 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
     return encoded ? `${window.location.origin}${window.location.pathname}#data=${encoded}` : window.location.href;
   }, [workshop]);
 
-  const playMode = usePlayMode(workshop, totalDuration);
+  const playMode = usePlayMode(workshop, totalDuration, playModeSounds);
 
   const prevItemCountRef = useRef(workshop.items.length);
 
@@ -301,10 +319,8 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
   }, [refreshBlocks]);
 
   const handleLoadTemplate = useCallback((template: WorkshopTemplate) => {
-    if (confirm(t('dialog.loadTemplateConfirm'))) {
-      loadWorkshop(template.data);
-      toast.success(t('dialog.templateLoaded'));
-    }
+    loadWorkshop(template.data);
+    toast.success(t('dialog.templateLoaded'));
   }, [loadWorkshop]);
 
   const handleSaveAsTemplate = useCallback(async () => {
@@ -317,17 +333,10 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
     }
   }, [templateName, workshop, refreshTemplates]);
 
-  const navigateToFallback = useCallback(() => {
-    const fallback = landingPageContent?.fallbackSlug;
-    if (landingPageContent?.type === 'template' && fallback && fallback !== landingPageContent.slug) {
-      navigate(`${localePrefix}/${fallback}`);
-    }
-  }, [navigate, landingPageContent, localePrefix]);
-
   const handleReset = useCallback(() => {
     resetWorkshop();
-    navigateToFallback();
-  }, [resetWorkshop, navigateToFallback]);
+    onReset?.();
+  }, [resetWorkshop, onReset]);
 
   const handleClearAll = useCallback(async () => {
     await clearAllData();
@@ -335,9 +344,12 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
     refreshAll();
     setSidebarCollapsed(getDefaultPrefs().sidebarCollapsed);
     setShowFullPreviewTextState(getDefaultPrefs().showFullPreviewText);
+    setPlayModeSoundsState(getDefaultPrefs().playModeSounds);
+    setTheme('system');
+    setEmptyStateRevision((revision) => revision + 1);
     toast.success(t('settings.clearAllSuccess'));
-    navigateToFallback();
-  }, [clearWorkshopCompletely, refreshAll, navigateToFallback]);
+    onReset?.();
+  }, [clearWorkshopCompletely, refreshAll, onReset, setTheme, t]);
 
   // Shortcut-only handlers: add a generic (untyped) block / group / breakout
   // to the end of the root timeline. Mirror the sticky add buttons in Timeline.
@@ -351,6 +363,12 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
       material: '',
     });
   }, [addItem, t]);
+
+  const handleAddEmptyStateBlock = useCallback(() => {
+    handleAddBlockShortcut();
+    focusLastBlockTitleInput();
+    scrollToLastBlock();
+  }, [handleAddBlockShortcut]);
 
   const handleAddGroupShortcut = useCallback(() => {
     addItem({
@@ -395,8 +413,8 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
 
   const handleCloseSessionShortcut = useCallback(() => {
     resetWorkshop();
-    navigateToFallback();
-  }, [resetWorkshop, navigateToFallback]);
+    onReset?.();
+  }, [resetWorkshop, onReset]);
 
   const handleFocusSessionTitleShortcut = useCallback(() => {
     focusSessionInput('data-session-title-input');
@@ -431,6 +449,8 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
     onOpenStartTime: handleOpenStartTimeShortcut,
     onOpenDate: handleOpenDateShortcut,
     onOpenShare: handleOpenShareShortcut,
+    onUndo: undo,
+    onRedo: redo,
     enabled: !editingItem && !isLoadingFromServer,
   });
 
@@ -455,10 +475,92 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
       onDragEnd={handleDragEnd}
     >
       {workshop.items.length > 0 && (
-        <Helmet><title>{formatTitle(workshop.workshop.title)}</title></Helmet>
+        <Helmet><title>{formatTitle(getWorkshopTitle(workshop.workshop.title, t))}</title></Helmet>
       )}
       <DragDropProvider value={{ activeId, activeData, activeParentId, dropIndicator }}>
-        <div className="flex min-h-screen w-full bg-background">
+        {/* Planner chrome stays at the top; page-provided empty content follows it. */}
+        <div className={`sticky top-0 z-30 print:static print:px-0 print:pt-0 transition-[padding-left] duration-200 ease-out ${sidebarCollapsed ? '' : 'lg:pl-72'}`}>
+          <div className="flex flex-col items-stretch gap-0 sm:flex-row sm:items-start sm:gap-3 sm:px-4 sm:pt-3 bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/80 sm:bg-transparent sm:backdrop-blur-none sm:border-0">
+            <WorkshopHeader
+              metadata={workshop.workshop}
+              totalDuration={totalDuration}
+              onUpdate={updateMetadata}
+              isSidebarCollapsed={sidebarCollapsed}
+              startTimePopoverOpen={startTimePopoverOpen}
+              onStartTimePopoverOpenChange={setStartTimePopoverOpen}
+              asHeading={workshop.items.length > 0}
+              onMenuClick={() => {
+                if (sidebarCollapsed && isLg) {
+                  setSidebarCollapsed(false);
+                  persistSidebarCollapsed(false);
+                } else {
+                  setSidebarOpen(true);
+                }
+              }}
+            />
+            <HeaderActionButtons
+              playMode={playMode}
+              onReset={handleReset}
+              serverKey={serverKey}
+              isEnablingServerMode={isEnablingServerMode}
+              onToggleServerMode={handleToggleServerMode}
+              getShareUrl={getShareUrl}
+              snapshotUrl={snapshotUrl}
+              lastModified={workshop.workshop.lastModified}
+              dateLocale={dateLocale}
+              canUndo={canUndo}
+              onUndo={undo}
+              onMenuClick={() => {
+                if (sidebarCollapsed && isLg) {
+                  setSidebarCollapsed(false);
+                  persistSidebarCollapsed(false);
+                } else {
+                  setSidebarOpen(true);
+                }
+              }}
+              isSidebarCollapsed={sidebarCollapsed}
+              hasActions={workshop.items.length >= 1}
+            />
+          </div>
+          {playMode.isActive && (
+            <PlayModeBar
+              label={playMode.currentDisplay?.label ?? null}
+              prevLabel={playMode.currentDisplay?.prevLabel ?? null}
+              nextLabel={playMode.currentDisplay?.nextLabel ?? null}
+              elapsedInCurrentBlock={playMode.elapsedInCurrentBlock}
+              currentBlockDuration={playMode.currentBlockEffectiveDuration}
+              soundPulse={playMode.soundPulse}
+              onExtendBlock={() => {
+                const currentBlock = playMode.currentDisplay?.current;
+                if (currentBlock) {
+                  updateItem(currentBlock.id, { duration: currentBlock.endMin - currentBlock.startMin + 5 });
+                }
+              }}
+              soundsEnabled={playModeSounds}
+              onToggleSounds={() => handleSetPlayModeSounds(!playModeSounds)}
+              onDeactivate={playMode.deactivate}
+            />
+          )}
+          {incomingUpdate && (
+            <IncomingUpdateBanner
+              onAccept={acceptIncomingUpdate}
+              onFork={forkSession}
+              isForking={isEnablingServerMode}
+              serverKey={serverKey}
+            />
+          )}
+        </div>
+        {workshop.items.length === 0 && renderEmptyState && (
+          <main className={`w-full ${sidebarCollapsed ? '' : 'lg:pl-72'}`}>
+            <div key={emptyStateRevision} className="contents">
+              {renderEmptyState({
+                onAddBlock: handleAddEmptyStateBlock,
+                onReopenSession: loadSessionFromHistory,
+              })}
+            </div>
+          </main>
+        )}
+        <div className={`flex w-full bg-background ${workshop.items.length > 0 ? 'min-h-screen' : ''}`}>
       {/* Spacer: reserves horizontal space for the fixed sidebar on desktop */}
       <div className={`hidden lg:block flex-shrink-0 transition-all duration-200 ease-out ${sidebarCollapsed ? 'w-0' : 'w-72'}`} />
       {/* Sidebar */}
@@ -481,6 +583,8 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
           setShowFullPreviewTextState(value);
           persistShowFullPreviewText(value);
         }}
+        playModeSounds={playModeSounds}
+        onSetPlayModeSounds={handleSetPlayModeSounds}
         onExport={handleExport}
         onImport={handleImport}
         onReset={handleReset}
@@ -498,72 +602,8 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
       />
           {/* Main content */}
           <div className="flex-1 min-w-0">
-          {/* Header + Play Mode Bar + Action Buttons */}
-          <div className="sticky top-0 z-30 print:static print:px-0 print:pt-0">
-            <div className="flex items-stretch sm:items-start sm:gap-3 sm:px-4 sm:pt-3">
-              {/* Header card — compact, left-aligned on desktop */}
-              <WorkshopHeader
-                metadata={workshop.workshop}
-                totalDuration={totalDuration}
-                onUpdate={updateMetadata}
-                isSidebarCollapsed={sidebarCollapsed}
-                startTimePopoverOpen={startTimePopoverOpen}
-                onStartTimePopoverOpenChange={setStartTimePopoverOpen}
-                asHeading={workshop.items.length > 0}
-                onMenuClick={() => {
-                  if (sidebarCollapsed && isLg) {
-                    setSidebarCollapsed(false);
-                    persistSidebarCollapsed(false);
-                  } else {
-                    setSidebarOpen(true);
-                  }
-                }}
-              />
-              {/* Action buttons — own surface, right side */}
-              {workshop.items.length >= 1 && (
-                <HeaderActionButtons
-                  playMode={playMode}
-                  onReset={handleReset}
-                  serverKey={serverKey}
-                  isEnablingServerMode={isEnablingServerMode}
-                  onToggleServerMode={handleToggleServerMode}
-                  getShareUrl={getShareUrl}
-                  snapshotUrl={snapshotUrl}
-                  lastModified={workshop.workshop.lastModified}
-                  dateLocale={dateLocale}
-                />
-              )}
-            </div>
-            {playMode.isActive && (
-              <PlayModeBar
-                label={playMode.currentDisplay?.label ?? null}
-                prevLabel={playMode.currentDisplay?.prevLabel ?? null}
-                nextLabel={playMode.currentDisplay?.nextLabel ?? null}
-                elapsedInCurrentBlock={playMode.elapsedInCurrentBlock}
-                currentBlockDuration={playMode.currentBlockEffectiveDuration}
-                onExtendBlock={() => {
-                  const currentBlock = playMode.currentDisplay?.current;
-                  if (currentBlock) {
-                    updateItem(currentBlock.id, { duration: currentBlock.endMin - currentBlock.startMin + 5 });
-                  }
-                }}
-                onDeactivate={playMode.deactivate}
-              />
-            )}
-          </div>
-
-          {/* Incoming collaborative update banner */}
-          {incomingUpdate && (
-            <IncomingUpdateBanner
-              onAccept={acceptIncomingUpdate}
-              onFork={forkSession}
-              isForking={isEnablingServerMode}
-              serverKey={serverKey}
-            />
-          )}
-
         {/* Timeline */}
-        <main className="mx-auto px-6 sm:px-0 overflow-x-clip lg:overflow-x-visible">
+        <div className="mx-auto px-6 md:px-0 overflow-x-clip lg:overflow-x-visible">
           <Timeline
             items={workshop.items}
             blockTypes={workshop.blockTypes}
@@ -572,7 +612,6 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
             startTime={workshop.workshop.startTime}
             targetDuration={workshop.workshop.targetDuration}
             durationLocked={workshop.workshop.durationLocked}
-            landingPageContent={landingPageContent}
             onReorder={reorderItems}
             onUpdateItem={updateItem}
             onDeleteItem={deleteItem}
@@ -591,7 +630,6 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
             onUpdateDescription={(desc) => updateMetadata({ description: desc })}
             onUpdateStartTime={(time) => updateMetadata({ startTime: time })}
             onAddStartTimeClick={() => setStartTimePopoverOpen(true)}
-            onReopenSession={loadSessionFromHistory}
             editingItem={editingItem}
             onEditingItemChange={setEditingItem}
           />
@@ -608,7 +646,7 @@ export const WorkshopPlanner = ({ landingPageContent }: WorkshopPlannerProps = {
               }
             }}
           />
-        </main>
+        </div>
       </div>
 
       </div>

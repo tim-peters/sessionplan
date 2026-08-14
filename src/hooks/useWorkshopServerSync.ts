@@ -36,6 +36,7 @@ interface UseWorkshopServerSyncArgs {
   setWorkshop: (updater: (prev: WorkshopData) => WorkshopData) => void;
   setEmptyWorkshop: () => void;
   navigate: ReturnType<typeof useNavigate>;
+  onExternalUpdate?: (version: number) => void;
   onSessionNotFound?: () => void;
 }
 
@@ -62,6 +63,7 @@ export const useWorkshopServerSync = ({
   setWorkshop,
   setEmptyWorkshop,
   navigate,
+  onExternalUpdate,
   onSessionNotFound,
 }: UseWorkshopServerSyncArgs): WorkshopServerSync => {
   const [serverKey, setServerKey] = useState<string | null>(() => getKeyFromSearch());
@@ -169,10 +171,11 @@ export const useWorkshopServerSync = ({
     if (!serverKeyRef.current) return;
     const result = await fetchServerSession(serverKeyRef.current);
     if (!result) return;
-    const localVersion = serverVersionRef.current;
-    if (result.version > localVersion) {
-      const hasLocalUnsavedChanges = isDirtyRef.current;
-      if (hasLocalUnsavedChanges) {
+      const localVersion = serverVersionRef.current;
+      if (result.version > localVersion) {
+        const hasLocalUnsavedChanges = isDirtyRef.current;
+        onExternalUpdate?.(result.version);
+        if (hasLocalUnsavedChanges) {
         isConflictedRef.current = true;
         setIncomingUpdate({ data: result.data, version: result.version });
       } else {
@@ -180,7 +183,7 @@ export const useWorkshopServerSync = ({
         applySyncedVersion(result.version);
       }
     }
-  }, [applySyncedVersion, setWorkshop]);
+  }, [applySyncedVersion, onExternalUpdate, setWorkshop]);
 
   useEffect(() => {
     if (!serverKey || isLoadingFromServer) return;
@@ -302,12 +305,13 @@ export const useWorkshopServerSync = ({
   const acceptIncomingUpdate = useCallback(() => {
     setIncomingUpdate((current) => {
       if (!current) return current;
+      onExternalUpdate?.(current.version);
       setWorkshop(() => current.data);
       applySyncedVersion(current.version);
       isConflictedRef.current = false;
       return null;
     });
-  }, [applySyncedVersion, setWorkshop]);
+  }, [applySyncedVersion, onExternalUpdate, setWorkshop]);
 
   const forkSession = useCallback(async () => {
     setIsEnablingServerMode(true);

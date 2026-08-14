@@ -13,6 +13,7 @@
  */
 import { useEffect } from 'react';
 import type { BlockType } from '@/types/workshop';
+
 export interface KeyboardShortcutsOptions {
   blockTypes: BlockType[];
   onAddBlock: () => void;
@@ -26,6 +27,8 @@ export interface KeyboardShortcutsOptions {
   onOpenStartTime: () => void;
   onOpenDate: () => void;
   onOpenShare: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
   enabled?: boolean;
 }
 
@@ -56,6 +59,8 @@ export const useKeyboardShortcuts = ({
   onOpenStartTime,
   onOpenDate,
   onOpenShare,
+  onUndo,
+  onRedo,
   enabled = true,
 }: KeyboardShortcutsOptions): void => {
   useEffect(() => {
@@ -81,10 +86,23 @@ export const useKeyboardShortcuts = ({
       if (isEditableTarget(event.target)) return;
       if (isRadixOverlayOpen()) return;
 
+      const key = event.key.toLowerCase();
+
+      const isRedoShortcut = (key === 'z' && event.shiftKey) || key === 'y';
+      if (isRedoShortcut && (event.metaKey || event.ctrlKey) && !event.altKey) {
+        event.preventDefault();
+        onRedo();
+        return;
+      }
+
+      if (key === 'z' && (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        onUndo();
+        return;
+      }
+
       // Meta/Ctrl/Alt combinations are reserved for browser shortcuts.
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-
-      const key = event.key.toLowerCase();
 
       // Shift-modified keys (date / start-time / share popovers).
       if (event.shiftKey) {
@@ -167,5 +185,7 @@ export const useKeyboardShortcuts = ({
     onOpenStartTime,
     onOpenDate,
     onOpenShare,
+    onUndo,
+    onRedo,
   ]);
 };

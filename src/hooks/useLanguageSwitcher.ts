@@ -19,17 +19,23 @@ const STATIC_BILATERAL_PATHS: string[] = ['/blog', '/templates', '/landing-pages
 
 export const useLanguageSwitcher = () => {
   const { locale, alternates } = useLocale();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+
+  // Dynamic sessions use the query string for the server-side session ID.
+  const withCurrentSearch = (path: string): string => {
+    if (!search) return path;
+    return `${path}${path.includes('?') ? '&' : '?'}${search.slice(1)}`;
+  };
 
   /**
    * Returns the URL to navigate to when switching to `targetLocale`.
    */
   const getTargetUrl = (targetLocale: Locale): string => {
-    if (targetLocale === locale) return pathname;
+    if (targetLocale === locale) return `${pathname}${search}`;
 
     // 1. Explicit alternate provided by the current content page
     const explicit = alternates[targetLocale];
-    if (explicit) return explicit;
+    if (explicit) return withCurrentSearch(explicit);
 
     // 2. Static index pages known to exist in both languages
     for (const staticPath of STATIC_BILATERAL_PATHS) {
@@ -37,12 +43,12 @@ export const useLanguageSwitcher = () => {
       const enVariant = `${LOCALE_PREFIX.en}${staticPath}`;
 
       if (pathname === deVariant || pathname === enVariant) {
-        return targetLocale === 'de' ? deVariant : enVariant;
+        return withCurrentSearch(targetLocale === 'de' ? deVariant : enVariant);
       }
     }
 
     // 3. Fallback: home page of the target locale
-    return targetLocale === 'de' ? '/' : LOCALE_PREFIX.en;
+    return withCurrentSearch(targetLocale === 'de' ? '/' : LOCALE_PREFIX.en);
   };
 
   return { locale, getTargetUrl };

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Github } from 'lucide-react';
 import { useLanguageSwitcher } from '@/hooks/useLanguageSwitcher';
 import { cn } from '@/lib/utils';
+import { ThemeToggleIcon } from '@/modules/sidebar/atoms/ThemeToggle';
 
 const GITHUB_REPO_URL = 'https://github.com/tim-peters/sessionplan';
 const GITHUB_REPO_LABEL = 'tim-peters/sessionplan';
@@ -83,31 +84,41 @@ export const PageFooter = ({
             </ul>
           </div>
 
-
-          <div className="col-span-2 sm:col-span-1">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t('footer.legal')}
+            </h2>
+            <ul className="mt-3 space-y-2">
+              <li>
+                <span className={footerLinkClass}>{t('footer.author')}</span>
+              </li>
+            </ul>
+          </div>
+          <div className="col-span-2 sm:col-span-1 flex flex-wrap justify-between gap-2 sm:gap-6 sm:-mt-2">
+            <div className="flex items-center gap-1">
+              <Link to={getTargetUrl('de')} className={cn('rounded-md px-2.5 py-1 text-sm transition-colors', locale === 'de' ? 'bg-primary font-semibold text-background -ml-1' : 'text-muted-foreground hover:bg-muted hover:text-foreground -ml-2')} aria-current={locale === 'de' ? 'true' : undefined}>DE</Link>
+              <Link to={getTargetUrl('en')} className={cn('rounded-md px-2.5 py-1 text-sm transition-colors', locale === 'en' ? 'bg-primary font-semibold text-background mr-2' : 'text-muted-foreground hover:bg-muted hover:text-foreground')} aria-current={locale === 'en' ? 'true' : undefined}>EN</Link>
+              |
+              <ThemeToggleIcon className="ml-1" />
+            </div>
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="group inline-flex shrink-0 items-center gap-3 rounded-xl bg-muted px-4 py-3 mb-6 -ml-4 md:-mt-2 shadow-sm transition-colors hover:bg-muted/50"
+              className="group inline-flex shrink-0 items-center gap-3 rounded-xl bg-muted px-4 py-3 mt-2 -ml-2 sm:-ml-4 sm:mt-2 sm:shadow-sm transition-colors hover:bg-muted/50"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/5 dark:bg-black/15 text-foreground">
+              <span className="flex sm:h-9 sm:w-9 items-center justify-center sm:rounded-lg sm:bg-black/5 sm:dark:bg-black/15 text-foreground">
                 <Github className="h-4 w-4" aria-hidden />
               </span>
               <span className="text-left">
                 <span className="block text-sm font-medium text-foreground">
                   {t('footer.openSource')}
                 </span>
-                <span className="block text-xs text-muted-foreground group-hover:text-foreground/80">
+                <span className="hidden sm:block text-xs text-muted-foreground group-hover:text-foreground/80">
                   {GITHUB_REPO_LABEL}
                 </span>
               </span>
             </a>
-            <div className="flex items-center gap-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('footer.language')}</h2>
-              <Link to={getTargetUrl('de')} className={cn('rounded-md px-2.5 py-1 text-sm transition-colors', locale === 'de' ? 'bg-foreground font-semibold text-background' : 'text-muted-foreground hover:bg-muted hover:text-foreground')} aria-current={locale === 'de' ? 'true' : undefined}>DE</Link>
-              <Link to={getTargetUrl('en')} className={cn('rounded-md px-2.5 py-1 text-sm transition-colors', locale === 'en' ? 'bg-foreground font-semibold text-background' : 'text-muted-foreground hover:bg-muted hover:text-foreground')} aria-current={locale === 'en' ? 'true' : undefined}>EN</Link>
-            </div>
           </div>
         </nav>
 

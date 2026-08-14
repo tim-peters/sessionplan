@@ -63,22 +63,32 @@ function sanitizeJsonNewlines(text: string): string {
 }
 
 async function fetchJsonOrThrow<T>(url: string, notFoundMessage: string): Promise<T> {
-  const response = await fetch(url);
+  let response: Response;
+
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    throw new Error(`Failed to fetch ${url}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 
   if (!response.ok) {
-    throw new Response(notFoundMessage, { status: 404 });
+    if (response.status === 404) {
+      throw new Response(notFoundMessage, { status: 404 });
+    }
+
+    throw new Error(`Failed to load ${url}: HTTP ${response.status}`);
   }
 
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
-    throw new Response(notFoundMessage, { status: 404 });
+    throw new Error(`Expected JSON from ${url}, received ${contentType || 'unknown content type'}`);
   }
 
   try {
     const text = await response.text();
     return JSON.parse(sanitizeJsonNewlines(text)) as T;
-  } catch {
-    throw new Response(notFoundMessage, { status: 404 });
+  } catch (error) {
+    throw new Error(`Invalid JSON from ${url}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

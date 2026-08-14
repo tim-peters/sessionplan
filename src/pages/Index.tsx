@@ -9,6 +9,7 @@
 import { useMemo } from 'react';
 import { useLoaderData, useSearchParams } from 'react-router-dom';
 import { WorkshopPlanner } from '@/components/states/WorkshopPlanner';
+import { EmptyStateHero, EmptyStateSEO } from '@/components/states/EmptyState';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { LandingPageContent } from '@/types/landingPage';
 import { useLocale } from '@/contexts/LocaleContext';
@@ -50,10 +51,21 @@ const Index = () => {
         structuredData={structuredData}
         noindex={isSharedSession}
       />
-      <WorkshopPlanner landingPageContent={content} />
+      <WorkshopPlanner
+        prefillData={content.prefillData}
+        renderEmptyState={({ onAddBlock, onReopenSession }) => (
+          <>
+            <EmptyStateHero
+              onAddBlock={onAddBlock}
+              landingPageContent={content}
+              onReopenSession={onReopenSession}
+            />
+            <EmptyStateSEO onAddBlock={onAddBlock} landingPageContent={content} />
+          </>
+        )}
+      />
     </>
   );
 };
 
 export default Index;
-

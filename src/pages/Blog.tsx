@@ -9,14 +9,17 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlogIndex } from '@/types/blog';
 import { PageFooter } from '@/components/layout/PageFooter';
-import { TemplateHeader } from '@/components/sections/TemplateHeader';
+import { TemplateHeader } from '@/components/layout/TemplateHeader';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { Button } from '@/components/primitives/button';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
 import { Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
+import { decodeHtmlEntities } from '@/lib/htmlEntities';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalizedPath, getLocaleRoot, createSymmetricAlternates } from '@/lib/localeUtils';
+import { getCanonicalUrl } from '@/lib/metaConfig';
+import { createCollectionPageSchema } from '@/lib/collectionStructuredData';
 
 const Blog = () => {
   const { t } = useTranslation('common');
@@ -33,6 +36,19 @@ const Blog = () => {
 
   const canonicalPath = getLocalizedPath(locale, '/blog');
   const blogAlternates = createSymmetricAlternates('/blog');
+  const structuredData = createCollectionPageSchema({
+    url: getCanonicalUrl(canonicalPath),
+    name: t('blog.title'),
+    description: t('blog.description'),
+    locale,
+    items: sortedPosts.map((post) => ({
+      url: getCanonicalUrl(getLocalizedPath(locale, `/blog/${post.slug}`)),
+      name: decodeHtmlEntities(post.title),
+      description: decodeHtmlEntities(post.excerpt),
+      datePublished: post.publishedDate,
+      itemType: 'BlogPosting',
+    })),
+  });
 
   return (
     <>
@@ -42,6 +58,7 @@ const Blog = () => {
         canonicalPath={canonicalPath}
         locale={locale}
         alternates={blogAlternates}
+        structuredData={structuredData}
       />
       <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -68,11 +85,11 @@ const Blog = () => {
                       </div>
                       <CardTitle className="text-xl group-hover:text-primary transition-colors">
                         <Link to={getLocalizedPath(locale, `/blog/${post.slug}`)} className="hover:underline">
-                          {post.title}
+                          {decodeHtmlEntities(post.title)}
                         </Link>
                       </CardTitle>
                       <CardDescription className="text-sm line-clamp-3">
-                        {post.excerpt}
+                        {decodeHtmlEntities(post.excerpt)}
                       </CardDescription>
                     </CardHeader>
                     <CardFooter>
@@ -86,11 +103,12 @@ const Blog = () => {
           )}
 
         </div>
-        <PageFooter />
+        <div className="mx-6 sm:mx-0">
+          <PageFooter />
+        </div>
       </div>
     </>
   );
 };
 
 export default Blog;
-

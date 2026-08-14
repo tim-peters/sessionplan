@@ -3,6 +3,9 @@
     "backToPlanner": "← Back to Sessionplan",
     "backToBlog": "← Back to Blog"
   },
+  "feedback": {
+    "report": "Report an issue"
+  },
   "blog": {
     "title": "Blog",
     "description": "Tips, tricks and insights on session planning, facilitation and effective training methods.",
@@ -35,6 +38,7 @@
     "sectionTitle": "Settings",
     "language": "Language",
     "truncateDescription": "Truncate descriptions",
+    "playModeSounds": "Audio notifications",
     "exportData": "Export data",
     "exportPdf": "Export as PDF",
     "importData": "Import data",
@@ -90,7 +94,9 @@
     "delete": "Delete"
   },
   "planner": {
+    "defaultWorkshopTitle": "New Workshop",
     "titlePlaceholder": "Session Title",
+    "menu": "Open menu",
     "description": "Description",
     "descriptionPlaceholder": "Add description...",
     "datePlaceholder": "Date",
@@ -103,23 +109,22 @@
     "shareOptions": "Share options",
     "sharedAt": "As of:",
     "reset": "Clear session",
+    "undo": "Undo last change",
     "newSession": "New session",
     "shareSuccess": "Link copied to clipboard!",
     "shareFail": "Copy failed",
     "copyLink": "Copy link",
     "copyLinkCopied": "Link copied",
-    "copyEditorLink": "Copy editor link",
-    "copyEditorLinkCopied": "Editor link copied",
+    "copyEditorLink": "Copy dynamic link",
+    "copyEditorLinkCopied": "Dynamic link copied",
     "copySnapshotLink": "Copy snapshot link",
     "copySnapshotLinkCopied": "Snapshot link copied",
     "urlLinkLabel": "Snapshot link",
     "urlLinkDescription": "Contains all data in the URL. Always shows the state at the time of copying.",
-    "serverLinkLabel": "Permanent link",
+    "serverLinkLabel": "Dynamic link",
     "permanentLink": "Enable dynamic link",
-    "permanentLinkActive": "Dynamic link active",
-    "permanentLinkDescription": "This link always shows the current state and is automatically updated on every change.",
+    "permanentLinkWarning": "Everyone with this link can edit the session. Only share it with people you trust.",
     "permanentLinkCreating": "Creating...",
-    "permanentLinkCopied": "Dynamic link copied!",
     "permanentLinkError": "Failed to create dynamic link",
     "sessionNotFound": "Session not found",
     "disableServerModeTitle": "Disable dynamic link?",
@@ -132,7 +137,7 @@
     "incomingUpdateAccept": "Load latest version",
     "incomingUpdateFork": "Save to new link",
     "incomingUpdateForking": "Creating…",
-    "permanentLinkSyncsNote": "Your plan is automatically saved to the server on every change.",
+    "permanentLinkSyncsNote": "Your plan is automatically saved to the server, the link always reflects the latest version.",
     "exportSuccess": "Session exported",
     "importSuccess": "Session imported",
     "importFailed": "Import failed: Invalid file",
@@ -204,6 +209,8 @@
     "templateName": "Template name",
     "templateNamePlaceholder": "e.g. Full-day workshop skeleton",
     "loadTemplateConfirm": "Replace current session?",
+    "loadTemplateDescription": "Your current session will be saved automatically.",
+    "loadTemplate": "Load template",
     "templateLoaded": "Template loaded",
     "templateSaved": "Saved as template",
     "savedToLibrary": "Saved to library",
@@ -214,6 +221,8 @@
     "remaining": "Left",
     "next": "Next:",
     "extend5Min": "Extend current block by 5 minutes",
+    "disableSounds": "Turn off audio notifications",
+    "enableSounds": "Turn on audio notifications",
     "stop": "Stop Live Mode"
   },
   "restore": {
@@ -258,6 +267,13 @@
     "hideConfirmTitle": "Hide session?",
     "hideConfirmText": "The session will be removed from the list. Without the exact URL it will no longer be accessible.",
     "hideConfirmAction": "Hide",
+    "relative": {
+      "justNow": "Just now",
+      "minutes": "{{count}} min. ago",
+      "hours": "{{count}} hr. ago",
+      "yesterday": "Yesterday",
+      "days": "{{count}} days ago"
+    },
     "itemsCount_one": "{{count}} block",
     "itemsCount_other": "{{count}} blocks",
     "minutes": "{{count}} min."

@@ -26,6 +26,8 @@ import {
   setSidebarCollapsed,
   getShowFullPreviewText,
   setShowFullPreviewText,
+  getPlayModeSounds,
+  setPlayModeSounds,
   exportWorkshopAsJson,
   importWorkshopFromJson,
   BlockTemplate,
@@ -381,6 +383,12 @@ describe('UI prefs', () => {
   it('persists and reads showFullPreviewText', () => {
     setShowFullPreviewText(false);
     expect(getShowFullPreviewText()).toBe(false);
+  });
+
+  it('defaults play mode sounds to disabled and persists the setting', () => {
+    expect(getPlayModeSounds()).toBe(false);
+    setPlayModeSounds(false);
+    expect(getPlayModeSounds()).toBe(false);
   });
 });
 

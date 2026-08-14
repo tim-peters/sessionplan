@@ -15,8 +15,10 @@ import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { Calendar, User } from 'lucide-react';
 import { Badge } from '@/components/primitives/badge';
 import { formatDate } from '@/lib/formatDate';
+import { decodeHtmlEntities } from '@/lib/htmlEntities';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalizedPath } from '@/lib/localeUtils';
+import { getCanonicalUrl } from '@/lib/metaConfig';
 
 const BlogArticle = () => {
   const { t } = useTranslation('common');
@@ -28,20 +30,32 @@ const BlogArticle = () => {
   }, [post.alternates, publishAlternates]);
 
   const canonicalPath = getLocalizedPath(locale, `/blog/${post.slug}`);
+  const canonicalUrl = getCanonicalUrl(canonicalPath);
 
   const structuredData = post.structuredData || {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
-    headline: post.title,
-    description: post.metaDescription || post.excerpt,
+    url: canonicalUrl,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': canonicalUrl,
+    },
+    headline: decodeHtmlEntities(post.title),
+    description: decodeHtmlEntities(post.metaDescription || post.excerpt),
     datePublished: post.publishedDate,
     dateModified: post.lastModified || post.publishedDate,
+    publisher: {
+      '@type': 'Organization',
+      name: 'Sessionplan',
+      url: 'https://sessionplan.de',
+    },
+    inLanguage: locale,
     author: {
       '@type': 'Person',
       name: post.author.name,
       url: post.author.url,
       jobTitle: 'Facilitator & Design Agency Director',
-      description: 'Tim J. Peters has over 15 years of experience in strategic design and workshop facilitation, he has led workshops for DAX-listed corporations, federal authorities, startups and non-profits. Speaker at MIT, FH Potsdam and international design and innovation conferences.',
+      description: 'Sessionplan helps facilitators structure workshops, meetings, trainings and events with a clear visual agenda.',
     },
   };
 
@@ -49,8 +63,8 @@ const BlogArticle = () => {
     <>
 
       <DocumentMeta
-        title={post.metaTitle || post.title}
-        description={post.metaDescription || post.excerpt}
+        title={decodeHtmlEntities(post.metaTitle || post.title)}
+        description={decodeHtmlEntities(post.metaDescription || post.excerpt)}
         canonicalPath={canonicalPath}
         locale={locale}
         alternates={post.alternates}
@@ -73,7 +87,7 @@ const BlogArticle = () => {
           </div>
 
           <header className="mb-8">
-            <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+            <h1 className="text-4xl font-bold mb-4">{decodeHtmlEntities(post.title)}</h1>
             
             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
               <div className="flex items-center gap-2">
@@ -117,7 +131,7 @@ const BlogArticle = () => {
                 <div className="flex-shrink-0 hidden sm:block">
                   <img 
                     src="/assets/author-tim-j-peters.png"
-                    alt="Facilitator Tim J. Peters"
+                    alt="Sessionplan"
                     className="max-w-48 md:max-w-xs border-2 border-primary/20"
                     loading="lazy"
                   />
@@ -172,7 +186,9 @@ const BlogArticle = () => {
           </footer>
         </article>
 
-        <PageFooter />
+        <div className="mx-6 sm:mx-0">
+          <PageFooter />
+        </div>
       </div>
     </>
   );

@@ -47,6 +47,20 @@ export interface WorkshopData {
   items: WorkshopItem[];
 }
 
+export interface WorkshopPrefillData {
+  workshopTitle?: string;
+  workshopDescription?: string;
+  date?: string | null;
+  startTime?: string | null;
+  targetDuration?: number;
+  durationLocked?: boolean;
+  blockTypes?: BlockType[];
+  persons?: Person[];
+  items?: WorkshopItem[];
+}
+
+export const DEFAULT_WORKSHOP_TITLE = 'Neuer Workshop';
+
 export const DEFAULT_BLOCK_TYPES: BlockType[] = [
   { id: 'input', name: '🎤 Vortrag/Input', color: '#2C8DFE' },
   { id: 'activity', name: '🏃 Übung/Aktivität', color: '#7CF4D9' },
@@ -60,7 +74,7 @@ export const DEFAULT_PERSONS: Person[] = [];
 export const createEmptyWorkshop = (): WorkshopData => ({
   version: '1.0',
   workshop: {
-    title: 'Neuer Workshop',
+    title: DEFAULT_WORKSHOP_TITLE,
     description: '',
     date: null,
     startTime: null,

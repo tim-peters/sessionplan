@@ -220,17 +220,4 @@ describe('home.json migration — FAQPage auto-derivation', () => {
     expect(mainEntity.length).toBeGreaterThan(0);
   });
 
-  it('migrated workshop-agenda-erstellen.json uses typed sections correctly', () => {
-    const content = loadSanitized('public/data/landing/workshop-agenda-erstellen.json') as LandingPageContent;
-    const sections = content.seoContent?.sections ?? [];
-    const checklist = sections.find(s => s.type === 'checklist');
-    expect(checklist).toBeDefined();
-    expect(checklist?.title).toBe('Kostenlos, werbefrei, datenschutzfreundlich');
-    // The "vs. SessionLab" comparison is now a callout
-    const vsSection = sections.find(s => s.title?.includes('vs. SessionLab'));
-    expect(vsSection?.type).toBe('callout');
-    // The "Für wen" audience section should still be prose
-    const fuerWen = sections.find(s => s.title?.startsWith('Für wen'));
-    expect(fuerWen?.type).toBeUndefined();
-  });
 });

@@ -8,7 +8,7 @@ interface ChecklistSectionProps {
 export const ChecklistSection = ({ section }: ChecklistSectionProps) => {
   const items = section.items ?? [];
   return (
-    <section className="bg-muted/30 py-16 md:py-20">
+    <section className="-mx-6 px-6 bg-muted/30 py-16 md:py-20">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
           {section.title}

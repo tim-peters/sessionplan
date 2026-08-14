@@ -3,6 +3,9 @@
     "backToPlanner": "← Zurück zum Sessionplan",
     "backToBlog": "← Zurück zum Blog"
   },
+  "feedback": {
+    "report": "Fehler melden"
+  },
   "blog": {
     "title": "Blog",
     "description": "Tipps, Tricks und Einblicke rund um Session-Planung, Moderation und effektive Trainingsmethoden.",
@@ -35,6 +38,7 @@
     "sectionTitle": "Einstellungen",
     "language": "Sprache",
     "truncateDescription": "Beschreibung kürzen",
+    "playModeSounds": "Audio-Benachrichtigungen",
     "exportData": "Daten sichern",
     "exportPdf": "Als PDF exportieren",
     "importData": "Daten importieren",
@@ -90,7 +94,9 @@
     "delete": "Löschen"
   },
   "planner": {
+    "defaultWorkshopTitle": "Neuer Workshop",
     "titlePlaceholder": "Session Titel",
+    "menu": "Menü öffnen",
     "description": "Beschreibung",
     "descriptionPlaceholder": "Beschreibung hinzufügen...",
     "datePlaceholder": "Datum",
@@ -103,23 +109,22 @@
     "shareOptions": "Weitergabe-Optionen",
     "sharedAt": "Stand:",
     "reset": "Session schließen",
+    "undo": "Letzte Änderung rückgängig machen",
     "newSession": "Neue Session",
     "shareSuccess": "Link in die Zwischenablage kopiert!",
     "shareFail": "Kopieren fehlgeschlagen",
     "copyLink": "Link kopieren",
     "copyLinkCopied": "Link kopiert",
-    "copyEditorLink": "Bearbeiter-Link kopieren",
-    "copyEditorLinkCopied": "Bearbeiter-Link kopiert",
+    "copyEditorLink": "Dynamischen Link kopieren",
+    "copyEditorLinkCopied": "Dynamischer Link kopiert",
     "copySnapshotLink": "Snapshot-Link kopieren",
     "copySnapshotLinkCopied": "Snapshot-Link kopiert",
     "urlLinkLabel": "Snapshot-Link",
     "urlLinkDescription": "Enthält alle Daten in der URL. Zeigt immer den Stand zum Zeitpunkt des Kopierens.",
     "serverLinkLabel": "Dynamischer Link",
     "permanentLink": "Dynamischen Link aktivieren",
-    "permanentLinkActive": "Dynamischer Link aktiv",
-    "permanentLinkDescription": "Dieser Link zeigt immer den aktuellen Stand und wird bei jeder Änderung automatisch aktualisiert.",
+    "permanentLinkWarning": "Jede Person mit diesem Link kann die Session bearbeiten. Teile ihn nur mit Personen, denen du vertraust.",
     "permanentLinkCreating": "Wird erstellt...",
-    "permanentLinkCopied": "Dynamischer Link kopiert!",
     "permanentLinkError": "Fehler beim Erstellen des dynamischen Links",
     "sessionNotFound": "Session nicht gefunden",
     "disableServerModeTitle": "Dynamischen Link deaktivieren?",
@@ -132,7 +137,7 @@
     "incomingUpdateAccept": "Letzte Version laden",
     "incomingUpdateFork": "In neuen Link speichern",
     "incomingUpdateForking": "Wird erstellt…",
-    "permanentLinkSyncsNote": "Dein Plan wird bei jeder Änderung automatisch auf dem Server gespeichert.",
+    "permanentLinkSyncsNote": "Dein Plan wird automatisch auf dem Server gespeichert, der Link bleibt immer aktuell.",
     "exportSuccess": "Session exportiert",
     "importSuccess": "Session importiert",
     "importFailed": "Import fehlgeschlagen: Ungültige Datei",
@@ -204,6 +209,8 @@
     "templateName": "Vorlagenname",
     "templateNamePlaceholder": "z.B. Tagesworkshop Grundgerüst",
     "loadTemplateConfirm": "Aktuelle Session ersetzen?",
+    "loadTemplateDescription": "Deine aktuelle Session wird automatisch gespeichert.",
+    "loadTemplate": "Vorlage laden",
     "templateLoaded": "Vorlage geladen",
     "templateSaved": "Als Vorlage gespeichert",
     "savedToLibrary": "In Bibliothek gespeichert",
@@ -214,6 +221,8 @@
     "remaining": "Noch",
     "next": "Danach:",
     "extend5Min": "Aktuellen Block um 5 Minuten verlängern",
+    "disableSounds": "Audio-Benachrichtigungen ausschalten",
+    "enableSounds": "Audio-Benachrichtigungen einschalten",
     "stop": "Live-Modus beenden"
   },
   "restore": {
@@ -258,6 +267,13 @@
     "hideConfirmTitle": "Session ausblenden?",
     "hideConfirmText": "Die Session wird aus der Liste entfernt. Ohne die exakte URL ist sie anschließend nicht mehr erreichbar.",
     "hideConfirmAction": "Ausblenden",
+    "relative": {
+      "justNow": "Gerade eben",
+      "minutes": "vor {{count}} Min.",
+      "hours": "vor {{count}} Std.",
+      "yesterday": "Gestern",
+      "days": "vor {{count}} Tagen"
+    },
     "itemsCount_one": "{{count}} Block",
     "itemsCount_other": "{{count}} Blöcke",
     "minutes": "{{count}} Min."

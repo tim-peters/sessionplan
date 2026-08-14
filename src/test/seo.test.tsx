@@ -9,6 +9,9 @@
  *      (and that the equivalent page's own tags point back the other way)
  *   5. An x-default hreflang that always resolves to the DE version
  *   6. A correct <title> (template applied, separator present, never empty)
+ *
+ * Pages that legitimately have no EN equivalent (/impressum, /datenschutz)
+ * must still ship a self-hreflang + x-default, but no EN-hreflang.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';

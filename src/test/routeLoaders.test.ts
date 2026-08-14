@@ -174,7 +174,7 @@ describe('landingPagesLoader', () => {
 });
 
 describe('non-JSON content-type handling', () => {
-  it('throws 404 when the response is HTML (e.g. SPA fallback)', async () => {
+  it('throws a client exception when the response is HTML (e.g. SPA fallback)', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -185,7 +185,7 @@ describe('non-JSON content-type handling', () => {
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     await expect(
       blogIndexLoader({ request: fakeRequest('/blog') } as never),
-    ).rejects.toMatchObject({ status: 404 });
+    ).rejects.toThrow('Expected JSON');
   });
 });
 

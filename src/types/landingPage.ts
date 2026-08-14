@@ -1,4 +1,4 @@
-import { BlockType, Person, WorkshopItem } from './workshop';
+import { WorkshopPrefillData } from './workshop';
 import { type Locale } from '@/lib/i18n';
 
 export interface SeoProseSection {
@@ -132,17 +132,7 @@ export interface LandingPageContent {
   
   // Pre-filled Workshop Data (optional)
   // Can be used for both landing pages (basic prefill) and templates (full workshop)
-  prefillData?: {
-    workshopTitle?: string;
-    workshopDescription?: string;
-    date?: string | null;
-    startTime?: string | null;
-    targetDuration?: number;
-    durationLocked?: boolean;
-    blockTypes?: BlockType[];
-    persons?: Person[];
-    items?: WorkshopItem[];
-  };
+  prefillData?: WorkshopPrefillData;
   
   // Structured Data (optional override)
   // Should be valid JSON-LD structured data (schema.org)

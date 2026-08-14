@@ -1,12 +1,11 @@
 {
   "name": "sessionplan",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "type": "module",
-  "description": "Browser-based PWA for visual agenda planning — workshops, meetings, events. Free, offline-first, no registration required.",
-  "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:spa": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -48,8 +47,8 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.20",
-    "baseline-browser-mapping": "^2.10.43",
-    "caniuse-lite": "^1.0.30001805",
+    "baseline-browser-mapping": "^2.11.11",
+    "caniuse-lite": "^1.0.30001806",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -101,5 +100,7 @@
     "vite": "^5.4.21",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^3.2.4"
-  }
+  },
+  "license": "AGPL-3.0-only",
+  "description": "Browser-based PWA for visual agenda planning — workshops, meetings, events. Free, offline-first, no registration required."
 }

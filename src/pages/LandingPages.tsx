@@ -10,11 +10,14 @@ import { Link, useLoaderData, Await } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { PageFooter } from '@/components/layout/PageFooter';
-import { TemplateHeader } from '@/components/sections/TemplateHeader';
+import { TemplateHeader } from '@/components/layout/TemplateHeader';
 import { LandingPageContent } from '@/types/landingPage';
 import { signalPrerenderReady } from '@/lib/prerender';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalePrefix, getLocaleRoot, createSymmetricAlternates } from '@/lib/localeUtils';
+import { decodeHtmlEntities } from '@/lib/htmlEntities';
+import { getCanonicalUrl } from '@/lib/metaConfig';
+import { createCollectionPageSchema } from '@/lib/collectionStructuredData';
 
 interface LandingPagesLoaderData {
   index: { pages: Array<{ slug: string }> };
@@ -55,10 +58,10 @@ const LandingPagesGrid = ({ pages, localePrefix }: LandingPagesGridProps) => {
           className="group block p-6 border rounded-lg hover:border-primary hover:shadow-lg transition-all bg-card"
         >
           <h2 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
-            {page.title}
+            {decodeHtmlEntities(page.title)}
           </h2>
           <p className="text-muted-foreground text-sm line-clamp-3">
-            {page.metaDescription || page.heroDescription}
+            {decodeHtmlEntities(page.metaDescription || page.heroDescription)}
           </p>
           <span className="inline-block mt-4 text-primary text-sm font-medium">
             {t('landingPages.learnMore')} →
@@ -80,13 +83,6 @@ const LandingPages = () => {
 
   return (
     <>
-      <DocumentMeta
-        title={t('landingPages.title')}
-        description={t('landingPages.description')}
-        canonicalPath={canonicalPath}
-        locale={locale}
-        alternates={alternates}
-      />
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <TemplateHeader
@@ -106,14 +102,40 @@ const LandingPages = () => {
               {(loadedPages: LandingPageContent[]) => {
                 // Filter out templates (only show landing pages)
                 const landingPages = loadedPages.filter(page => page.type !== 'template');
+                const structuredData = createCollectionPageSchema({
+                  url: getCanonicalUrl(canonicalPath),
+                  name: t('landingPages.title'),
+                  description: t('landingPages.description'),
+                  locale,
+                  items: landingPages.map((page) => ({
+                    url: getCanonicalUrl(`${localePrefix}/${page.slug}`),
+                    name: decodeHtmlEntities(page.title),
+                    description: decodeHtmlEntities(page.metaDescription || page.heroDescription),
+                    itemType: 'WebPage',
+                  })),
+                });
 
-                return <LandingPagesGrid pages={landingPages} localePrefix={localePrefix} />;
+                return (
+                  <>
+                    <DocumentMeta
+                      title={t('landingPages.title')}
+                      description={t('landingPages.description')}
+                      canonicalPath={canonicalPath}
+                      locale={locale}
+                      alternates={alternates}
+                      structuredData={structuredData}
+                    />
+                    <LandingPagesGrid pages={landingPages} localePrefix={localePrefix} />
+                  </>
+                );
               }}
             </Await>
           </Suspense>
 
         </div>
-        <PageFooter />
+        <div className="mx-6 sm:mx-0">
+          <PageFooter />
+        </div>
       </div>
     </>
   );

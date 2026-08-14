@@ -8,16 +8,19 @@
  */
 import { useMemo } from 'react';
 import { useLayoutEffect } from 'react';
-import { useLoaderData, useLocation } from 'react-router-dom';
+import { useLoaderData, useLocation, useNavigate } from 'react-router-dom';
 import { WorkshopPlanner } from '@/components/states/WorkshopPlanner';
+import { EmptyStateHero, EmptyStateSEO } from '@/components/states/EmptyState';
 import { LandingPageContent } from '@/types/landingPage';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { useLocale } from '@/contexts/LocaleContext';
 import { deriveFaqPageSchema, mergeStructuredData } from '@/lib/landingPageSeo';
+import { LOCALE_PREFIX } from '@/lib/metaConfig';
 
 const LandingPage = () => {
   const content = useLoaderData() as LandingPageContent;
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { locale, publishAlternates } = useLocale();
 
   // Publish alternate URLs from content JSON so Language Switcher can use them.
@@ -49,10 +52,27 @@ const LandingPage = () => {
         ogImage={content.ogImage}
         structuredData={structuredData}
       />
-      <WorkshopPlanner key={pathname} landingPageContent={content} />
+      <WorkshopPlanner
+        key={pathname}
+        prefillData={content.prefillData}
+        onReset={() => {
+          if (content.type === 'template' && content.fallbackSlug && content.fallbackSlug !== content.slug) {
+            navigate(`${LOCALE_PREFIX[locale]}/${content.fallbackSlug}`);
+          }
+        }}
+        renderEmptyState={({ onAddBlock, onReopenSession }) => (
+          <>
+            <EmptyStateHero
+              onAddBlock={onAddBlock}
+              landingPageContent={content}
+              onReopenSession={onReopenSession}
+            />
+            <EmptyStateSEO onAddBlock={onAddBlock} landingPageContent={content} />
+          </>
+        )}
+      />
     </>
   );
 };
 
 export default LandingPage;
-

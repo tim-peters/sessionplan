@@ -9,7 +9,8 @@ import { SeoSection } from '@/components/landingcontent/SeoSection';
 import { LandingPageContent } from '@/types/landingPage';
 import { SessionHistoryEntry } from '@/types/sessionHistory';
 import { getSessionHistory } from '@/lib/workshopLocalStorage';
-import { SessionHistoryList } from '@/components/sections/SessionHistoryList';
+import { SessionHistoryList } from '@/components/states/SessionHistoryList';
+import { DropZone } from '@/modules/timeline/DropZone';
 
 interface EmptyStateHeroProps {
   onAddBlock: () => void;
@@ -53,7 +54,7 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
   }, [resolvedTheme]);
 
   return (
-    <div id="hero-planner" className="relative mx-auto min-h-[calc(100vh-260px)] lg:pt-[4vh] sm:px-6">    
+    <div id="hero-planner" className="relative mx-auto min-h-[calc(100vh-210px)] p-6 pt-10 lg:pt-[10vh]">
       {/* Content */}
       <div className="relative z-10 mx-auto lg:px-10 flex items-center justify-center gap-8 md:gap-16 flex-col md:flex-row">
         <div className="flex-1 max-w-md">
@@ -86,7 +87,7 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
             </>
           )}
         </div>
-        <div className="w-full flex-1 max-w-md">
+        <div className="w-full flex-1 max-w-md overflow-hidden">
           {hasSessions && onReopenSession ? (
             <SessionHistoryList onReopenSession={onReopenSession} onEmpty={() => setHasSessions(false)} />
           ) : (
@@ -99,6 +100,7 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
           )}
         </div>
       </div>
+      <DropZone id="drop-zone-bottom" position="bottom" />
     </div>
   );
 };
@@ -120,7 +122,7 @@ export const EmptyStateSEO = ({ onAddBlock, landingPageContent }: EmptyStateSEOP
   const sections = emptyStateContent?.seoContent?.sections;
 
   return (
-    <div id="seo-content">
+    <div id="seo-content" className="px-6">
       <div className="my-8 flex justify-center">
         <a
           href="#seo-content"

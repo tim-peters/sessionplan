@@ -2,7 +2,7 @@ import "@testing-library/jest-dom";
 import { beforeEach } from "vitest";
 
 // Vite injects this global at build time; in the test environment we provide a
-// fixed string so modules that reference it don't throw.
+// fixed string for deterministic tests.
 declare global {
   var __APP_BUILD__: string;
 }

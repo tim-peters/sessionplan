@@ -29,6 +29,8 @@ export function ErrorBoundary() {
 function NotFoundError() {
   const { t } = useTranslation('common');
 
+  useEffect(() => {
+  }, []);
   return (
     <>
       <DocumentMeta
@@ -64,6 +66,9 @@ function NotFoundError() {
 function GenericError({ error }: { error: unknown }) {
   const { t } = useTranslation('common');
   const errorMessage = error instanceof Error ? error.message : 'Ein unerwarteter Fehler ist aufgetreten.';
+
+  useEffect(() => {
+  }, [errorMessage]);
 
   return (
     <>

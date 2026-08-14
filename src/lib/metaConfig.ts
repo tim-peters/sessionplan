@@ -9,8 +9,7 @@
 
 import { type Locale, LOCALES, LOCALE_OG, LOCALE_PREFIX } from './i18n';
 
-const PRODUCTION_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env.VITE_BASE_URL) || 'https://sessionplan.de';
+const PRODUCTION_BASE_URL = 'https://sessionplan.de';
 
 // Canonical URLs should always target the production domain
 const getBaseUrl = (): string => {
@@ -26,6 +25,7 @@ export const META_CONFIG = {
   defaultOgImage: '/assets/preview.png',
   author: {
     name: 'Sessionplan',
+    url: 'https://sessionplan.de'
   },
   organization: {
     name: 'Sessionplan',

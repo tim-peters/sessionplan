@@ -1,10 +1,10 @@
 import { Toaster as Sonner } from "@/components/primitives/sonner";
-import { MessageSquare } from 'lucide-react';
 import { TooltipProvider } from "@/components/primitives/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider, useLocation, Outlet, useNavigation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { resetPrerenderReady, signalPrerenderReady, isPrerendering } from "./lib/prerender";
 import { LibraryProvider } from "./contexts/LibraryContext";
 import { LocaleProvider } from "./contexts/LocaleContext";
@@ -27,6 +27,7 @@ const FEEDBACK_MAILTO = 'mailto:feedback@sessionplan.de';
 function RootLayout() {
   const location = useLocation();
   const navigation = useNavigation();
+  const { t } = useTranslation('common');
   const workshopPageRef = useRef(false);
   workshopPageRef.current = false;
 
@@ -74,13 +75,6 @@ function RootLayout() {
           <Outlet />
         </LocaleProvider>
       </WorkshopPageContext.Provider>
-      <a
-        href={FEEDBACK_MAILTO}
-        className="fixed hidden lg:flex bottom-4 right-4 md:-ml-16 z-30 items-center gap-2 px-3 py-2 rounded-sm bg-card shadow-md hover:bg-muted transition-colors text-sm font-medium"
-      >
-        <MessageSquare className="h-4 w-4 shrink-0" />
-        <span className="hidden sm:inline">Feedback</span>
-      </a>
     </>
   );
 }

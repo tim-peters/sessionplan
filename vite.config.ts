@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {},
   },
   preview: {
     // No proxy during preview/prerender — static JSON files are served directly

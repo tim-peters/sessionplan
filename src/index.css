@@ -137,11 +137,11 @@
   }
 
   .block-card {
-    @apply relative bg-card rounded-lg border shadow-sm transition-all duration-200;
+    @apply outline outline-black/0 relative bg-card rounded-sm rounded-r-lg overflow-hidden border shadow-sm transition-all duration-200;
   }
 
   .block-card:hover {
-    @apply shadow-md;
+    @apply outline outline-black/5 dark:outline-white/5;
   }
 
   .block-card.dragging {
@@ -153,7 +153,7 @@
   }
 
   .sidebar-section {
-    @apply mt-3 space-y-1 bg-black/5 dark:bg-black/15 -mx-4 pl-4 py-2 border-b border-sidebar-border;
+    @apply mt-3 space-y-1 bg-[rgb(60,90,160,0.04)] dark:bg-black/15 -mx-4 pl-4 py-2 border-b border-sidebar-border;
   }
 
   .sidebar-item {

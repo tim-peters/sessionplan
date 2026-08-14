@@ -16,10 +16,10 @@ import {
   WorkshopItem,
   BlockType,
   Person,
+  WorkshopPrefillData,
   createEmptyWorkshop,
   generateId,
 } from '@/types/workshop';
-import { LandingPageContent } from '@/types/landingPage';
 import { SessionHistoryEntry } from '@/types/sessionHistory';
 import {
   getWorkshopFromHash,
@@ -50,7 +50,10 @@ import {
 import { useWorkshopServerSync } from './useWorkshopServerSync';
 import { DEBOUNCE_TIMES } from '@/lib/timing';
 
-const createWorkshopFromPrefill = (prefillData: LandingPageContent['prefillData']) => {
+const UNDO_LIMIT = 20;
+const UNDO_COALESCE_MS = 500;
+
+const createWorkshopFromPrefill = (prefillData: WorkshopPrefillData) => {
   const emptyWorkshop = createEmptyWorkshop();
 
   return {
@@ -90,7 +93,7 @@ const stripDataFromUrl = () => {
   }
 };
 
-export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => {
+export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
   const location = useLocation();
   const navigate = useNavigate();
   const hasPrefillData = !!prefillData;
@@ -141,6 +144,13 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
   const workshopRef = useRef(workshop);
   workshopRef.current = workshop;
   const workshopEntryHandledRef = useRef(false);
+  const undoStackRef = useRef<WorkshopData[]>([]);
+  const redoStackRef = useRef<WorkshopData[]>([]);
+  const lastUndoRecordRef = useRef<{ key: string; at: number } | null>(null);
+  const recordExternalUpdateRef = useRef<(version: number) => void>(() => {});
+  const onExternalUpdate = useCallback((version: number) => {
+    recordExternalUpdateRef.current(version);
+  }, []);
 
   const debounceTrackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const metadataTrackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -199,6 +209,7 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
     setWorkshop,
     setEmptyWorkshop: () => setWorkshopState(createEmptyWorkshop()),
     navigate,
+    onExternalUpdate,
     onSessionNotFound: () => setSessionNotFound(true),
   });
 
@@ -292,8 +303,33 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
   // directly, so this is a sentinel the mutations themselves must flip.
   const markDirty = sync.markDirty;
 
+  const clearUndoHistory = useCallback(() => {
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    lastUndoRecordRef.current = null;
+  }, []);
+
+  const recordUndoState = useCallback((previous: WorkshopData, key = 'mutation') => {
+    const now = Date.now();
+    const last = lastUndoRecordRef.current;
+    redoStackRef.current = [];
+    if (last?.key === key && now - last.at < UNDO_COALESCE_MS) return;
+
+    // React may invoke state updaters more than once in development. Avoid
+    // recording the same immutable state twice in that case.
+    if (undoStackRef.current[undoStackRef.current.length - 1] === previous) return;
+
+    undoStackRef.current = [...undoStackRef.current.slice(-(UNDO_LIMIT - 1)), previous];
+    lastUndoRecordRef.current = { key, at: now };
+  }, []);
+
+  recordExternalUpdateRef.current = (version: number) => {
+    recordUndoState(workshopRef.current, `external:${version}`);
+  };
+
   const withLastModified = useCallback(
-    (data: WorkshopData): WorkshopData => {
+    (data: WorkshopData, historyKey = 'mutation'): WorkshopData => {
+      recordUndoState(workshopRef.current, historyKey);
       markDirty();
       return {
         ...data,
@@ -303,7 +339,7 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
         },
       };
     },
-    [markDirty],
+    [markDirty, recordUndoState],
   );
 
   const updateMetadata = useCallback(
@@ -321,7 +357,7 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
         withLastModified({
           ...prev,
           workshop: { ...prev.workshop, ...updates },
-        }),
+        }, 'metadata'),
       );
     },
     [withLastModified],
@@ -362,9 +398,12 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
 
   const insertItemAfter = useCallback(
     (afterId: string, newItem: Omit<WorkshopItem, 'id'>): string | null => {
+      // The state updater may run asynchronously. Validate the reference before
+      // scheduling the update so the generated ID can be returned synchronously.
+      if (!findItemById(workshopRef.current.items, afterId)) return null;
+
       const generated: WorkshopItem = { ...newItem, id: generateId() };
 
-      let inserted = false;
       setWorkshopState((prev) => {
         const { parentId } = findItemAndParent(prev.items, afterId);
         const reference = findItemById(prev.items, afterId);
@@ -381,7 +420,6 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
         const insertInto = (items: WorkshopItem[]): WorkshopItem[] => {
           const idx = items.findIndex((i) => i.id === afterId);
           if (idx !== -1) {
-            inserted = true;
             const next = [...items];
             next.splice(idx + 1, 0, finalItem);
             return next;
@@ -397,13 +435,11 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
         };
 
         let updatedItems = insertInto(prev.items);
-        if (!inserted) return prev;
-
         updatedItems = updateGroupDurations(updatedItems);
         return withLastModified({ ...prev, items: updatedItems });
       });
 
-      return inserted ? generated.id : null;
+      return generated.id;
     },
     [withLastModified],
   );
@@ -442,7 +478,7 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
           }, DEBOUNCE_TIMES.METADATA_TRACKING);
         }
 
-        return withLastModified({ ...prev, items: updatedItems });
+        return withLastModified({ ...prev, items: updatedItems }, `item:${id}`);
       });
     },
     [withLastModified],
@@ -650,16 +686,60 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
   );
 
   const loadWorkshop = useCallback((data: WorkshopData) => {
+    if (workshop.items.length > 0) {
+      saveTempWorkshop(workshop);
+      const sessionId = getTempWorkshopStore()?.sessionId ?? generateId();
+      const existing = getSessionHistory().find((s) => s.id === sessionId);
+      const now = Date.now();
+      upsertSessionToHistory({
+        id: sessionId,
+        title: workshop.workshop.title,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+        lastOpenedAt: now,
+        itemCount: workshop.items.length,
+        totalDuration: workshop.items.reduce((sum, item) => sum + (item.duration ?? 0), 0),
+        type: 'local',
+        urlHash: encodeWorkshopToUrl(workshop),
+      });
+    }
     setWorkshopState(data);
-  }, []);
+    clearUndoHistory();
+    setCurrentSessionId(null);
+  }, [workshop, clearUndoHistory]);
+
+  const undo = useCallback(() => {
+    const previous = undoStackRef.current.pop();
+    if (!previous) return false;
+
+    redoStackRef.current = [...redoStackRef.current.slice(-(UNDO_LIMIT - 1)), workshopRef.current];
+    lastUndoRecordRef.current = null;
+    setWorkshopState(previous);
+    workshopRef.current = previous;
+    markDirty();
+    return true;
+  }, [markDirty]);
+
+  const redo = useCallback(() => {
+    const next = redoStackRef.current.pop();
+    if (!next) return false;
+
+    undoStackRef.current = [...undoStackRef.current.slice(-(UNDO_LIMIT - 1)), workshopRef.current];
+    lastUndoRecordRef.current = null;
+    setWorkshopState(next);
+    workshopRef.current = next;
+    markDirty();
+    return true;
+  }, [markDirty]);
 
   const resetWorkshop = useCallback(() => {
     setWorkshopState(createEmptyWorkshop());
+    clearUndoHistory();
     clearTempWorkshop();
     clearTempWorkshopRestoreMarker();
     setCurrentSessionId(null);
     stripDataFromUrl();
-  }, []);
+  }, [clearUndoHistory]);
 
   const clearWorkshopCompletely = useCallback(() => {
     const sessionId = currentSessionIdRef.current;
@@ -667,14 +747,16 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
       removeSessionFromHistory(sessionId);
     }
     setWorkshopState(createEmptyWorkshop());
+    clearUndoHistory();
     clearTempWorkshop();
     clearTempWorkshopRestoreMarker();
     setCurrentSessionId(null);
     stripDataFromUrl();
-  }, []);
+  }, [clearUndoHistory]);
 
   const loadSessionFromHistory = useCallback(
     (entry: SessionHistoryEntry) => {
+      clearUndoHistory();
       updateSessionLastOpened(entry.id);
 
       if (entry.type === 'dynamic' && entry.serverKey) {
@@ -694,7 +776,7 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
         }
       }
     },
-    [navigate, sync.loadServerSession],
+    [navigate, sync.loadServerSession, clearUndoHistory],
   );
 
   return {
@@ -718,6 +800,9 @@ export const useWorkshop = (prefillData?: LandingPageContent['prefillData']) => 
     loadSessionFromHistory,
     sessionNotFound,
     clearSessionNotFound: () => setSessionNotFound(false),
+    undo,
+    redo,
+    canUndo: undoStackRef.current.length > 0,
     serverKey: sync.serverKey,
     isLoadingFromServer: sync.isLoadingFromServer,
     isEnablingServerMode: sync.isEnablingServerMode,

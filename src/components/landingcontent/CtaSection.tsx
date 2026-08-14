@@ -8,7 +8,7 @@ interface CtaSectionProps {
 }
 
 export const CtaSection = ({ section, onAddBlock }: CtaSectionProps) => (
-  <section className="bg-primary text-primary-foreground -mx-6 sm:mx-auto py-20 md:py-28">
+  <section className="bg-primary text-primary-foreground -mx-6 py-20 md:py-28">
     <div className="mx-auto max-w-3xl px-6 sm:px-6 text-center">
       <h2 className="text-3xl md:text-5xl font-bold tracking-tight">{section.title}</h2>
       {section.content && (

@@ -23,8 +23,8 @@ export const FeaturesSection = ({ section }: FeaturesSectionProps) => {
   // Section background depends on tint. The grid column count is controlled
   // exclusively by `columns` — never by `tint`.
   const sectionClass = tint
-    ? `py-16 md:py-24 ${tintSectionClasses[tint]}`
-    : 'bg-muted/30 py-16 md:py-24';
+    ? `-mx-6 px-6 py-16 md:py-24 ${tintSectionClasses[tint]}`
+    : '-mx-6 px-6 bg-muted/30 py-16 md:py-24';
   const gridClass = gridCols(section.columns);
 
   return (

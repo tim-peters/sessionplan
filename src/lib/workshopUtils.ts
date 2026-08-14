@@ -5,7 +5,7 @@
  *       duration aggregation) live here. No React, no side effects.
  * Used by: useWorkshop, WorkshopPlanner drag handlers
  */
-import { WorkshopItem, BlockType } from '@/types/workshop';
+import { WorkshopItem, BlockType, DEFAULT_WORKSHOP_TITLE } from '@/types/workshop';
 import type { TFunction } from 'i18next';
 
 // Well-known default block type IDs that have locale translations
@@ -25,6 +25,14 @@ const DEFAULT_BLOCK_TYPE_KEYS: Record<string, string> = {
 export const getBlockTypeName = (type: BlockType, t: TFunction): string => {
   const key = DEFAULT_BLOCK_TYPE_KEYS[type.id];
   return key ? t(key) : type.name;
+};
+
+/**
+ * Returns the display title for a workshop. The built-in default is translated,
+ * while titles entered by the user are returned unchanged.
+ */
+export const getWorkshopTitle = (title: string, t: TFunction): string => {
+  return title === DEFAULT_WORKSHOP_TITLE ? t('planner.defaultWorkshopTitle') : title;
 };
 
 /**

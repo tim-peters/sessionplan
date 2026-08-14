@@ -22,7 +22,7 @@ import { DndContext } from '@dnd-kit/core';
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { LibraryProvider } from '@/contexts/LibraryContext';
 import { DragDropProvider } from '@/hooks/useDragDropContext';
-import { BreakoutCard } from '@/components/sections/BreakoutCard';
+import { BreakoutCard } from '@/modules/timeline/BreakoutCard';
 import { WorkshopItem } from '@/types/workshop';
 
 const makeBreakout = (overrides: Partial<WorkshopItem> = {}): WorkshopItem => ({

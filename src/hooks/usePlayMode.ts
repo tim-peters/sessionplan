@@ -7,7 +7,7 @@
  *       after explicit stop.
  * Used by: WorkshopPlanner (live bar rendering + timeline highlighting)
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { WorkshopData } from '@/types/workshop';
 import {
   flattenTimeline,
@@ -25,17 +25,23 @@ export interface PlayModeState {
   blockPlayStates: Map<string, PlayState>;
   elapsedInCurrentBlock: number;
   currentBlockEffectiveDuration: number;
+  soundPulse: number;
   activate: () => void;
   deactivate: () => void;
 }
 
-export function usePlayMode(workshop: WorkshopData, totalDuration: number): PlayModeState {
+export function usePlayMode(
+  workshop: WorkshopData,
+  totalDuration: number,
+  soundsEnabled = true,
+): PlayModeState {
   const [now, setNow] = useState(() => new Date());
   // When the user manually pressed "Live", we record the timestamp so that
   // elapsed is calculated from that moment (not from the scheduled sessionStart).
   const [manualStartedAt, setManualStartedAt] = useState<Date | null>(null);
   // Set to true when the user explicitly presses Stop — prevents auto re-activation.
   const [manuallyStopped, setManuallyStopped] = useState(false);
+  const [soundPulse, setSoundPulse] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), PLAY_MODE_TICK_MS);
@@ -108,6 +114,55 @@ export function usePlayMode(workshop: WorkshopData, totalDuration: number): Play
     };
   }, [currentDisplay, elapsedMinutes]);
 
+  const previousAudioState = useRef<{
+    isActive: boolean;
+    currentBlockId: string | null;
+  }>({ isActive: false, currentBlockId: null });
+  const soundsEnabledRef = useRef(soundsEnabled);
+  soundsEnabledRef.current = soundsEnabled;
+
+  useEffect(() => {
+    const previous = previousAudioState.current;
+    const currentBlockId = currentDisplay?.current?.id ?? null;
+    previousAudioState.current = { isActive, currentBlockId };
+
+    if (!soundsEnabled) return;
+
+    let sound: string | null = null;
+    // Play Mode has just started.
+    if (isActive && !previous.isActive) {
+      sound = '/assets/ding.mp3';
+    // The current block has ended without another block to switch to.
+    } else if (isActive && currentBlockId === null && previous.currentBlockId !== null) {
+      sound = '/assets/success.mp3';
+    // The current block's time is up and Play Mode switches to the next block.
+    } else if (
+      isActive &&
+      currentBlockId !== null &&
+      previous.currentBlockId !== null &&
+      currentBlockId !== previous.currentBlockId
+    ) {
+      sound = '/assets/dingdong.mp3';
+    // The automatically running session has reached its total duration.
+    } else if (!isActive && previous.isActive && elapsedMinutes >= totalDuration) {
+      sound = '/assets/success.mp3';
+    }
+
+    if (!sound) return;
+
+    const audio = new Audio(sound);
+    void audio
+      .play()
+      .then(() => {
+        if (soundsEnabledRef.current) {
+          setSoundPulse((pulse) => pulse + 1);
+        }
+      })
+      .catch(() => {
+        // Browsers may block playback when Play Mode starts automatically.
+      });
+  }, [currentDisplay, elapsedMinutes, isActive, soundsEnabled, totalDuration]);
+
   return {
     isActive,
     canActivate,
@@ -115,6 +170,7 @@ export function usePlayMode(workshop: WorkshopData, totalDuration: number): Play
     blockPlayStates,
     elapsedInCurrentBlock,
     currentBlockEffectiveDuration,
+    soundPulse,
     activate: () => {
       // Start immediately from now, independent of scheduled time
       setManualStartedAt(new Date());
