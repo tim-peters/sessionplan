@@ -8,7 +8,7 @@ import { ChevronDown, ChevronRight, Plus, Layers, Lock, Unlock } from 'lucide-re
 import { Button } from '@/components/primitives/button';
 import { DurationInput } from './atoms/DurationInput';
 import { DragHandle } from './atoms/DragHandle';
-import { Checkbox } from '@/components/primitives/checkbox';
+import { Switch } from '@/components/primitives/switch';
 import { cn } from '@/lib/utils';
 import { BlockPreview } from './BlockPreview';
 import { useDragDropContext } from '@/hooks/useDragDropContext';
@@ -26,6 +26,7 @@ import { containerId } from '@/lib/dndConstants';
 import { BreakoutLane } from './BreakoutLane';
 import { SameInAllLanesView } from './SameInAllLanesView';
 import { ParallelLanesView } from './ParallelLanesView';
+import { useIsStripHighlighted, useHoverHighlightHandlers } from '@/hooks/useHoverHighlight';
 
 interface BreakoutCardProps {
   item: WorkshopItem;
@@ -94,6 +95,14 @@ export const BreakoutCard = ({
   const [isExpanded, setIsExpanded] = useState(true);
   const { activeParentId: contextActiveParentId } = useDragDropContext();
   const isLg = useIsLg();
+
+  // Cross-highlight with the time-visualization strip. The breakout root
+  // carries data-item-id, so the handlers live on this element — its inner
+  // children (lane blocks) already publish via their own BlockCard instances.
+  // Only the strip-originated hover gets the outline; timeline-originated
+  // hovers get the card's normal CSS hover affordance.
+  const isHighlighted = useIsStripHighlighted(item.id);
+  const hoverHandlers = useHoverHighlightHandlers(item.id);
 
   // Fix the pre-existing innerWidth read-on-render (hydration risk + re-renders
   // on resize) with a useEffect-driven matchMedia for the sm: breakpoint.
@@ -222,16 +231,19 @@ export const BreakoutCard = ({
       {/* Breakout card - right side */}
       <div
         ref={setNodeRef}
+        data-item-id={item.id}
         style={{
           transform: CSS.Transform.toString(transform),
           transition,
           opacity: isDragging ? 0 : 1,
         }}
         onClick={onEditDetails}
+        {...hoverHandlers}
         className={cn(
-          'block-card shadow-none bg-block-breakout-bg rounded-lg border-2 border-dashed border-block-breakout/60 fade-in flex-1 cursor-pointer [&:not(:has(.block-card:hover)):hover]:bg-block-breakout/10 transition-shadow',
+          'block-card group shadow-none bg-block-breakout-bg rounded-lg border-2 border-dashed border-block-breakout/60 fade-in flex-1 cursor-pointer [&:not(:has(.block-card:hover)):hover]:bg-block-breakout/10 transition-shadow',
           isDragging && 'dragging opacity-50',
           playState === 'current' && 'border-primary',
+          isHighlighted && 'time-card-highlight',
         )}
       >
         <div
@@ -340,17 +352,18 @@ export const BreakoutCard = ({
                       />
                     </div>
                     <div className="flex items-center gap-1.5 pl-2 border-l">
-                      <Checkbox
-                        id={`same-${item.id}`}
-                        checked={item.sameInAllBreakouts || false}
-                        onCheckedChange={(checked) => onUpdate({ sameInAllBreakouts: !!checked })}
-                      />
                       <label
                         htmlFor={`same-${item.id}`}
-                        className="text-xs text-muted-foreground cursor-pointer select-none"
+                        className="text-xs text-muted-foreground cursor-pointer select-none -mr-1"
                       >
                         <span className="hidden sm:inline">{t('dialog.sameInAllRooms').split(' ').slice(0, -1).join(' ')} </span>{t('dialog.sameInAllRooms').split(' ').at(-1)}
                       </label>
+                      <Switch
+                        id={`same-${item.id}`}
+                        checked={item.sameInAllBreakouts || false}
+                        onCheckedChange={(checked) => onUpdate({ sameInAllBreakouts: checked })}
+                        className="scale-75"
+                      />
                     </div>
                   </div>
 
@@ -365,7 +378,7 @@ export const BreakoutCard = ({
                           ? t('block.count', { count: blocksPerLane })
                           : minBlocksInLane === maxBlocksInLane
                             ? t('block.count', { count: minBlocksInLane })
-                            : `${minBlocksInLane}–${maxBlocksInLane} ${t('block.count_other', { count: maxBlocksInLane! })}`}
+                            : `${minBlocksInLane} – ${t('block.count_other', { count: maxBlocksInLane! })}`}
                       </>
                     )}
                   </span>

@@ -99,6 +99,27 @@ const handleSidebarDrag = (args: CollisionArgs) => {
  */
 const handleTimelineDrag = (args: CollisionArgs, workshopItems: WorkshopItem[], activeParentId: string | null) => {
   const pointerCollisions = pointerWithin(args);
+
+  const isAncestorOfActiveItem = (containerId: string): boolean => {
+    let parentId = activeParentId;
+
+    while (parentId !== null && parentId !== undefined) {
+      if (parentId === containerId) return true;
+      parentId = findParentId(workshopItems, parentId);
+    }
+
+    return false;
+  };
+
+  const isPointerInsideActiveParent = (): boolean => {
+    if (!activeParentId || !args.pointerCoordinates) return false;
+
+    const rect = args.droppableRects.get(activeParentId);
+    if (!rect) return false;
+
+    const { x, y } = args.pointerCoordinates;
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  };
   
   // PRIORITY 1: Check for explicit drop zones first
   
@@ -112,7 +133,12 @@ const handleTimelineDrag = (args: CollisionArgs, workshopItems: WorkshopItem[], 
   
   // Container drop zones
   const containerDropZone = pointerCollisions.find((collision: Collision) => 
-    typeof collision.id === 'string' && collision.id.startsWith('container-')
+    typeof collision.id === 'string' &&
+    collision.id.startsWith('container-') &&
+    // Do not let an enclosing group intercept reordering while the pointer is
+    // still inside the active breakout. Once it leaves the breakout, that
+    // group is a valid drop target again.
+    !(isAncestorOfActiveItem(collision.id.slice('container-'.length)) && isPointerInsideActiveParent())
   );
   if (containerDropZone) {
     return [containerDropZone];

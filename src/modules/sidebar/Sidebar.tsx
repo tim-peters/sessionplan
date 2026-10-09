@@ -20,6 +20,7 @@ import { CollapsedView } from './CollapsedView';
 import { SettingsPanel } from './SettingsPanel';
 import { SidebarBottomBar, SidebarLogo, MobileCloseButton } from './SidebarBottomBar';
 import { SidebarDialogs } from './SidebarDialogs';
+import { AiImportHelpDialog } from './AiImportHelpDialog';
 
 interface SidebarProps {
   blockTypes: BlockType[];
@@ -39,8 +40,11 @@ interface SidebarProps {
   onSetShowFullPreviewText?: (value: boolean) => void;
   playModeSounds?: boolean;
   onSetPlayModeSounds?: (value: boolean) => void;
+  timeVisualizationStrip?: boolean;
+  onSetTimeVisualizationStrip?: (value: boolean) => void;
   onExport?: () => void;
-  onImport?: (file: File) => void;
+  onImport?: (file: File) => Promise<void>;
+  onImportText?: (text: string) => Promise<void>;
   onReset?: () => void;
   onClearAll?: () => void;
   onSaveAsTemplate?: () => void;
@@ -69,8 +73,11 @@ export const Sidebar = ({
   onSetShowFullPreviewText,
   playModeSounds,
   onSetPlayModeSounds,
+  timeVisualizationStrip,
+  onSetTimeVisualizationStrip,
   onExport,
   onImport,
+  onImportText,
   onReset: _onReset,
   onClearAll,
   onSaveAsTemplate,
@@ -111,6 +118,7 @@ export const Sidebar = ({
     { kind: 'blockType' | 'person'; id: string; name: string } | null
   >(null);
   const [pendingTemplate, setPendingTemplate] = useState<WorkshopTemplate | null>(null);
+  const [showAiHelp, setShowAiHelp] = useState(false);
 
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -336,8 +344,12 @@ export const Sidebar = ({
               onSetShowFullPreviewText={onSetShowFullPreviewText}
               playModeSounds={playModeSounds}
               onSetPlayModeSounds={onSetPlayModeSounds}
+              timeVisualizationStrip={timeVisualizationStrip}
+              onSetTimeVisualizationStrip={onSetTimeVisualizationStrip}
               onExport={onExport}
               onImport={onImport}
+              onImportText={onImportText}
+              onOpenAiHelp={() => setShowAiHelp(true)}
               onClearAll={() => setShowClearAllDialog(true)}
               onClose={() => closeSection('settings')}
               panelRef={settingsRef}
@@ -366,6 +378,12 @@ export const Sidebar = ({
         pendingTemplate={pendingTemplate}
         onClearPendingTemplate={() => setPendingTemplate(null)}
         onConfirmLoadTemplate={handleConfirmLoadTemplate}
+      />
+      <AiImportHelpDialog
+        open={showAiHelp}
+        onOpenChange={setShowAiHelp}
+        onImportText={onImportText}
+        onImportFile={onImport}
       />
     </>
   );

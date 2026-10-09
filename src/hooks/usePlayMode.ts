@@ -23,6 +23,9 @@ export interface PlayModeState {
   canActivate: boolean;
   currentDisplay: CurrentDisplay | null;
   blockPlayStates: Map<string, PlayState>;
+  /** Minutes elapsed since the live session started (clamped to ≥ 0).
+   *  Always defined when `isActive` is true; meaningless otherwise. */
+  elapsedMinutes: number;
   elapsedInCurrentBlock: number;
   currentBlockEffectiveDuration: number;
   soundPulse: number;
@@ -168,6 +171,10 @@ export function usePlayMode(
     canActivate,
     currentDisplay,
     blockPlayStates,
+    // Surface the total elapsed minutes (clamped) so consumers like the time-
+    // visualization strip can show a "current position" marker even when no
+    // specific block is active (e.g. between blocks during a fixedStartTime gap).
+    elapsedMinutes: isActive ? Math.max(0, elapsedMinutes) : 0,
     elapsedInCurrentBlock,
     currentBlockEffectiveDuration,
     soundPulse,

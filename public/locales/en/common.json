@@ -1,37 +1,60 @@
 {
   "nav": {
     "backToPlanner": "← Back to Sessionplan",
-    "backToBlog": "← Back to Blog"
+    "backToBlog": "← Back to Blog",
+    "toTool": "Open tool"
   },
   "feedback": {
     "report": "Report an issue"
+  },
+  "languageHint": {
+    "regionLabel": "Sprachhinweis",
+    "message": "Dies ist die englische Seite. Lieber zu Deutsch wechseln?",
+    "primary": "Zur deutschen Version",
+    "secondary": "Bei Englisch bleiben",
+    "close": "Sprachhinweis schließen"
   },
   "blog": {
     "title": "Blog",
     "description": "Tips, tricks and insights on session planning, facilitation and effective training methods.",
     "subtitle": "Tips, tricks and insights on session planning and facilitation",
     "readArticle": "Read article →",
-    "noPosts": "No blog articles yet."
+    "noPosts": "No blog articles yet.",
+    "allPosts": "All",
+    "filterLabel": "Blog topics",
+    "backToBlog": "View all blog articles →",
+    "moreOnTopic": "More on {{hub}}"
   },
   "templates": {
     "title": "Session Templates",
     "description": "Ready-made agenda templates for various workshop formats – immediately usable and individually customisable.",
     "subtitle": "Ready-made agendas for various formats – ready to use",
     "openTemplate": "Open template →",
-    "noTemplates": "No templates available yet."
+    "noTemplates": "No templates available yet.",
+    "backToTemplates": "View all templates →",
+    "allTemplates": "All",
+    "filterLabel": "Template categories"
   },
   "footer": {
     "mode": "Modes",
     "templates": "Templates",
     "blog": "Blog",
+    "enterprise": "Enterprise",
     "imprint": "Imprint",
     "privacy": "Privacy",
-    "author": "Developer",
+    "author": "Developed by Tim J. Peters",
     "language": "Language",
     "tagline": "Free agenda planner for workshops, trainings and events — offline, no account needed.",
     "openSource": "Open Source on GitHub",
+    "gdprCompliant": "GDPR-compliant",
+    "gdprCompliantSubtitle": "Privacy policy",
+    "hostedInEu": "Hosted in the EU",
+    "hostedInEuSubtitle": "EU server location",
     "explore": "Explore",
     "legal": "Legal",
+    "support": "Support",
+    "supportDescription": "Sessionplan is free to use and run without profit – and that is great! If you would like to help keep the servers running, you can buy me a coffee here.",
+    "supportLink": "Support on Ko-fi",
     "freeOpenSource": "100% free · Open Source"
   },
   "settings": {
@@ -39,9 +62,25 @@
     "language": "Language",
     "truncateDescription": "Truncate descriptions",
     "playModeSounds": "Audio notifications",
+    "timeVisualizationStrip": "Show time visualization",
     "exportData": "Export data",
     "exportPdf": "Export as PDF",
     "importData": "Import data",
+    "aiHelp": "Create a session with AI",
+    "aiTitle": "Create a session with an AI chat",
+    "aiDescription": "Describe your session in ChatGPT, Claude, or another LLM and use the Prompt below. Then simply import the generated JSON file into Sessionplan.",
+    "aiSchemaLink": "Open import schema",
+    "aiApiSkillLink": "Download the Open API skill (for AI tools) instead",
+    "aiOpenCustomGpt": "Open the Sessionplan GPT in ChatGPT",
+    "aiPromptLabel": "Copy prompt",
+    "aiCopyPrompt": "Copy prompt",
+    "aiPromptCopied": "Prompt copied",
+    "aiPrompt": "Create a Sessionplan JSON for the described agenda. Follow the schema exactly at {{schemaUrl}}. Return only a complete JSON object (as JSON file).",
+    "aiResponseLabel": "LLM JSON response",
+    "aiResponsePlaceholder": "Paste JSON here ...",
+    "aiImportResponse": "Import session",
+    "aiChooseFile": "Upload JSON file",
+    "aiResponseError": "The response is not valid Sessionplan JSON. Check the schema and try again.",
     "clearAll": "Clear all",
     "clearAllTitle": "Delete all data?",
     "clearAllConfirm": "Really delete all data? This removes the current state, session history, all saved block templates, session templates, and your UI settings. The default templates will be restored.",
@@ -127,6 +166,12 @@
     "permanentLinkCreating": "Creating...",
     "permanentLinkError": "Failed to create dynamic link",
     "sessionNotFound": "Session not found",
+    "sessionUnavailable": {
+      "offline": "You are offline – check your connection and reload.",
+      "network": "The shared plan could not be loaded right now – try again later.",
+      "server": "The server is temporarily unreachable – please try again later.",
+      "timeout": "The connection took too long – please try again."
+    },
     "disableServerModeTitle": "Disable dynamic link?",
     "disableServerModeText": "The existing link will be deleted and can no longer be accessed.",
     "disableServerModeAction": "Disable",
@@ -137,6 +182,10 @@
     "incomingUpdateAccept": "Load latest version",
     "incomingUpdateFork": "Save to new link",
     "incomingUpdateForking": "Creating…",
+    "unsyncedChangesBanner": "Unsaved changes",
+    "unsyncedChangesHintBefore": "Syncing was currently not available (it will be attempted again shortly). If you're experiencing connection issues, you can download your plan ",
+    "unsyncedChangesLink": "as a JSON file",
+    "unsyncedChangesHintAfter": " so you don't lose any changes.",
     "permanentLinkSyncsNote": "Your plan is automatically saved to the server, the link always reflects the latest version.",
     "exportSuccess": "Session exported",
     "importSuccess": "Session imported",
@@ -199,8 +248,10 @@
     "persons": "Persons",
     "notes": "Notes",
     "notesPlaceholder": "Notes about this block...",
+    "addNotes": "Add notes",
     "material": "Material",
     "materialPlaceholder": "Required materials...",
+    "addMaterial": "Add material",
     "cancel": "Cancel",
     "save": "Save",
     "done": "Done",
@@ -224,6 +275,14 @@
     "disableSounds": "Turn off audio notifications",
     "enableSounds": "Turn on audio notifications",
     "stop": "Stop Live Mode"
+  },
+  "timeStrip": {
+    "ariaLabel": "Time overview of the session",
+    "untitled": "(Untitled)",
+    "breakout": "Breakout",
+    "indicatorLabel": "Visible time range",
+    "indicatorHelp": "Drag or use arrow keys to scroll, click the track to center on a position",
+    "indicatorValue": "Visible range: {{start}}–{{end}}"
   },
   "restore": {
     "title": "Last local version found",
@@ -257,6 +316,8 @@
     "lastEdited": "Last edited",
     "localBadge": "Local",
     "dynamicBadge": "Shared",
+    "unavailable": "Dynamic link unavailable",
+    "untitled": "Untitled",
     "reopen": "Open",
     "hide": "Hide",
     "deleteServer": "Delete",
@@ -283,7 +344,10 @@
     "description": "Overview of all specialised planning tools for workshops, events, teaching and more.",
     "heading": "All planning tools",
     "subheading": "Explore all specialised planning tools for different use cases",
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "allPages": "All",
+    "filterLabel": "Tool categories",
+    "backToOverview": "View all planning tools →"
   },
   "blockTypes": {
     "input": "🎤 Lecture/Input",

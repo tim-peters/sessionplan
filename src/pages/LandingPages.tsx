@@ -11,17 +11,21 @@ import { useTranslation } from 'react-i18next';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { PageFooter } from '@/components/layout/PageFooter';
 import { TemplateHeader } from '@/components/layout/TemplateHeader';
+import { HubFilter } from '@/components/atoms/HubFilter';
 import { LandingPageContent } from '@/types/landingPage';
+import type { Hub } from '@/types/hub';
 import { signalPrerenderReady } from '@/lib/prerender';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalePrefix, getLocaleRoot, createSymmetricAlternates } from '@/lib/localeUtils';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
-import { getCanonicalUrl } from '@/lib/metaConfig';
+import { getCanonicalUrl, getOrganizationSchema } from '@/lib/metaConfig';
 import { createCollectionPageSchema } from '@/lib/collectionStructuredData';
+import { buildBreadcrumbList } from '@/lib/breadcrumbStructuredData';
 
 interface LandingPagesLoaderData {
   index: { pages: Array<{ slug: string }> };
   pages: Promise<LandingPageContent[]>;
+  hubs: Hub[];
 }
 
 interface LandingPagesGridProps {
@@ -74,7 +78,7 @@ const LandingPagesGrid = ({ pages, localePrefix }: LandingPagesGridProps) => {
 
 const LandingPages = () => {
   const { t } = useTranslation('common');
-  const { pages } = useLoaderData() as LandingPagesLoaderData;
+  const { pages, hubs } = useLoaderData() as LandingPagesLoaderData;
   const { locale } = useLocale();
 
   const localePrefix = getLocalePrefix(locale);
@@ -86,12 +90,20 @@ const LandingPages = () => {
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <TemplateHeader
-            backTo={getLocaleRoot(locale)}
-            backLabel={t('nav.backToPlanner')}
             title={t('landingPages.heading')}
             subtitle={t('landingPages.subheading')}
+            breadcrumbs={[{ label: t('landingPages.heading') }]}
             className="max-w-2xl"
           />
+
+          {hubs && hubs.length > 0 && (
+            <HubFilter
+              hubs={hubs}
+              basePath="/landing-pages"
+              allLabel={t('landingPages.allPages')}
+              filterLabel={t('landingPages.filterLabel')}
+            />
+          )}
 
           <Suspense fallback={
             <div className="text-center py-12">
@@ -114,6 +126,10 @@ const LandingPages = () => {
                     itemType: 'WebPage',
                   })),
                 });
+                const breadcrumbSchema = buildBreadcrumbList([
+                  { name: 'Sessionplan', path: getLocaleRoot(locale) },
+                  { name: t('landingPages.heading') },
+                ]);
 
                 return (
                   <>
@@ -123,7 +139,7 @@ const LandingPages = () => {
                       canonicalPath={canonicalPath}
                       locale={locale}
                       alternates={alternates}
-                      structuredData={structuredData}
+                      structuredData={[structuredData, getOrganizationSchema(), breadcrumbSchema]}
                     />
                     <LandingPagesGrid pages={landingPages} localePrefix={localePrefix} />
                   </>
@@ -133,7 +149,7 @@ const LandingPages = () => {
           </Suspense>
 
         </div>
-        <div className="mx-6 sm:mx-0">
+        <div className="mx-6 md:mx-0">
           <PageFooter />
         </div>
       </div>

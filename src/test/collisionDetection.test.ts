@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createCustomCollisionDetection } from '@/lib/collisionDetection';
-import { makeBlock, makeGroup } from './test-helpers';
+import { makeBlock, makeBreakout, makeGroup } from './test-helpers';
 import { vi } from 'vitest';
 
 // We exercise the public factory and stub @dnd-kit's helpers via a
@@ -108,5 +108,51 @@ describe('createCustomCollisionDetection', () => {
     // The factory prefers same-level (and only falls back to cross-level if it
     // is much closer), so child1 wins here.
     expect(result[0].id).toBe('child1');
+  });
+
+  it('does not let an ancestor group capture an intra-lane breakout drag', () => {
+    const laneBlock1 = makeBlock({ id: 'lane-block-1', laneIndex: 0 });
+    const laneBlock2 = makeBlock({ id: 'lane-block-2', laneIndex: 0 });
+    const breakout = makeBreakout([laneBlock1, laneBlock2], { id: 'breakout-1' });
+    const group = makeGroup([breakout], { id: 'group-1' });
+
+    vi.mocked(dndKit.pointerWithin).mockReturnValueOnce([
+      { id: 'container-group-1', data: { value: 0 } },
+    ]);
+    vi.mocked(dndKit.closestCenter).mockReturnValueOnce([
+      { id: 'lane-block-1', data: { value: 0.5 } },
+    ]);
+
+    const detect = createCustomCollisionDetection([group], 'breakout-1');
+    const result = detect(
+      baseArgs({
+        active: { id: 'lane-block-2', data: { current: { parentId: 'breakout-1', laneIndex: 0 } } } as never,
+        droppableRects: new Map([['breakout-1', makeRect(0, 0)]]) as never,
+      }),
+    );
+
+    expect(result[0].id).toBe('lane-block-1');
+  });
+
+  it('allows moving a breakout-lane block into its enclosing group outside the breakout', () => {
+    const laneBlock = makeBlock({ id: 'lane-block', laneIndex: 0 });
+    const breakout = makeBreakout([laneBlock], { id: 'breakout-1' });
+    const group = makeGroup([breakout], { id: 'group-1' });
+
+    vi.mocked(dndKit.pointerWithin).mockReturnValueOnce([
+      { id: 'container-group-1', data: { value: 0 } },
+    ]);
+    vi.mocked(dndKit.closestCenter).mockReturnValueOnce([]);
+
+    const detect = createCustomCollisionDetection([group], 'breakout-1');
+    const result = detect(
+      baseArgs({
+        active: { id: 'lane-block', data: { current: { parentId: 'breakout-1', laneIndex: 0 } } } as never,
+        pointerCoordinates: { x: 150, y: 150 } as never,
+        droppableRects: new Map([['breakout-1', makeRect(0, 0)]]) as never,
+      }),
+    );
+
+    expect(result[0].id).toBe('container-group-1');
   });
 });

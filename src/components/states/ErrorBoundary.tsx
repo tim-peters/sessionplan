@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { PageFooter } from '@/components/layout/PageFooter';
 import { signalPrerenderReady } from '@/lib/prerender';
-
 /**
  * Error Boundary für React Router
  * Fängt Fehler in Loadern und Components ab
@@ -36,8 +35,9 @@ function NotFoundError() {
       <DocumentMeta
         title={t('errors.notFound')}
         description={t('errors.notFoundDesc')}
+        noindex={true}
       />
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col" data-error-page="true">
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
             <h1 className="text-6xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -57,7 +57,9 @@ function NotFoundError() {
             </Link>
           </div>
         </main>
-        <PageFooter />
+        <div className="mx-6 md:mx-0">
+          <PageFooter />
+        </div>
       </div>
     </>
   );
@@ -75,8 +77,9 @@ function GenericError({ error }: { error: unknown }) {
       <DocumentMeta
         title={t('errors.oops')}
         description=""
+        noindex={true}
       />
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col" data-error-page="true">
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -114,7 +117,9 @@ function GenericError({ error }: { error: unknown }) {
             </div>
           </div>
         </main>
-        <PageFooter />
+        <div className="mx-6 md:mx-0">
+          <PageFooter />
+        </div>
       </div>
     </>
   );

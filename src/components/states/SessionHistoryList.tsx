@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { EyeOff, Link, SquareChartGantt, Trash2 } from 'lucide-react';
+import { EyeOff, Link, Link2Off, SquareChartGantt, Trash2 } from 'lucide-react';
 import { SessionHistoryEntry } from '@/types/sessionHistory';
-import { getSessionHistory, removeSessionFromHistory } from '@/lib/workshopLocalStorage';
-import { deleteServerSession } from '@/lib/workshopServer';
+import { getSessionHistory, removeSessionFromHistory, upsertSessionToHistory } from '@/lib/workshopLocalStorage';
+import { deleteServerSession, fetchServerSessionStatus } from '@/lib/workshopServer';
 import { Button } from '@/components/primitives/button';
 import { RECENT_INDICATOR_MS } from '@/lib/timing';
 import {
@@ -44,6 +44,50 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
     getSessionHistory().sort((a, b) => b.lastOpenedAt - a.lastOpenedAt)
   );
 
+  useEffect(() => {
+    let cancelled = false;
+    const dynamicSessions = getSessionHistory().filter((entry) => entry.type === 'dynamic' && entry.serverKey);
+
+    if (dynamicSessions.length === 0) return;
+
+    Promise.all(dynamicSessions.map(async (entry) => {
+      const result = await fetchServerSessionStatus(entry.serverKey!);
+
+      if (result.status === 'available') {
+        const updatedEntry: SessionHistoryEntry = {
+          ...entry,
+          title: result.data.workshop.title,
+          updatedAt: result.data.workshop.lastModified
+            ? Date.parse(result.data.workshop.lastModified) || entry.updatedAt
+            : entry.updatedAt,
+          itemCount: result.data.items.length,
+          totalDuration: result.data.items.reduce((sum, item) => sum + (item.duration ?? 0), 0),
+          unavailable: false,
+          lastOpenedAt: entry.lastOpenedAt,
+        };
+        // Keep the local entry's timestamps stable; this refresh is not an open action.
+        upsertSessionToHistory(updatedEntry);
+        return updatedEntry;
+      }
+
+      if (result.status === 'not-found') {
+        const updatedEntry = { ...entry, unavailable: true };
+        upsertSessionToHistory(updatedEntry);
+        return updatedEntry;
+      }
+
+      return entry;
+    })).then((updatedEntries) => {
+      if (cancelled) return;
+      const updates = new Map(updatedEntries.map((entry) => [entry.id, entry]));
+      setSessions((current) => current.map((entry) => updates.get(entry.id) ?? entry));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (sessions.length === 0) return null;
 
   const handleHide = (id: string) => {
@@ -71,115 +115,139 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
     <div className="w-full md:max-h-[70vh] overflow-y-auto sm:px-0.5 py-2" data-nosnippet="true">
       <div className="flex flex-col gap-2">
         {sessions.map((entry, idx) => {
+          const href = entry.type === 'dynamic' && entry.serverKey
+            ? `/?id=${entry.serverKey}`
+            : entry.type === 'local' && entry.urlHash
+              ? `#data=${entry.urlHash}`
+              : null;
+          const canOpen = !entry.unavailable && href !== null;
+          const content = (
+            <>
+              {/* Icon */}
+              <div className="mt-1.5 ml-1 shrink-0 text-muted-foreground">
+                {entry.type === 'dynamic' ? (
+                  entry.unavailable
+                    ? <Link2Off className="h-4 w-4" aria-label={t('sessionHistory.unavailable')} />
+                    : <Link className="h-4 w-4" />
+                ) : (
+                  <SquareChartGantt className="h-4 w-4" />
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="font-medium text-sm truncate">{entry.title || t('sessionHistory.untitled')}</span>
+                  {idx === 0 && !entry.unavailable && Date.now() - entry.lastOpenedAt < RECENT_INDICATOR_MS && (
+                    <span className="inline-block h-2 w-2 rounded-full bg-primary shrink-0" />
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  <span>
+                    {t('sessionHistory.itemsCount', { count: entry.itemCount })}
+                  </span>
+                  {entry.totalDuration > 0 && (
+                    <span>{t('sessionHistory.minutes', { count: entry.totalDuration })}</span>
+                  )}
+                </div>
+              </div>
+            </>
+          );
+
           return (
           <div
             key={entry.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => onReopenSession(entry)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onReopenSession(entry);
-              }
-            }}
-            className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3 shadow-sm hover:shadow-md transition-shadow no-underline text-foreground text-left w-full cursor-pointer"
+            className={`group relative flex items-start gap-3 rounded-xl border border-border bg-card p-3 shadow-sm transition-shadow no-underline text-left w-full ${
+              entry.unavailable
+                ? 'text-muted-foreground opacity-60 cursor-default'
+                : canOpen
+                  ? 'text-foreground hover:shadow-md cursor-pointer'
+                  : 'text-foreground cursor-default'
+            }`}
           >
-            {/* Icon */}
-            <div className="mt-1.5 ml-1 shrink-0 text-muted-foreground">
-              {entry.type === 'dynamic' ? (
-                <Link className="h-4 w-4" />
-              ) : (
-                <SquareChartGantt className="h-4 w-4" />
-              )}
+            {canOpen && (
+              <a
+                href={href}
+                aria-label={entry.title || t('sessionHistory.untitled')}
+                className="absolute inset-0 z-20 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onClick={(event) => {
+                  if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+                    event.preventDefault();
+                    onReopenSession(entry);
+                  }
+                }}
+              />
+            )}
+
+            <div className="relative z-10 flex min-w-0 flex-1 items-start gap-3 pr-16">
+              {content}
             </div>
 
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="font-medium text-sm truncate">{entry.title}</span>
-                {idx === 0 && Date.now() - entry.lastOpenedAt < RECENT_INDICATOR_MS && (
-                  <span className="inline-block h-2 w-2 rounded-full bg-primary shrink-0" />
-                )}
-              </div>
-              <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                <span>
-                  {t('sessionHistory.itemsCount', { count: entry.itemCount })}
-                </span>
-                {entry.totalDuration > 0 && (
-                  <span>{t('sessionHistory.minutes', { count: entry.totalDuration })}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-end flex-col gap-1">
-              {/* Actions */}
-              <div className="flex items-center gap-1 shrink-0" onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}>
-                {entry.type === 'dynamic' && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                        title={t('sessionHistory.deleteServer')}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{t('sessionHistory.deleteConfirmTitle')}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t('sessionHistory.deleteConfirmText')}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t('sessionHistory.deleteConfirmCancel')}</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          onClick={() => handleDeleteServer(entry)}
-                        >
-                          {t('sessionHistory.deleteConfirmAction')}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+            <div className="absolute top-3 right-3 z-30 flex items-center gap-1">
+              {entry.type === 'dynamic' && !entry.unavailable && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                      title={t('sessionHistory.hide')}
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      title={t('sessionHistory.deleteServer')}
                     >
-                      <EyeOff className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>{t('sessionHistory.hideConfirmTitle')}</AlertDialogTitle>
+                      <AlertDialogTitle>{t('sessionHistory.deleteConfirmTitle')}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        {t('sessionHistory.hideConfirmText')}
+                        {t('sessionHistory.deleteConfirmText')}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('sessionHistory.deleteConfirmCancel')}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleHide(entry.id)}>
-                        {t('sessionHistory.hideConfirmAction')}
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => handleDeleteServer(entry)}
+                      >
+                        {t('sessionHistory.deleteConfirmAction')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </div>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                {formatRelativeDate(entry.lastOpenedAt, t, i18n.language)}
-              </span>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0
+                      ${entry.unavailable ? "text-foreground ": "text-muted-foreground "},
+                       hover:text-foreground`}
+                    title={t('sessionHistory.hide')}
+                  >
+                    <EyeOff className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t('sessionHistory.hideConfirmTitle')}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t('sessionHistory.hideConfirmText')}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t('sessionHistory.deleteConfirmCancel')}</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleHide(entry.id)}>
+                      {t('sessionHistory.hideConfirmAction')}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
+
+            <span className="absolute bottom-3 right-3 z-10 flex items-center gap-1 text-xs text-muted-foreground">
+              {formatRelativeDate(entry.updatedAt, t, i18n.language)}
+            </span>
           </div>
           );
         })}

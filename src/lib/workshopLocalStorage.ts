@@ -105,6 +105,7 @@ export const migrateStorageKeys = (): void => {
     const previewOld = localStorage.getItem('showFullPreviewText');
     if (sidebarOld !== null || previewOld !== null) {
       const prefs: UIPrefs = {
+        ...DEFAULT_PREFS,
         sidebarCollapsed: sidebarOld === null ? true : sidebarOld === 'true',
         showFullPreviewText: previewOld === null ? true : previewOld === 'true',
       };
@@ -195,10 +196,24 @@ export interface TempWorkshopStore {
   sessionId: string;
 }
 
+/**
+ * Dispatched on `window` whenever the temp workshop in localStorage changes
+ * (saved or cleared). Lets UI outside the planner tree (e.g. LanguageHint)
+ * react to session content appearing/disappearing without a prop drill.
+ */
+export const TEMP_WORKSHOP_CHANGED_EVENT = 'sessionplan:temp-workshop-changed';
+
+const notifyTempWorkshopChanged = (): void => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(TEMP_WORKSHOP_CHANGED_EVENT));
+  }
+};
+
 export const saveTempWorkshopWithId = (data: WorkshopData, sessionId: string): void => {
   try {
     const wrapper: TempWorkshopStore = { data, sessionId };
     localStorage.setItem(KEYS.temp, JSON.stringify(wrapper));
+    notifyTempWorkshopChanged();
   } catch (error) {
     console.error('Failed to save temp workshop:', error);
   }
@@ -225,6 +240,7 @@ export const saveTempWorkshop = (data: WorkshopData, sessionId?: string): void =
 
 export const clearTempWorkshop = (): void => {
   localStorage.removeItem(KEYS.temp);
+  notifyTempWorkshopChanged();
 };
 
 export const clearTempWorkshopItems = (): void => {
@@ -367,12 +383,16 @@ interface UIPrefs {
   sidebarCollapsed: boolean;
   showFullPreviewText: boolean;
   playModeSounds: boolean;
+  /** Off by default — opt-in to render the slim time-distribution strip on
+   *  the right edge of the planner. */
+  timeVisualizationStrip: boolean;
 }
 
 const DEFAULT_PREFS: UIPrefs = {
   sidebarCollapsed: true,
   showFullPreviewText: true,
   playModeSounds: false,
+  timeVisualizationStrip: false,
 };
 
 export const getDefaultPrefs = (): UIPrefs => DEFAULT_PREFS;
@@ -421,6 +441,12 @@ export const setPlayModeSounds = (value: boolean): void => {
   savePrefs({ playModeSounds: value });
 };
 
+export const getTimeVisualizationStrip = (): boolean => getPrefs().timeVisualizationStrip;
+
+export const setTimeVisualizationStrip = (value: boolean): void => {
+  savePrefs({ timeVisualizationStrip: value });
+};
+
 // ── Export / Import ───────────────────────────────────────────────────────────
 
 export const exportWorkshopAsJson = (data: WorkshopData): void => {
@@ -441,8 +467,7 @@ export const importWorkshopFromJson = (file: File): Promise<WorkshopData> => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target?.result as string) as WorkshopData;
-        resolve(data);
+        resolve(parseWorkshopJson(e.target?.result as string));
       } catch {
         reject(new Error('Invalid JSON file'));
       }
@@ -450,4 +475,98 @@ export const importWorkshopFromJson = (file: File): Promise<WorkshopData> => {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsText(file);
   });
+};
+
+/** Parses JSON pasted from an LLM or read from an imported file. */
+export const parseWorkshopJson = (value: string): WorkshopData => {
+  let parsed: unknown = JSON.parse(cleanImportedJson(value));
+
+  // Some LLMs return a JSON string containing the actual JSON object.
+  if (typeof parsed === 'string') {
+    parsed = JSON.parse(cleanImportedJson(parsed));
+  }
+
+  const data = normalizeImportedWorkshop(parsed);
+  if (!isWorkshopData(data)) {
+    throw new Error('Invalid workshop data');
+  }
+  return data;
+};
+
+/** Removes the Markdown fence users commonly copy from an LLM response. */
+export const cleanImportedJson = (value: string): string => {
+  return value
+    .replace(/^\s*```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+};
+
+/** Fills optional fields that are safe to omit in LLM-generated JSON. */
+export const normalizeImportedWorkshop = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+
+  const workshop = isRecord(value.workshop)
+    ? {
+        ...value.workshop,
+        description: value.workshop.description ?? '',
+        date: value.workshop.date ?? null,
+        startTime: value.workshop.startTime ?? null,
+      }
+    : value.workshop;
+
+  return {
+    ...value,
+    workshop,
+    items: Array.isArray(value.items) ? value.items.map(normalizeImportedItem) : value.items,
+  };
+};
+
+const normalizeImportedItem = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+
+  return {
+    ...value,
+    blockTypeId: value.blockTypeId ?? null,
+    notes: value.notes ?? '',
+    material: value.material ?? '',
+    children: Array.isArray(value.children) ? value.children.map(normalizeImportedItem) : value.children,
+  };
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isWorkshopItem = (value: unknown): boolean => {
+  if (!isRecord(value)) return false;
+  if (
+    typeof value.id !== 'string' ||
+    (value.type !== 'block' && value.type !== 'group' && value.type !== 'breakout') ||
+    (value.blockTypeId !== undefined && value.blockTypeId !== null && typeof value.blockTypeId !== 'string') ||
+    typeof value.title !== 'string' ||
+    typeof value.duration !== 'number' ||
+    (value.notes !== undefined && typeof value.notes !== 'string') ||
+    (value.material !== undefined && typeof value.material !== 'string')
+  ) {
+    return false;
+  }
+
+  return value.children === undefined ||
+    (Array.isArray(value.children) && value.children.every(isWorkshopItem));
+};
+
+const isWorkshopData = (value: unknown): value is WorkshopData => {
+  if (!isRecord(value) || !isRecord(value.workshop)) return false;
+
+  const metadata = value.workshop;
+  return (
+    typeof value.version === 'string' &&
+    typeof metadata.title === 'string' &&
+    typeof metadata.description === 'string' &&
+    (metadata.date === null || typeof metadata.date === 'string') &&
+    (metadata.startTime === null || typeof metadata.startTime === 'string') &&
+    Array.isArray(value.blockTypes) &&
+    Array.isArray(value.persons) &&
+    Array.isArray(value.items) &&
+    value.items.every(isWorkshopItem)
+  );
 };

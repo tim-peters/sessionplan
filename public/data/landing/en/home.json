@@ -187,9 +187,9 @@
         ],
         "author": {
           "@type": "Person",
-          "@id": "https://www.timjpeters.com/#person",
-          "name": "Tim J. Peters",
-          "url": "https://www.timjpeters.com/"
+          "@id": "https://sessionplan.de/#person",
+          "name": "Sessionplan",
+          "url": "https://sessionplan.de/"
         },
         "aggregateRating": {
           "@type": "AggregateRating",

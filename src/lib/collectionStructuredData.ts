@@ -1,4 +1,5 @@
 import { type Locale } from '@/lib/i18n';
+import { ORGANIZATION_ID } from '@/lib/metaConfig';
 
 const SITE_URL = 'https://sessionplan.de';
 
@@ -38,6 +39,7 @@ export const createCollectionPageSchema = ({
     '@id': `${SITE_URL}/#website`,
     url: SITE_URL,
     name: 'Sessionplan',
+    publisher: { '@id': ORGANIZATION_ID },
   },
   mainEntity: {
     '@type': 'ItemList',

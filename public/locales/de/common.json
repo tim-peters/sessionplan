@@ -1,47 +1,86 @@
 {
   "nav": {
     "backToPlanner": "← Zurück zum Sessionplan",
-    "backToBlog": "← Zurück zum Blog"
+    "backToBlog": "← Zurück zum Blog",
+    "toTool": "Zum Tool"
   },
   "feedback": {
     "report": "Fehler melden"
+  },
+  "languageHint": {
+    "regionLabel": "Language suggestion",
+    "message": "This page is in German. Prefer English?",
+    "primary": "View this page in English",
+    "secondary": "Stay in German",
+    "close": "Close language suggestion"
   },
   "blog": {
     "title": "Blog",
     "description": "Tipps, Tricks und Einblicke rund um Session-Planung, Moderation und effektive Trainingsmethoden.",
     "subtitle": "Tipps, Tricks und Einblicke rund um Session-Planung und Moderation",
     "readArticle": "Artikel lesen →",
-    "noPosts": "Noch keine Blogartikel vorhanden."
+    "noPosts": "Noch keine Blogartikel vorhanden.",
+    "allPosts": "Alle",
+    "filterLabel": "Blog-Themen",
+    "backToBlog": "Alle Blogartikel anzeigen →",
+    "moreOnTopic": "Mehr zum Thema {{hub}}"
   },
   "templates": {
     "title": "Session Templates",
     "description": "Vorgefertigte Ablauf-Templates und Agendas für verschiedene Formate – sofort einsatzbereit und individuell anpassbar.",
     "subtitle": "Vorgefertigte Abläufe und Agendas für verschiedene Formate – sofort einsatzbereit",
     "openTemplate": "Template öffnen →",
-    "noTemplates": "Noch keine Templates vorhanden."
+    "noTemplates": "Noch keine Templates vorhanden.",
+    "backToTemplates": "Alle Templates anzeigen →",
+    "allTemplates": "Alle",
+    "filterLabel": "Template-Kategorien"
   },
   "footer": {
     "mode": "Modus",
     "templates": "Templates",
     "blog": "Blog",
+    "enterprise": "Enterprise",
     "imprint": "Impressum",
     "privacy": "Datenschutz",
-    "author": "Entwickler",
+    "author": "Entwickelt von Tim J. Peters",
     "language": "Sprache",
     "tagline": "Kostenloser Ablaufplaner für Workshops, Trainings und Events — offline, ohne Account.",
     "openSource": "Open Source auf GitHub",
+    "gdprCompliant": "DSGVO-konform",
+    "gdprCompliantSubtitle": "Datenschutzerklärung",
+    "hostedInEu": "Hosting in der EU",
+    "hostedInEuSubtitle": "Serverstandort EU",
     "explore": "Entdecken",
     "legal": "Rechtliches",
+    "support": "Unterstützen",
+    "supportDescription": "Sessionplan ist kostenlos und wird ohne Gewinnabsicht betrieben – und das ist großartig! Wenn du helfen möchtest, die Server am Laufen zu halten, kannst du mir hier einen Kaffee spendieren.",
+    "supportLink": "Auf Ko-fi unterstützen",
     "freeOpenSource": "100% kostenlos · Open Source"
   },
   "settings": {
     "sectionTitle": "Einstellungen",
     "language": "Sprache",
-    "truncateDescription": "Beschreibung kürzen",
+    "truncateDescription": "Beschreibungen kürzen",
     "playModeSounds": "Audio-Benachrichtigungen",
+    "timeVisualizationStrip": "Zeitleiste anzeigen",
     "exportData": "Daten sichern",
     "exportPdf": "Als PDF exportieren",
     "importData": "Daten importieren",
+    "aiHelp": "Session per KI erstellen",
+    "aiTitle": "Session per KI-Chat erstellen",
+    "aiDescription": "Beschreibe deine Session in ChatGPT, Claude oder einem anderen LLM und nutze den Prompt unten. Importiere danach einfach die erzeugte JSON-Datei in Sessionplan.",
+    "aiSchemaLink": "Import-Schema öffnen",
+    "aiApiSkillLink": "Stattdessen als Open API-Skill (für KI-Tools) runterladen",
+    "aiOpenCustomGpt": "Sessionplan-GPT in ChatGPT öffnen",
+    "aiPromptLabel": "Copy-Prompt",
+    "aiCopyPrompt": "Prompt kopieren",
+    "aiPromptCopied": "Prompt kopiert",
+    "aiPrompt": "Erstelle eine Sessionplan-JSON für den beschriebenen Ablauf. Halte dich exakt an das Schema unter {{schemaUrl}}. Gib nur ein vollständiges JSON-Objekt (als JSON-Datei) zurück.",
+    "aiResponseLabel": "JSON-Antwort des LLM",
+    "aiResponsePlaceholder": "JSON hier einfügen ...",
+    "aiImportResponse": "Session importieren",
+    "aiChooseFile": "JSON-Datei laden",
+    "aiResponseError": "Die Antwort ist keine gültige Sessionplan-JSON. Prüfe das Schema und versuche es erneut.",
     "clearAll": "Alles löschen",
     "clearAllTitle": "Alle Daten löschen?",
     "clearAllConfirm": "Wirklich alle Daten löschen? Dies entfernt den aktuellen Stand, den Session-Verlauf, alle gespeicherten Block-Vorlagen, Session-Vorlagen und deine UI-Einstellungen. Die Standard-Vorlagen werden wiederhergestellt.",
@@ -127,6 +166,12 @@
     "permanentLinkCreating": "Wird erstellt...",
     "permanentLinkError": "Fehler beim Erstellen des dynamischen Links",
     "sessionNotFound": "Session nicht gefunden",
+    "sessionUnavailable": {
+      "offline": "Du bist offline – prüfe deine Verbindung und lade neu.",
+      "network": "Der geteilte Plan konnte gerade nicht geladen werden – versuche es später erneut.",
+      "server": "Der Server ist gerade nicht erreichbar – versuche es später erneut.",
+      "timeout": "Die Verbindung hat zu lange gedauert – versuche es erneut."
+    },
     "disableServerModeTitle": "Dynamischen Link deaktivieren?",
     "disableServerModeText": "Der bestehende Link wird gelöscht und ist nicht mehr aufrufbar.",
     "disableServerModeAction": "Deaktivieren",
@@ -137,6 +182,10 @@
     "incomingUpdateAccept": "Letzte Version laden",
     "incomingUpdateFork": "In neuen Link speichern",
     "incomingUpdateForking": "Wird erstellt…",
+    "unsyncedChangesBanner": "Ungespeicherte Änderungen",
+    "unsyncedChangesHintBefore": "Die Synchronisierung war eben nicht möglich und wird gleich erneut versucht. Falls du Probleme mit der Verbindung hast, kannst deinen Plan ",
+    "unsyncedChangesLink": "als JSON herunterladen",
+    "unsyncedChangesHintAfter": ", um keine Änderungen zu verlieren.",
     "permanentLinkSyncsNote": "Dein Plan wird automatisch auf dem Server gespeichert, der Link bleibt immer aktuell.",
     "exportSuccess": "Session exportiert",
     "importSuccess": "Session importiert",
@@ -199,8 +248,10 @@
     "persons": "Personen",
     "notes": "Notizen",
     "notesPlaceholder": "Notizen zum Block...",
+    "addNotes": "Notizen hinzufügen",
     "material": "Material",
     "materialPlaceholder": "Benötigte Materialien...",
+    "addMaterial": "Material hinzufügen",
     "cancel": "Abbrechen",
     "save": "Speichern",
     "done": "Fertig",
@@ -224,6 +275,14 @@
     "disableSounds": "Audio-Benachrichtigungen ausschalten",
     "enableSounds": "Audio-Benachrichtigungen einschalten",
     "stop": "Live-Modus beenden"
+  },
+  "timeStrip": {
+    "ariaLabel": "Zeitlicher Verlauf der Session",
+    "untitled": "(Ohne Titel)",
+    "breakout": "Breakout",
+    "indicatorLabel": "Sichtbarer Zeitbereich",
+    "indicatorHelp": "Ziehen oder Pfeiltasten zum Scrollen, Leertaste zum Zentrieren auf Klickposition",
+    "indicatorValue": "Sichtbarer Bereich: {{start}}–{{end}}"
   },
   "restore": {
     "title": "Letzte lokale Version gefunden",
@@ -257,6 +316,8 @@
     "lastEdited": "Zuletzt bearbeitet",
     "localBadge": "Lokal",
     "dynamicBadge": "Geteilt",
+    "unavailable": "Dynamic Link nicht verfügbar",
+    "untitled": "Ohne Titel",
     "reopen": "Öffnen",
     "hide": "Ausblenden",
     "deleteServer": "Löschen",
@@ -283,7 +344,10 @@
     "description": "Übersicht aller spezialisierten Planungs-Tools für Workshops, Events, Unterricht und mehr.",
     "heading": "Alle Ablauf-Planungstools",
     "subheading": "Entdecke alle spezialisierten Planungs-Tools für unterschiedliche Anwendungsfälle",
-    "learnMore": "Mehr erfahren"
+    "learnMore": "Mehr erfahren",
+    "allPages": "Alle",
+    "filterLabel": "Tool-Kategorien",
+    "backToOverview": "Alle Ablauf-Planungstools anzeigen →"
   },
   "blockTypes": {
     "input": "🎤 Vortrag/Input",

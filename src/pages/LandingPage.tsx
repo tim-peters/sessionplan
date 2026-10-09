@@ -16,6 +16,7 @@ import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { useLocale } from '@/contexts/LocaleContext';
 import { deriveFaqPageSchema, mergeStructuredData } from '@/lib/landingPageSeo';
 import { LOCALE_PREFIX } from '@/lib/metaConfig';
+import { getLocaleRoot } from '@/lib/localeUtils';
 
 const LandingPage = () => {
   const content = useLoaderData() as LandingPageContent;
@@ -57,7 +58,11 @@ const LandingPage = () => {
         prefillData={content.prefillData}
         onReset={() => {
           if (content.type === 'template' && content.fallbackSlug && content.fallbackSlug !== content.slug) {
-            navigate(`${LOCALE_PREFIX[locale]}/${content.fallbackSlug}`);
+            navigate(
+              content.fallbackSlug === 'home'
+                ? getLocaleRoot(locale)
+                : `${LOCALE_PREFIX[locale]}/${content.fallbackSlug}`,
+            );
           }
         }}
         renderEmptyState={({ onAddBlock, onReopenSession }) => (

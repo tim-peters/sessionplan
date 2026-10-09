@@ -1,57 +1,8 @@
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Settings, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Locale } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
 import { useLanguageSwitcher } from '@/hooks/useLanguageSwitcher';
-
-interface LanguageSwitcherProps {
-  locale: Locale;
-  getTargetUrl: (target: Locale) => string;
-  size?: 'inline' | 'stacked';
-}
-
-export const LanguageSwitcher = ({
-  locale,
-  getTargetUrl,
-  size = 'inline',
-}: LanguageSwitcherProps) => {
-  const navigate = useNavigate();
-  const { t: _t } = useTranslation('common');
-  if (size === 'stacked') {
-    return (
-      <button
-        onClick={() => navigate(getTargetUrl(locale === 'de' ? 'en' : 'de'))}
-        className="icon-button text-xs font-semibold"
-        title={locale === 'de' ? 'Switch to English' : 'Zu Deutsch wechseln'}
-      >
-        {locale.toUpperCase()}
-      </button>
-    );
-  }
-  return (
-    <div className="flex items-center gap-1 px-3 border-l shrink-0">
-      <button
-        onClick={() => navigate(getTargetUrl('de'))}
-        className={cn(
-          'px-2 py-0.5 rounded text-xs font-medium transition-colors',
-          locale === 'de' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-        )}
-      >
-        DE
-      </button>
-      <button
-        onClick={() => navigate(getTargetUrl('en'))}
-        className={cn(
-          'px-2 py-0.5 rounded text-xs font-medium transition-colors',
-          locale === 'en' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-        )}
-      >
-        EN
-      </button>
-    </div>
-  );
-};
+import { LanguageSwitcher } from '@/components/atoms/LanguageSwitcher';
 
 interface SidebarBottomBarProps {
   isCollapsed: boolean;
@@ -72,7 +23,7 @@ export const SidebarBottomBar = ({
   if (isCollapsed) {
     return (
       <div className="flex flex-col items-center py-2 gap-1">
-        <LanguageSwitcher locale={locale} getTargetUrl={getTargetUrl} size="stacked" />
+        <LanguageSwitcher locale={locale} getTargetUrl={getTargetUrl} variant="collapsed" />
         <button
           onClick={onToggleSettings}
           className="icon-button"
@@ -99,7 +50,7 @@ export const SidebarBottomBar = ({
           )}
         </span>
       </button>
-      <LanguageSwitcher locale={locale} getTargetUrl={getTargetUrl} />
+      <LanguageSwitcher locale={locale} getTargetUrl={getTargetUrl} variant="sidebar" />
     </div>
   );
 };

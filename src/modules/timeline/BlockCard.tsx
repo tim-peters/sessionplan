@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { getBlockTypeName } from '@/lib/workshopUtils';
 import { BlockPreview } from './BlockPreview';
 import { PlayState } from '@/lib/playModeUtils';
+import { useIsStripHighlighted, useHoverHighlightHandlers } from '@/hooks/useHoverHighlight';
 
 interface BlockCardProps {
   item: WorkshopItem;
@@ -27,6 +28,7 @@ interface BlockCardProps {
   blockTypes: BlockType[];
   persons: Person[];
   showFullPreviewText?: boolean;
+  stackPreviewFields?: boolean;
   timeDisplay: string | null;
   onUpdate: (updates: Partial<WorkshopItem>) => void;
   onDelete: () => void;
@@ -49,6 +51,7 @@ export const BlockCard = ({
   blockTypes,
   persons,
   showFullPreviewText = false,
+  stackPreviewFields = false,
   timeDisplay,
   onUpdate,
   onDelete,
@@ -65,8 +68,14 @@ export const BlockCard = ({
   playState,
 }: BlockCardProps) => {
   const { t } = useTranslation('common');
+  // Cross-highlight with the time-visualization strip. The card shows the
+  // `time-card-highlight` outline only when the hover originated in the
+  // strip (so the timeline's own native CSS hover is the sole affordance
+  // when the user hovers a card directly).
+  const isHighlighted = useIsStripHighlighted(item.id);
+  const hoverHandlers = useHoverHighlightHandlers(item.id);
   // Use sortable for dragging
-  const sortable = useSortable({ 
+  const sortable = useSortable({
     id: item.id,
     data: {
       parentId: parentId,
@@ -92,12 +101,15 @@ export const BlockCard = ({
   // Nested blocks should have same layout as main blocks, but with drag handle
   if (isNested) {
     return (
-      <div 
+      <div
         ref={setNodeRef}
+        data-item-id={item.id}
         style={style}
+        {...hoverHandlers}
         className={cn(
           'relative',
-          isDragging && 'opacity-50'
+          isDragging && 'opacity-50',
+          isHighlighted && 'time-card-highlight',
         )}
       >
         <div
@@ -106,7 +118,7 @@ export const BlockCard = ({
             onEditDetails();
           }}
           className={cn(
-            'block-card shadow-none fade-in cursor-pointer',
+            'block-card group shadow-none fade-in cursor-pointer',
             playState === 'current' && 'ring-2 ring-primary',
             playState === 'past' && 'opacity-40 grayscale',
           )}
@@ -223,7 +235,14 @@ export const BlockCard = ({
               </div>
             </div>
 
-            <BlockPreview notes={item.notes} material={item.material} showFullText={showFullPreviewText} onUpdate={onUpdate} />
+            <BlockPreview
+              notes={item.notes}
+              material={item.material}
+              showFullText={showFullPreviewText}
+              stackFields={stackPreviewFields}
+              showEmptyPlaceholders={parentType !== 'breakout'}
+              onUpdate={onUpdate}
+            />
           </div>
         </div>
         </div>
@@ -232,9 +251,13 @@ export const BlockCard = ({
   }
 
   return (
-    <div className={cn(
+    <div
+      data-item-id={item.id}
+      {...hoverHandlers}
+      className={cn(
       'flex gap-4',
       playState === 'past' && 'opacity-50 grayscale',
+      isHighlighted && 'time-card-highlight',
     )}>
       {/* Time column - left side */}
       <div className="hidden sm:flex flex-col items-end w-20 print:w-10 shrink-0 pt-4 print:flex">
@@ -278,7 +301,7 @@ export const BlockCard = ({
         style={style}
         onClick={onEditDetails}
           className={cn(
-            'block-card shadow-none fade-in flex-1 cursor-pointer',
+            'block-card group shadow-none fade-in flex-1 cursor-pointer',
             isDragging && 'dragging opacity-50',
             playState === 'current' && 'ring-2 ring-primary rounded-lg',
           )}
@@ -373,7 +396,14 @@ export const BlockCard = ({
               </div>
             </div>
 
-            <BlockPreview notes={item.notes} material={item.material} showFullText={showFullPreviewText} onUpdate={onUpdate} />
+            <BlockPreview
+              notes={item.notes}
+              material={item.material}
+              showFullText={showFullPreviewText}
+              stackFields={stackPreviewFields}
+              showEmptyPlaceholders={parentType !== 'breakout'}
+              onUpdate={onUpdate}
+            />
           </div>
         </div>
       </div>

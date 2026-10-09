@@ -23,7 +23,7 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/tim-peters/sessionplan.git
+git clone <repository-url>
 cd sessionplan
 npm install
 npm run dev
@@ -33,20 +33,9 @@ Open [http://localhost:5173](http://localhost:5173) (or the port Vite assigns) i
 
 ## Self-Hosting
 
-Sessionplan is fully functional without a backend — all data is stored locally in the browser. An optional backend enables the **Dynamic Link** feature for real-time sync between multiple users.
-
-### Dynamic Link (optional backend)
-
-To enable the Dynamic Link feature, deploy a PHP backend that implements the `/data/sessions.php` REST API (see the [API reference](#dynamic-link-api)). Then set the endpoint URL:
-
-```env
-# .env
-VITE_SESSIONS_API=https://your-server.example.com/data/sessions.php
-```
-
-If `VITE_SESSIONS_API` is not set, the Dynamic Link toggle is still available in the UI but all requests will fail gracefully — the planner continues to work fully locally.
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the API contract.
+Sessionplan is a static web app. Install dependencies, build it and serve the
+generated files from any static web server. Plans remain in the browser and can
+be shared as URL links or exported as JSON.
 
 ## License
 
@@ -63,3 +52,14 @@ Bug reports and pull requests are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.
 ## Security
 
 See [SECURITY.md](./SECURITY.md) for reporting vulnerabilities.
+
+## Public distribution
+
+This repository contains the frontend application and neutral sample content.
+It has no analytics integration, operator-specific contact details, legal pages
+or server implementation. Static sample content in `public/data/` is independent
+of production content.
+
+`.public-export.json` records the source commit and SHA-256 of each exported
+file. A `working-tree-preview` source is for review only; published exports
+should come from a committed release revision.

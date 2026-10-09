@@ -11,6 +11,7 @@ import { SessionHistoryEntry } from '@/types/sessionHistory';
 import { getSessionHistory } from '@/lib/workshopLocalStorage';
 import { SessionHistoryList } from '@/components/states/SessionHistoryList';
 import { DropZone } from '@/modules/timeline/DropZone';
+import { parseFormatting } from '@/lib/textFormatting';
 
 interface EmptyStateHeroProps {
   onAddBlock: () => void;
@@ -46,11 +47,11 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
   const { resolvedTheme } = useTheme();
   const [previewSrc, setPreviewSrc] = useState(
     () => (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
-      ? '/assets/preview-dark.png'
-      : '/assets/preview.png')
+      ? '/assets/preview-dark.webp'
+      : '/assets/preview.webp')
   );
   useEffect(() => {
-    setPreviewSrc(resolvedTheme === 'dark' ? '/assets/preview-dark.png' : '/assets/preview.png');
+    setPreviewSrc(resolvedTheme === 'dark' ? '/assets/preview-dark.webp' : '/assets/preview.webp');
   }, [resolvedTheme]);
 
   return (
@@ -67,7 +68,7 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
             {renderWithPrimary(heroTitle)}
           </h1>
           <p className="my-8 text-sm lg:text-md">
-            {heroDescription}
+            {parseFormatting(heroDescription)}
             {!emptyStateContent && (
               <>
                 <br />
@@ -95,6 +96,9 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
             src={previewSrc}
             alt="Sessionplan Workshop Agenda Example Preview"
             aria-hidden="true"
+            width={536}
+            height={516}
+            fetchpriority="high"
             className="-mx-10  max-w-[calc(100%+5rem)] md:-mx-5 xl:mx-auto xl:max-w-full"
           />
           )}

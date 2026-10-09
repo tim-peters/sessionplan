@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Textarea } from '@/components/primitives/textarea';
+import { FormattedTextField } from '@/components/atoms/FormattedTextField';
+import { EditableFieldPencil } from '@/components/atoms/EditableFieldPencil';
 import { parseFormatting } from '@/lib/textFormatting';
+import { useClickToEdit } from '@/hooks/useClickToEdit';
+import { cn } from '@/lib/utils';
 
 interface WorkshopDescriptionProps {
   description: string;
@@ -14,15 +16,14 @@ interface WorkshopDescriptionProps {
 
 export const WorkshopDescription = ({ description, date, startTime, onAddStartTimeClick, showFullText = false, onUpdate }: WorkshopDescriptionProps) => {
   const { t } = useTranslation('common');
-  const [open, setOpen] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (open && textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [open, description]);
+  const {
+    previewRef,
+    editing,
+    startEditing,
+    stopEditing,
+    caretPoint,
+    initialSelection,
+  } = useClickToEdit<HTMLButtonElement>({ value: description });
 
   return (
     <div className="flex flex-col sm:flex-row items-start gap-3">
@@ -44,40 +45,55 @@ export const WorkshopDescription = ({ description, date, startTime, onAddStartTi
         </div>
       )}
       <div className="flex-1 min-w-0">
-        {open ? (
-          <Textarea
-            ref={textareaRef}
-            autoFocus
-            value={description}
-            onChange={(e) => {
-              onUpdate?.(e.target.value);
-              if (textareaRef.current) {
-                textareaRef.current.style.height = 'auto';
-                textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-              }
-            }}
-            onBlur={() => setOpen(false)}
-            placeholder={t('planner.descriptionPlaceholder')}
-            className="min-h-[80px] resize-none print:border-none print:p-0 print:min-h-0 print:bg-transparent"
-            data-session-description
-          />
+        {editing ? (
+          // Padding + min height live on this wrapper (not on the textarea)
+          // so the formatting backdrop inside FormattedTextField stays
+          // perfectly aligned with the text it highlights. Deliberately
+          // borderless with no focus ring — while editing, the field should
+          // look like plain text, same as the inline block previews (the
+          // caret and formatting toolbar are the editing affordances).
+          <div
+            className="min-h-[80px] w-full px-3 py-2 text-sm print:p-0 print:min-h-0"
+          >
+            <FormattedTextField
+              value={description}
+              onChange={(v) => onUpdate?.(v)}
+              onBlur={() => stopEditing()}
+              placeholder={t('planner.descriptionPlaceholder')}
+              multiline
+              autoGrow
+              autoFocus
+              initialCaretPoint={caretPoint}
+              initialSelection={initialSelection}
+              dataAttributes={{ 'data-session-description': '' }}
+              className="w-full"
+            />
+          </div>
         ) : (
           <button
-            onClick={() => setOpen(true)}
-            className="text-left w-full text-sm text-muted-foreground hover:text-foreground transition-colors print:hidden"
+            ref={previewRef}
+            onClick={startEditing}
+            className={cn(
+              'text-left w-full text-sm text-muted-foreground hover:text-foreground transition-colors print:hidden',
+              onUpdate && 'editable-field',
+            )}
             data-session-description
           >
             {description ? (
               <span className={showFullText ? 'whitespace-pre-wrap break-words' : 'line-clamp-3 whitespace-pre-wrap break-words'}>
                 {parseFormatting(description)}
+                {onUpdate && <EditableFieldPencil className="ml-1" />}
               </span>
             ) : (
-              <span>{t('planner.descriptionPlaceholder')}</span>
+              <span>
+                {t('planner.descriptionPlaceholder')}
+                {onUpdate && <EditableFieldPencil className="ml-1" />}
+              </span>
             )}
           </button>
         )}
         {/* Print: always show formatted description */}
-        {description && !open && (
+        {description && !editing && (
           <p className="hidden print:block text-sm whitespace-pre-wrap break-words">
             {parseFormatting(description)}
           </p>

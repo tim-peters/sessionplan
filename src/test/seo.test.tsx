@@ -10,16 +10,41 @@
  *   5. An x-default hreflang that always resolves to the DE version
  *   6. A correct <title> (template applied, separator present, never empty)
  *
- * Pages that legitimately have no EN equivalent (/impressum, /datenschutz)
- * must still ship a self-hreflang + x-default, but no EN-hreflang.
+ * The German imprint currently has no EN equivalent. Privacy is available in
+ * both languages and must emit bidirectional hreflang tags.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
 import { HelmetProvider, HelmetData } from 'react-helmet-async';
+import { MemoryRouter } from 'react-router-dom';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { META_CONFIG, getCanonicalUrl } from '@/lib/metaConfig';
 import { createSymmetricAlternates } from '@/lib/localeUtils';
 import { Locale } from '@/lib/i18n';
+import { ErrorBoundary } from '@/components/states/ErrorBoundary';
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    useRouteError: vi.fn(),
+  };
+});
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: '3rdParty', init: () => undefined },
+  Trans: ({ children }: { children?: React.ReactNode }) => children ?? null,
+  withTranslation: () => (Component: React.ComponentType) => Component,
+}));
+
+// The error pages render <PageFooter>, which pulls in useLanguageSwitcher →
+// useLocale (requires <LocaleProvider>) plus theme/language widgets. The SEO
+// assertions only care about the head tags and the error marker, so stub the
+// footer out instead of dragging the whole provider tree into the test.
+vi.mock('@/components/layout/PageFooter', () => ({
+  PageFooter: () => null,
+}));
 
 const flushHelmet = () =>
   act(async () => {
@@ -271,6 +296,56 @@ const ROUTES: Array<{ de: RouteSpec; en?: RouteSpec }> = [
   },
   {
     de: {
+      name: 'Impressum (/impressum) ↔ Imprint (/en/imprint)',
+      props: {
+        title: 'Impressum',
+        description: 'Impressum und rechtliche Informationen.',
+        canonicalPath: '/impressum',
+        alternates: { de: '/impressum', en: '/en/imprint' },
+        noindex: true,
+      },
+      hasAlternate: true,
+    },
+    en: {
+      name: 'Imprint (/en/imprint)',
+      props: {
+        title: 'Imprint',
+        description: 'Imprint and legal information.',
+        canonicalPath: '/en/imprint',
+        locale: 'en',
+        alternates: { de: '/impressum', en: '/en/imprint' },
+        noindex: true,
+      },
+      hasAlternate: true,
+    },
+  },
+  {
+    de: {
+      name: 'Datenschutz (/datenschutz) ↔ Privacy (/en/privacy)',
+      props: {
+        title: 'Datenschutz',
+        description: 'Datenschutzerklärung.',
+        canonicalPath: '/datenschutz',
+        noindex: true,
+        alternates: { de: '/datenschutz', en: '/en/privacy' },
+      },
+      hasAlternate: true,
+    },
+    en: {
+      name: 'Privacy (/en/privacy)',
+      props: {
+        title: 'Privacy Policy',
+        description: 'Privacy policy.',
+        canonicalPath: '/en/privacy',
+        locale: 'en',
+        alternates: { de: '/datenschutz', en: '/en/privacy' },
+        noindex: true,
+      },
+      hasAlternate: true,
+    },
+  },
+  {
+    de: {
       name: '404 (/404)',
       props: {
         title: 'Seite nicht gefunden (404)',
@@ -443,5 +518,59 @@ describe('SEO: buildHreflangLinks is symmetric for every paired route', () => {
     const deHreflangs = deHead.hreflangs.map((h) => h.hreflang).sort();
     const enHreflangs = enHead.hreflangs.map((h) => h.hreflang).sort();
     expect(deHreflangs).toEqual(enHreflangs);
+  });
+});
+
+describe('SEO: error pages are never indexable', () => {
+  beforeEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+  afterEach(() => cleanup());
+
+  const renderErrorBoundary = async (error: unknown) => {
+    // Mounting ErrorBoundary inside a real data router triggers
+    // createClientSideRequest, which under jsdom + Node 22 throws an
+    // AbortSignal webidl TypeError before the loader ever runs. We instead
+    // mock useRouteError to return the error we want ErrorBoundary to
+    // handle — ErrorBoundary branches on `isRouteErrorResponse(error)`, which
+    // is the same code path as a real loader throw. We still wrap in
+    // MemoryRouter because the rendered error page uses <Link>, which
+    // requires a router context to be present.
+    const { useRouteError } = await import('react-router-dom');
+    (useRouteError as Mock).mockReturnValue(error);
+    const helmetContext: HelmetData = {} as HelmetData;
+    render(
+      <HelmetProvider context={helmetContext}>
+        <MemoryRouter>
+          <ErrorBoundary />
+        </MemoryRouter>
+      </HelmetProvider>,
+    );
+    await flushHelmet();
+    return parseHelmet(helmetContext);
+  };
+
+  it('renders noindex,nofollow and the data-error-page marker for generic errors', async () => {
+    const head = await renderErrorBoundary(
+      new Error('Failed to fetch /data/blog/x.json'),
+    );
+    expect(head.robots).toBe('noindex,nofollow');
+    expect(document.querySelector('[data-error-page="true"]')).not.toBeNull();
+  });
+
+  it('renders noindex,nofollow and the data-error-page marker for 404 Response throws', async () => {
+    // React Router wraps loader-thrown Responses into an ErrorResponse before
+    // handing them to the errorElement; isRouteErrorResponse() requires the
+    // `internal` boolean, and loader-thrown Responses surface with
+    // internal:false (the ErrorResponse constructor default).
+    const head = await renderErrorBoundary({
+      status: 404,
+      statusText: 'Not Found',
+      internal: false,
+      data: 'Blog post not found',
+    });
+    expect(head.robots).toBe('noindex,nofollow');
+    expect(document.querySelector('[data-error-page="true"]')).not.toBeNull();
   });
 });

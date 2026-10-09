@@ -9,7 +9,7 @@
                 "title": "Begrüßung & Check-In",
                 "duration": 15,
                 "blockTypeId": "input",
-                "notes": "Willkommensrunde mit Vorstellungsrunde der Teilnehmenden. \nDann [Check-In Frage](https:\/\/studies.timjpeters.com\/shuffler)",
+                "notes": "Willkommensrunde mit Vorstellungsrunde der Teilnehmenden. \nDann [Check-In Frage](https://example.com/check-in)",
                 "material": "Namensschilder, Moderationskarten"
             }
         },
@@ -23,7 +23,7 @@
                 "duration": 10,
                 "blockTypeId": "energizer",
                 "notes": "Kurze aktivierende Übung zur Auflockerung",
-                "material": "Entweder-Oder-Fragen -> [Generator](https:\/\/studies.timjpeters.com\/shuffler)"
+                "material": "Entweder-Oder-Fragen -> [Generator](https://example.com/check-in)"
             }
         },
         {
@@ -127,7 +127,7 @@
                         "title": "Begrüßung & Agenda",
                         "duration": 15,
                         "blockTypeId": "",
-                        "notes": "Schneller Check-In, Frage generiert [hier mit](https:\/\/studies.timjpeters.com\/shuffler)\nVorstellung und Überblick über den Tag",
+                        "notes": "Schneller Check-In, Frage generiert [hier mit](https://example.com/check-in)\nVorstellung und Überblick über den Tag",
                         "material": "Agenda-Folien"
                     },
                     {
@@ -237,7 +237,7 @@
                         "duration": 30,
                         "blockTypeId": "input",
                         "notes": "Warm-Up und Tagesagenda",
-                        "material": "[Check-In-Frage](https:\/\/studies.timjpeters.com\/shuffler)"
+                        "material": "[Check-In-Frage](https://example.com/check-in)"
                     },
                     {
                         "id": "item-2",

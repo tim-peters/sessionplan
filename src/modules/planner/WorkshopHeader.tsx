@@ -7,6 +7,7 @@ import { Calendar, Clock, PanelLeft, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/primitives/popover';
+import { EditableFieldPencil } from '@/components/atoms/EditableFieldPencil';
 import { cn } from '@/lib/utils';
 
 interface WorkshopHeaderProps {
@@ -55,22 +56,38 @@ export const WorkshopHeader = ({
             >
               <PanelLeft className="h-5 w-5" />
             </Button>
-            <TitleWrapper className="inline-grid sm:min-w-[8ch] sm:max-w-[100ch] -m-1 p-1 overflow-hidden whitespace-nowrap text-ellipsis relative">
-              <span
-                className={cn(asHeading ? 'sr-only' : 'invisible', 'col-start-1 row-start-1 text-lg font-semibold px-1 whitespace-pre overflow-hidden whitespace-nowrap text-ellipsis')}
-                aria-hidden={!asHeading}
-              >
-                {displayTitle || t('planner.titlePlaceholder')}
-              </span>
+            <TitleWrapper
+              aria-label={asHeading ? (displayTitle || t('planner.titlePlaceholder')) : undefined}
+              className="inline-grid sm:min-w-[8ch] sm:max-w-[100ch] -m-1 p-1 overflow-hidden whitespace-nowrap text-ellipsis relative"
+            >
               <input
                 type="text"
                 value={displayTitle}
                 onChange={(e) => onUpdate({ title: e.target.value })}
-                className="col-start-1 row-start-1 text-lg font-semibold bg-transparent border-none outline-none min-w-0 focus:ring-2 focus:ring-primary/20 rounded px-1 overflow-hidden whitespace-nowrap text-ellipsis"
+                className="editable-field col-start-1 row-start-1 text-lg font-semibold bg-transparent border-none outline-none min-w-0 focus:ring-2 focus:ring-primary/20 rounded px-1 overflow-hidden whitespace-nowrap text-ellipsis"
                 placeholder={t('planner.titlePlaceholder')}
                 title="Workshop-Titel (T)"
                 data-session-title-input
               />
+              {/* Invisible sizer mirroring the title text, carrying the hover
+                  pencil right after the text end (visibility restored on the
+                  pencil). Must stay AFTER the input for the
+                  `.editable-field:hover ~` CSS hook; pointer-events-none keeps
+                  the input clickable underneath. The input's intrinsic width
+                  dominates the grid track, so the field size is unchanged.
+                  This span is the ONLY place the title exists as a DOM text
+                  node inside the h1 — the previous sr-only span was removed
+                  because SEO tools read the h1's textContent (ignoring
+                  aria-hidden/sr-only) and saw the title duplicated. The h1's
+                  accessible name (incl. placeholder fallback when empty) now
+                  comes from aria-label on the TitleWrapper instead. */}
+              <span
+                aria-hidden
+                className="editable-field-sizer invisible pointer-events-none col-start-1 row-start-1 text-lg font-semibold px-1 whitespace-pre overflow-hidden whitespace-nowrap text-ellipsis"
+              >
+                {displayTitle || t('planner.titlePlaceholder')}
+                <EditableFieldPencil className="ml-1 mt-0.5 visible" />
+              </span>
             </TitleWrapper>
             {/* Print-only credit */}
             <span className="hidden print:inline text-xs text-muted-foreground shrink-0 mt-2">

@@ -6,21 +6,23 @@
  */
 import { Link, useLoaderData } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { TemplateSummary } from '@/lib/routeLoaders';
+import { TemplateHub, TemplateSummary } from '@/lib/routeLoaders';
 import { PageFooter } from '@/components/layout/PageFooter';
 import { TemplateHeader } from '@/components/layout/TemplateHeader';
+import { HubFilter } from '@/components/atoms/HubFilter';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { Button } from '@/components/primitives/button';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
 import { useLocale } from '@/contexts/LocaleContext';
-import { getLocalizedPath, getLocaleRoot, createSymmetricAlternates } from '@/lib/localeUtils';
+import { getLocaleRoot, getLocalizedPath, createSymmetricAlternates } from '@/lib/localeUtils';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
-import { getCanonicalUrl } from '@/lib/metaConfig';
+import { getCanonicalUrl, getOrganizationSchema } from '@/lib/metaConfig';
 import { createCollectionPageSchema } from '@/lib/collectionStructuredData';
+import { buildBreadcrumbList } from '@/lib/breadcrumbStructuredData';
 
 const Templates = () => {
   const { t } = useTranslation('common');
-  const { templates } = useLoaderData() as { templates: TemplateSummary[] };
+  const { templates, hubs } = useLoaderData() as { templates: TemplateSummary[]; hubs: TemplateHub[] };
   const { locale } = useLocale();
 
   const canonicalPath = getLocalizedPath(locale, '/templates');
@@ -37,6 +39,10 @@ const Templates = () => {
       itemType: 'CreativeWork',
     })),
   });
+  const breadcrumbSchema = buildBreadcrumbList([
+    { name: 'Sessionplan', path: getLocaleRoot(locale) },
+    { name: t('templates.title') },
+  ]);
 
   return (
     <>
@@ -46,15 +52,21 @@ const Templates = () => {
         canonicalPath={canonicalPath}
         locale={locale}
         alternates={templatesAlternates}
-        structuredData={structuredData}
+        structuredData={[structuredData, getOrganizationSchema(), breadcrumbSchema]}
       />
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <TemplateHeader
-            backTo={getLocaleRoot(locale)}
-            backLabel={t('nav.backToPlanner')}
             title={t('templates.title')}
             subtitle={t('templates.subtitle')}
+            breadcrumbs={[{ label: t('templates.title') }]}
+          />
+
+          <HubFilter
+            hubs={hubs}
+            basePath="/templates"
+            allLabel={t('templates.allTemplates')}
+            filterLabel={t('templates.filterLabel')}
           />
 
           {!templates || templates.length === 0 ? (
@@ -86,7 +98,7 @@ const Templates = () => {
           )}
 
         </div>
-        <div className="mx-6 sm:mx-0">
+        <div className="mx-6 md:mx-0">
           <PageFooter />
         </div>
       </div>

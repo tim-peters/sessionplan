@@ -102,5 +102,5 @@
     "vitest": "^3.2.4"
   },
   "license": "AGPL-3.0-only",
-  "description": "Browser-based PWA for visual agenda planning — workshops, meetings, events. Free, offline-first, no registration required."
+  "description": "Browser-based PWA for visual agenda planning. Free, offline-first, no registration required."
 }

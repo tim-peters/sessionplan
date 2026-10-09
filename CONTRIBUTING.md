@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Sessionplan is a solo-maintained proje
 
 ## Reporting Bugs
 
-Use [GitHub Issues](https://github.com/tim-peters/sessionplan/issues) to report bugs. Please include:
+Use the issue tracker of the repository you cloned to report bugs. Please include:
 
 1. A clear description of the problem
 2. Steps to reproduce

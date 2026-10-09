@@ -7,6 +7,7 @@
  * Used by: DocumentMeta (useDocumentMeta.tsx)
  */
 
+import { siteAuthor } from '@/integrations/site';
 import { type Locale, LOCALES, LOCALE_OG, LOCALE_PREFIX } from './i18n';
 
 const PRODUCTION_BASE_URL = 'https://sessionplan.de';
@@ -23,10 +24,7 @@ export const META_CONFIG = {
   defaultTitle: 'Workshop Agenda – Session Ablauf Planer',
   defaultDescription: 'Kostenloser Ablauf Planer für Trainer, Coaches und Moderatoren. Erstelle professionelle Workshop-Agendas per Drag & Drop – ohne Registrierung, ohne Cloud, ohne Kosten.',
   defaultOgImage: '/assets/preview.png',
-  author: {
-    name: 'Sessionplan',
-    url: 'https://sessionplan.de'
-  },
+  author: siteAuthor,
   organization: {
     name: 'Sessionplan',
     url: PRODUCTION_BASE_URL
@@ -189,6 +187,29 @@ export const formatTitle = (title?: string): string => {
 
   return META_CONFIG.titleTemplate.replace('%s', title);
 };
+
+/**
+ * Canonical @id values for the site's Organization and WebSite entities.
+ * Reference these via `{ '@id': ORGANIZATION_ID }` instead of inlining a
+ * fresh Organization object on every page — the full node (with logo) only
+ * needs to be included once per page's own JSON-LD graph via
+ * getOrganizationSchema().
+ */
+export const ORGANIZATION_ID = `${PRODUCTION_BASE_URL}/#organization`;
+export const WEBSITE_ID = `${PRODUCTION_BASE_URL}/#website`;
+
+/** The canonical Organization node — include once in a page's structuredData array. */
+export const getOrganizationSchema = () => ({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': ORGANIZATION_ID,
+  name: META_CONFIG.organization.name,
+  url: META_CONFIG.organization.url,
+  logo: {
+    '@type': 'ImageObject',
+    url: getCanonicalUrl('/pwa/icon-512.png'),
+  },
+});
 
 /**
  * Generate absolute image URL

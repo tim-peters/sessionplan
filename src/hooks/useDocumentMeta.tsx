@@ -18,6 +18,7 @@ import {
   getOgLocale,
   getOgLocaleAlternates,
 } from '@/lib/metaConfig';
+import { normalizeStructuredData, toJsonLdPayload } from '@/lib/structuredData';
 
 /**
  * Component for managing all document meta tags in one place.
@@ -118,15 +119,19 @@ export const DocumentMeta = ({
       ))}
 
       {/* JSON-LD Structured Data */}
-      {structuredData && (
-        <script type="application/ld+json">
-          {JSON.stringify(
-            Array.isArray(structuredData) ? structuredData : [structuredData],
-            null,
-            2
-          )}
-        </script>
-      )}
+      {(() => {
+        const payload = toJsonLdPayload(normalizeStructuredData(structuredData));
+        if (!payload) return null;
+        try {
+          return (
+            <script type="application/ld+json">
+              {JSON.stringify(payload, null, 2)}
+            </script>
+          );
+        } catch {
+          return null;
+        }
+      })()}
     </Helmet>
   );
 };

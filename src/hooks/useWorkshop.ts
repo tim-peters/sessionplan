@@ -48,7 +48,9 @@ import {
   findItemAndParent,
 } from '@/lib/workshopUtils';
 import { useWorkshopServerSync } from './useWorkshopServerSync';
+import type { SessionUnavailableReason } from '@/lib/workshopServer';
 import { DEBOUNCE_TIMES } from '@/lib/timing';
+import { formatTitle } from '@/lib/metaConfig';
 
 const UNDO_LIMIT = 20;
 const UNDO_COALESCE_MS = 500;
@@ -140,6 +142,7 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
   currentSessionIdRef.current = currentSessionId;
 
   const [sessionNotFound, setSessionNotFound] = useState(false);
+  const [sessionUnavailable, setSessionUnavailable] = useState<SessionUnavailableReason | null>(null);
 
   const workshopRef = useRef(workshop);
   workshopRef.current = workshop;
@@ -154,11 +157,13 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
 
   const debounceTrackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const metadataTrackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const titlePageViewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(
     () => () => {
       if (debounceTrackingTimeoutRef.current) clearTimeout(debounceTrackingTimeoutRef.current);
       if (metadataTrackingTimeoutRef.current) clearTimeout(metadataTrackingTimeoutRef.current);
+      if (titlePageViewTimeoutRef.current) clearTimeout(titlePageViewTimeoutRef.current);
     },
     [],
   );
@@ -211,6 +216,7 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     navigate,
     onExternalUpdate,
     onSessionNotFound: () => setSessionNotFound(true),
+    onSessionUnavailable: (reason) => setSessionUnavailable(reason),
   });
 
   // Update hash when workshop changes (on workshop pages with debounce)
@@ -352,6 +358,17 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
         metadataTrackingTimeoutRef.current = setTimeout(() => {
           metadataTrackingTimeoutRef.current = null;
         }, DEBOUNCE_TIMES.METADATA_TRACKING);
+      }
+      // After the LAST change of the session title, send a pageview event so
+      // Record the visit under the new title (site-title format).
+      if (typeof updates.title === 'string' && updates.title.length > 0) {
+        const newTitle = updates.title;
+        if (titlePageViewTimeoutRef.current) {
+          clearTimeout(titlePageViewTimeoutRef.current);
+        }
+        titlePageViewTimeoutRef.current = setTimeout(() => {
+          titlePageViewTimeoutRef.current = null;
+        }, DEBOUNCE_TIMES.TITLE_PAGEVIEW);
       }
       setWorkshopState((prev) =>
         withLastModified({
@@ -758,7 +775,6 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     (entry: SessionHistoryEntry) => {
       clearUndoHistory();
       updateSessionLastOpened(entry.id);
-
       if (entry.type === 'dynamic' && entry.serverKey) {
         navigate(`/?id=${entry.serverKey}`);
         sync.loadServerSession(entry.serverKey);
@@ -800,6 +816,8 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     loadSessionFromHistory,
     sessionNotFound,
     clearSessionNotFound: () => setSessionNotFound(false),
+    sessionUnavailable,
+    clearSessionUnavailable: () => setSessionUnavailable(null),
     undo,
     redo,
     canUndo: undoStackRef.current.length > 0,
@@ -810,6 +828,8 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     disableServerMode: sync.disableServerMode,
     pollNow: sync.pollNow,
     incomingUpdate: sync.incomingUpdate,
+    hasUnsyncedChanges: sync.hasUnsyncedChanges,
+    hasSyncError: sync.hasSyncError,
     acceptIncomingUpdate: sync.acceptIncomingUpdate,
     forkSession: sync.forkSession,
   };

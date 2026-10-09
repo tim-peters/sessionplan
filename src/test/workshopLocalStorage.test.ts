@@ -28,13 +28,45 @@ import {
   setShowFullPreviewText,
   getPlayModeSounds,
   setPlayModeSounds,
+  getTimeVisualizationStrip,
+  setTimeVisualizationStrip,
   exportWorkshopAsJson,
   importWorkshopFromJson,
+  cleanImportedJson,
+  normalizeImportedWorkshop,
   BlockTemplate,
   WorkshopTemplate,
 } from '@/lib/workshopLocalStorage';
 import { makeWorkshop, makeBlock } from './test-helpers';
 import { vi } from 'vitest';
+import type { WorkshopData } from '@/types/workshop';
+
+describe('LLM JSON import helpers', () => {
+  it('removes JSON Markdown code fences and surrounding whitespace', () => {
+    expect(cleanImportedJson('  ```json\n{"version":"1.0"}\n```  ')).toBe('{"version":"1.0"}');
+    expect(cleanImportedJson('{"version":"1.0"}')).toBe('{"version":"1.0"}');
+  });
+
+  it('fills optional workshop and item fields recursively', () => {
+    const normalized = normalizeImportedWorkshop({
+      version: '1.0',
+      workshop: { title: 'Imported session' },
+      blockTypes: [],
+      persons: [],
+      items: [{
+        id: 'group',
+        type: 'group',
+        title: 'Group',
+        duration: 15,
+        children: [{ id: 'block', type: 'block', title: 'Block', duration: 15 }],
+      }],
+    }) as WorkshopData;
+
+    expect(normalized.workshop).toMatchObject({ description: '', date: null, startTime: null });
+    expect(normalized.items[0]).toMatchObject({ blockTypeId: null, notes: '', material: '' });
+    expect(normalized.items[0].children[0]).toMatchObject({ blockTypeId: null, notes: '', material: '' });
+  });
+});
 
 // All tests in this file rely on the auto-clearing beforeEach in setup.ts.
 
@@ -85,9 +117,14 @@ describe('migrateStorageKeys', () => {
 
     migrateStorageKeys();
 
+    // Migrated prefs inherit DEFAULT_PREFS for fields that didn't exist in
+    // the legacy store (e.g. playModeSounds, timeVisualizationStrip), so
+    // missing keys gracefully fall back to their defaults.
     expect(JSON.parse(localStorage.getItem('sp:prefs')!)).toEqual({
       sidebarCollapsed: false,
       showFullPreviewText: false,
+      playModeSounds: false,
+      timeVisualizationStrip: false,
     });
     expect(localStorage.getItem('sidebarCollapsed')).toBeNull();
     expect(localStorage.getItem('showFullPreviewText')).toBeNull();
@@ -390,6 +427,14 @@ describe('UI prefs', () => {
     setPlayModeSounds(false);
     expect(getPlayModeSounds()).toBe(false);
   });
+
+  it('defaults the time-visualization strip to disabled and persists the setting', () => {
+    expect(getTimeVisualizationStrip()).toBe(false);
+    setTimeVisualizationStrip(true);
+    expect(getTimeVisualizationStrip()).toBe(true);
+    setTimeVisualizationStrip(false);
+    expect(getTimeVisualizationStrip()).toBe(false);
+  });
 });
 
 // ── Export / Import ───────────────────────────────────────────────────────────
@@ -434,5 +479,43 @@ describe('exportWorkshopAsJson / importWorkshopFromJson', () => {
   it('importWorkshopFromJson rejects invalid JSON', async () => {
     const file = new File(['not json'], 'bad.json', { type: 'application/json' });
     await expect(importWorkshopFromJson(file)).rejects.toThrow('Invalid JSON file');
+  });
+
+  it('importWorkshopFromJson rejects valid JSON with an invalid workshop shape', async () => {
+    const file = new File([JSON.stringify({})], 'bad-workshop.json', { type: 'application/json' });
+    await expect(importWorkshopFromJson(file)).rejects.toThrow('Invalid JSON file');
+  });
+
+  it('importWorkshopFromJson accepts exported groups without optional item fields', async () => {
+    const data = {
+      ...makeWorkshop(),
+      items: [{
+        id: 'group-1',
+        type: 'group',
+        title: 'Session',
+        duration: 30,
+        children: [],
+      }],
+    };
+    const file = new File([JSON.stringify(data)], 'group-workshop.json', { type: 'application/json' });
+    await expect(importWorkshopFromJson(file)).resolves.toMatchObject({
+      ...data,
+      workshop: { ...data.workshop, description: data.workshop.description, date: data.workshop.date, startTime: data.workshop.startTime },
+      items: [{ ...data.items[0], blockTypeId: null, notes: '', material: '' }],
+    });
+  });
+
+  it('importWorkshopFromJson accepts an LLM Markdown code fence', async () => {
+    const data = makeWorkshop();
+    const file = new File(['```json\n' + JSON.stringify(data) + '\n```\n'], 'session.md', { type: 'text/markdown' });
+    await expect(importWorkshopFromJson(file)).resolves.toEqual(data);
+  });
+
+  it('parseWorkshopJson accepts a pasted JSON object and a JSON string containing an object', async () => {
+    const data = makeWorkshop();
+    const { parseWorkshopJson } = await import('@/lib/workshopLocalStorage');
+
+    expect(parseWorkshopJson(JSON.stringify(data))).toEqual(data);
+    expect(parseWorkshopJson(JSON.stringify(JSON.stringify(data)))).toEqual(data);
   });
 });

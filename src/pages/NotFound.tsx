@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
+import { TemplateHeader } from '@/components/layout/TemplateHeader';
 
 const NotFound = () => {
   const location = useLocation();
@@ -18,15 +19,20 @@ const NotFound = () => {
         noindex={true}
         robots="noindex,nofollow"
       />
-      <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
-        </a>
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-3xl px-6 py-12">
+          <TemplateHeader
+            title="404"
+            breadcrumbs={[{ label: '404' }]}
+          />
+          <div className="text-center">
+            <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
+            <a href="/" className="text-primary underline hover:text-primary/90">
+              Return to Home
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
     </>
   );
 };

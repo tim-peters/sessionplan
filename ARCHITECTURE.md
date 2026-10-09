@@ -48,13 +48,8 @@ A workshop plan consists of:
 Data is stored using multiple layers:
 1. **localStorage** (`sp:*` namespace) — primary local storage with auto-save
 2. **URL hash** — LZ-string compressed snapshot of the current plan (shareable via link)
-3. **Server sync** — optional, via `VITE_SESSIONS_API` endpoint (Dynamic Link)
 
 Auto-save is debounced and writes to both localStorage and the URL hash on every change.
-
-### Dynamic Link API
-
-The optional `/data/sessions.php` endpoint is proprietary and therefor not included. 
 
 ### Routing
 

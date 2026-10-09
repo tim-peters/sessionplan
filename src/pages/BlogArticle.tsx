@@ -6,10 +6,12 @@
  *       Publishes alternate-language URLs so the Language Switcher can navigate correctly.
  */
 
-import { Link, useLoaderData } from 'react-router-dom';
+import { useLoaderData, Link } from 'react-router-dom';
 import { useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useArticleIntegration, articleAuthorMetadata, authorImage } from '@/integrations/site';
 import { BlogPost } from '@/types/blog';
+import type { BlogHub } from '@/lib/routeLoaders';
 import { PageFooter } from '@/components/layout/PageFooter';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { Calendar, User } from 'lucide-react';
@@ -17,20 +19,25 @@ import { Badge } from '@/components/primitives/badge';
 import { formatDate } from '@/lib/formatDate';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
 import { useLocale } from '@/contexts/LocaleContext';
-import { getLocalizedPath } from '@/lib/localeUtils';
-import { getCanonicalUrl } from '@/lib/metaConfig';
+import { getLocaleRoot, getLocalizedPath } from '@/lib/localeUtils';
+import { getAbsoluteImageUrl, getCanonicalUrl, getOrganizationSchema, ORGANIZATION_ID } from '@/lib/metaConfig';
+import { buildBreadcrumbList } from '@/lib/breadcrumbStructuredData';
+import { TemplateHeader } from '@/components/layout/TemplateHeader';
 
 const BlogArticle = () => {
   const { t } = useTranslation('common');
-  const post = useLoaderData() as BlogPost;
+  const post = useLoaderData() as BlogPost & { hub?: BlogHub };
   const { locale, publishAlternates } = useLocale();
 
   useLayoutEffect(() => {
     publishAlternates(post.alternates);
   }, [post.alternates, publishAlternates]);
 
+  useArticleIntegration(post.slug);
+
   const canonicalPath = getLocalizedPath(locale, `/blog/${post.slug}`);
   const canonicalUrl = getCanonicalUrl(canonicalPath);
+  const imageUrl = getAbsoluteImageUrl(post.ogImage || authorImage);
 
   const structuredData = post.structuredData || {
     '@context': 'https://schema.org',
@@ -42,22 +49,28 @@ const BlogArticle = () => {
     },
     headline: decodeHtmlEntities(post.title),
     description: decodeHtmlEntities(post.metaDescription || post.excerpt),
+    image: imageUrl,
     datePublished: post.publishedDate,
     dateModified: post.lastModified || post.publishedDate,
-    publisher: {
-      '@type': 'Organization',
-      name: 'Sessionplan',
-      url: 'https://sessionplan.de',
-    },
+    publisher: { '@id': ORGANIZATION_ID },
     inLanguage: locale,
     author: {
       '@type': 'Person',
       name: post.author.name,
       url: post.author.url,
-      jobTitle: 'Facilitator & Design Agency Director',
-      description: 'Sessionplan helps facilitators structure workshops, meetings, trainings and events with a clear visual agenda.',
+      ...articleAuthorMetadata,
     },
   };
+
+  const breadcrumbSchema = buildBreadcrumbList([
+    { name: 'Sessionplan', path: getLocaleRoot(locale) },
+    { name: t('blog.title'), path: getLocalizedPath(locale, '/blog') },
+    { name: decodeHtmlEntities(post.title) },
+  ]);
+
+  const structuredDataArray = post.structuredData
+    ? [structuredData, breadcrumbSchema]
+    : [structuredData, getOrganizationSchema(), breadcrumbSchema];
 
   return (
     <>
@@ -69,26 +82,26 @@ const BlogArticle = () => {
         locale={locale}
         alternates={post.alternates}
         ogType="article"
-        ogImage={post.ogImage || '/assets/author-tim-j-peters.png'}
+        ogImage={imageUrl}
         article={{
           publishedTime: post.publishedDate,
           modifiedTime: post.lastModified || post.publishedDate,
           author: post.author.name,
           tags: post.tags,
         }}
-        structuredData={structuredData}
+        structuredData={structuredDataArray}
       />
       <div className="min-h-screen bg-background">
         <article className="max-w-3xl mx-auto px-6 py-12">
-          <div className="mb-8">
-            <Link to={getLocalizedPath(locale, '/blog')} className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block">
-              {t('nav.backToBlog')}
-            </Link>
-          </div>
+          <TemplateHeader
+            title={decodeHtmlEntities(post.title)}
+            breadcrumbs={[
+              { label: t('blog.title'), path: getLocalizedPath(locale, '/blog') },
+              { label: decodeHtmlEntities(post.title) },
+            ]}
+          />
 
           <header className="mb-8">
-            <h1 className="text-4xl font-bold mb-4">{decodeHtmlEntities(post.title)}</h1>
-            
             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -107,6 +120,17 @@ const BlogArticle = () => {
                 </div>
               )}
             </div>
+
+            {post.hub && (
+              <div className="mb-3">
+                <Link
+                  to={getLocalizedPath(locale, `/blog/${post.hub.slug}`)}
+                  className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+                >
+                  {t('blog.moreOnTopic', { hub: post.hub.shortLabel ?? post.hub.title })} →
+                </Link>
+              </div>
+            )}
 
             {post.tags && post.tags.length > 0 && (
               <div className="flex gap-2 flex-wrap">
@@ -130,8 +154,8 @@ const BlogArticle = () => {
               <div className="flex gap-6 items-start">
                 <div className="flex-shrink-0 hidden sm:block">
                   <img 
-                    src="/assets/author-tim-j-peters.png"
-                    alt="Sessionplan"
+                    src={authorImage}
+                    alt={post.author.name}
                     className="max-w-48 md:max-w-xs border-2 border-primary/20"
                     loading="lazy"
                   />
@@ -179,14 +203,9 @@ const BlogArticle = () => {
             </div>
           )}
 
-          <footer className="mt-12 pt-8 border-t">
-            <Link to={getLocalizedPath(locale, '/blog')} className="text-sm text-muted-foreground hover:text-foreground">
-              {t('nav.backToBlog')}
-            </Link>
-          </footer>
         </article>
 
-        <div className="mx-6 sm:mx-0">
+        <div className="mx-6 md:mx-0">
           <PageFooter />
         </div>
       </div>

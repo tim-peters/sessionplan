@@ -13,7 +13,6 @@
  */
 import { useEffect } from 'react';
 import type { BlockType } from '@/types/workshop';
-
 export interface KeyboardShortcutsOptions {
   blockTypes: BlockType[];
   onAddBlock: () => void;

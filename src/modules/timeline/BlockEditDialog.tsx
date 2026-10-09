@@ -20,7 +20,8 @@ import {
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { Label } from '@/components/primitives/label';
-import { Textarea } from '@/components/primitives/textarea';
+import { Switch } from '@/components/primitives/switch';
+import { FormattedTextField } from '@/components/atoms/FormattedTextField';
 import { Lock, Unlock, Trash2, X } from 'lucide-react';
 import {
   Select,
@@ -54,7 +55,7 @@ export const BlockEditDialog = ({
   focusField,
 }: BlockEditDialogProps) => {
   const isMobile = useIsMobile();
-  const { formData, setFormData, handleSave, handleTextareaKeyDown, handleTextareaBlur } =
+  const { formData, setFormData, handleSave, handleTextareaBlur } =
     useBlockFormState(item, onSave);
   const { t } = useTranslation('common');
 
@@ -149,17 +150,15 @@ export const BlockEditDialog = ({
               max={10}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="sameInAllBreakouts"
-              type="checkbox"
-              checked={formData.sameInAllBreakouts || false}
-              onChange={(e) => handleFieldChange('sameInAllBreakouts', e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
-            />
+          <div className="flex items-center justify-between gap-2">
             <Label htmlFor="sameInAllBreakouts" className="cursor-pointer">
               {t('dialog.sameInAllRooms')}
             </Label>
+            <Switch
+              id="sameInAllBreakouts"
+              checked={formData.sameInAllBreakouts || false}
+              onCheckedChange={(checked) => handleFieldChange('sameInAllBreakouts', checked)}
+            />
           </div>
         </>
       )}
@@ -283,45 +282,37 @@ export const BlockEditDialog = ({
 
       {/* Notes */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="notes">{t('dialog.notes')}</Label>
-          <span className="text-xs text-muted-foreground">
-            _<em>kursiv</em>_ *<strong>fett</strong>* 
-          </span>
-        </div>
-        <Textarea
+        <Label htmlFor="notes">{t('dialog.notes')}</Label>
+        <FormattedTextField
           id="notes"
           value={formData.notes || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-          onKeyDown={(e) => handleTextareaKeyDown(e, 'notes')}
-          onBlur={(e) => {
-            handleTextareaBlur('notes', e.target.value);
-            if (isMobile) autoSave({ ...formData, notes: e.target.value });
+          onChange={(v) => setFormData(prev => ({ ...prev, notes: v }))}
+          onBlur={(v) => {
+            handleTextareaBlur('notes', v);
+            if (isMobile) autoSave({ ...formData, notes: v });
           }}
           placeholder={t('dialog.notesPlaceholder')}
+          multiline
           rows={4}
+          toolbarSize="sm"
         />
       </div>
 
       {/* Material */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="material">{t('dialog.material')}</Label>
-          <span className="text-xs text-muted-foreground">
-            _<em>kursiv</em>_ *<strong>fett</strong>* 
-          </span>
-        </div>
-        <Textarea
+        <Label htmlFor="material">{t('dialog.material')}</Label>
+        <FormattedTextField
           id="material"
           value={formData.material || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, material: e.target.value }))}
-          onKeyDown={(e) => handleTextareaKeyDown(e, 'material')}
-          onBlur={(e) => {
-            handleTextareaBlur('material', e.target.value);
-            if (isMobile) autoSave({ ...formData, material: e.target.value });
+          onChange={(v) => setFormData(prev => ({ ...prev, material: v }))}
+          onBlur={(v) => {
+            handleTextareaBlur('material', v);
+            if (isMobile) autoSave({ ...formData, material: v });
           }}
           placeholder={t('dialog.materialPlaceholder')}
+          multiline
           rows={2}
+          toolbarSize="sm"
         />
       </div>
     </div>

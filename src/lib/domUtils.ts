@@ -13,7 +13,7 @@
 /**
  * Checks if the device is a touch device
  */
-const isTouchDevice = (): boolean => {
+export const isTouchDevice = (): boolean => {
   return (
     'ontouchstart' in window ||
     navigator.maxTouchPoints > 0 ||
@@ -139,4 +139,28 @@ export const focusSessionElement = (dataAttribute: string): void => {
       next.select();
     }
   }, 50);
+};
+
+/** True if the current pointer is a coarse (touch) pointer — used by the
+ *  formatting toolbar to flip its placement below the selection line so it
+ *  doesn't cover the native iOS/Android selection callout. Guarded for SSR
+ *  and browsers without `matchMedia`. */
+export const isCoarsePointer = (): boolean => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  try {
+    return window.matchMedia('(pointer: coarse)').matches;
+  } catch {
+    return false;
+  }
+};
+
+/** True if the current platform is macOS. Prefers the modern User-Agent
+ *  Client Hints API (`navigator.userAgentData.platform`) and falls back to
+ *  the deprecated `navigator.platform`. Both surfaces return "macOS" or
+ *  "MacIntel" on macOS, and the downstream check is a MAC substring match
+ *  (case-insensitive), so the two paths are behavior-identical. */
+export const isMacPlatform = (): boolean => {
+  const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+  const platform = uaData?.platform ?? navigator.platform;
+  return platform.toUpperCase().includes('MAC');
 };

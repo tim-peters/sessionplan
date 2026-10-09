@@ -168,6 +168,52 @@
     @apply bg-transparent border-none outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 -mx-1;
   }
 
+  /* Editable-in-place affordance for planner text fields (workshop/block/group/
+     breakout titles, notes, material, description). A subtle highlight shows on
+     hover; click-to-edit fields additionally fade in a pencil cue
+     (.editable-field-pencil). Gated to devices with a fine pointer and real
+     hover support so touch input never gets sticky hover states, and it stays
+     invisible in print. */
+  .editable-field {
+    @apply rounded transition-colors duration-150 motion-reduce:transition-none;
+  }
+
+  .editable-field-pencil {
+    @apply opacity-0 transition-opacity duration-150 motion-reduce:transition-none -mt-1;
+  }
+
+  /* Metrics-neutral faux bold for the inline formatting backdrop
+     (FormattedTextField). The backdrop's styled text must occupy EXACTLY the
+     same advance widths as the transparent textarea above it — the textarea
+     draws the caret and selection highlight from its own (regular-weight)
+     layout, so any real font-weight in the backdrop would desync the visible
+     caret from the visible text. `-webkit-text-stroke` thickens the glyphs
+     without touching layout (supported in all evergreen browsers). Real bold
+     stays in the read-only previews (parseFormatting), where nothing needs
+     to align. */
+  .formatting-faux-bold {
+    -webkit-text-stroke: 0.6px currentColor;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    /* :not(:focus) keeps the hover affordance (highlight + pencil) a
+       "click-to-edit" cue only — while a field is being edited (focused) the
+       text stays plain and the pencil never appears, on every editable field
+       (click-to-edit previews and always-rendered title inputs alike). */
+    .editable-field:hover:not(:focus) {
+      @apply text-foreground;
+    }
+
+    /* Pencil cue: either a descendant of the hovered field (inline text) or a
+       descendant of an `.editable-field-sizer` sibling that mirrors an input's
+       text (inputs can't contain elements, so title fields carry the pencil in
+       an invisible sizer span placed after the input in the DOM). */
+    .editable-field:hover:not(:focus) .editable-field-pencil,
+    .editable-field:hover:not(:focus) ~ .editable-field-sizer .editable-field-pencil {
+      @apply opacity-100;
+    }
+  }
+
   .time-badge {
     @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted text-muted-foreground;
   }
@@ -195,6 +241,54 @@
 
   .group-children-area {
     @apply relative;
+  }
+
+  /* Time Visualization Strip — diagonal hatch for breakout segments. The
+     stripe color comes from the CSS custom property --strip-color, falling
+     back to the app's breakout pink (matches `--block-breakout` in :root).
+     The base layer is a translucent tint of the same color so the track
+     still reads behind the stripes, and the stripes themselves are drawn at
+     full opacity. */
+  .time-strip-segment--breakout {
+    --strip-color: hsl(330 81% 60%);
+    background-color: color-mix(in srgb, var(--strip-color) 58%, transparent);
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 3px,
+      var(--strip-color) 3px,
+      var(--strip-color) 5px
+    );
+  }
+  .dark .time-strip-segment--breakout {
+    --strip-color: hsl(330 81% 60%);
+    background-color: color-mix(in srgb, var(--strip-color) 22%, transparent);
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 3px,
+      var(--strip-color) 3px,
+      var(--strip-color) 5px
+    );
+  }
+
+  /* Time Visualization Strip — cross-highlight overlay. Applied to a segment
+     (block / break / breakout) when its id matches the global hovered item
+     id from the hoverHighlight store. `filter: brightness()` multiplies
+     through the solid colour, the white-on-color stripe pattern, and the
+     breakout hatch, darkening them uniformly. */
+  .time-strip-segment--highlight {
+    filter: brightness(0.78);
+  }
+
+  /* Cross-highlight on timeline cards. Applied to the outermost element
+     carrying data-item-id (the sortable row in BlockCard, the breakout root
+     in BreakoutCard). The outline lives outside the card so it doesn't
+     disturb the existing border / shadow. */
+  .time-card-highlight {
+    outline: 2px solid hsl(var(--primary) / 0.45);
+    outline-offset: 3px;
+    border-radius: 0.5rem;
   }
 
   /* Blog Content Boxes - must work within prose */

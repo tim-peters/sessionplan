@@ -10,9 +10,8 @@ import { migrateStorageKeys, KEYS } from "./lib/workshopLocalStorage";
 // Migrate legacy localStorage keys to the `sp:` namespace before rendering.
 migrateStorageKeys();
 
-if (!isPrerendering()) {
-	registerSW({ immediate: true });
-}
+
+if (!isPrerendering()) registerSW({ immediate: true });
 
 const rootElement = document.getElementById("root")!;
 const app = (

@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { BlogIndex } from '@/types/blog';
 import { PageFooter } from '@/components/layout/PageFooter';
 import { TemplateHeader } from '@/components/layout/TemplateHeader';
+import { HubFilter } from '@/components/atoms/HubFilter';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { Button } from '@/components/primitives/button';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
@@ -17,13 +18,15 @@ import { Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
 import { useLocale } from '@/contexts/LocaleContext';
-import { getLocalizedPath, getLocaleRoot, createSymmetricAlternates } from '@/lib/localeUtils';
-import { getCanonicalUrl } from '@/lib/metaConfig';
+import { getLocaleRoot, getLocalizedPath, createSymmetricAlternates } from '@/lib/localeUtils';
+import { getCanonicalUrl, getOrganizationSchema } from '@/lib/metaConfig';
 import { createCollectionPageSchema } from '@/lib/collectionStructuredData';
+import { buildBreadcrumbList } from '@/lib/breadcrumbStructuredData';
+import type { BlogHub } from '@/lib/routeLoaders';
 
 const Blog = () => {
   const { t } = useTranslation('common');
-  const blogIndex = useLoaderData() as BlogIndex;
+  const blogIndex = useLoaderData() as BlogIndex & { hubs: BlogHub[] };
   const { locale } = useLocale();
 
   // Sort by date, newest first
@@ -49,6 +52,10 @@ const Blog = () => {
       itemType: 'BlogPosting',
     })),
   });
+  const breadcrumbSchema = buildBreadcrumbList([
+    { name: 'Sessionplan', path: getLocaleRoot(locale) },
+    { name: t('blog.title') },
+  ]);
 
   return (
     <>
@@ -58,17 +65,25 @@ const Blog = () => {
         canonicalPath={canonicalPath}
         locale={locale}
         alternates={blogAlternates}
-        structuredData={structuredData}
+        structuredData={[structuredData, getOrganizationSchema(), breadcrumbSchema]}
       />
       <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <TemplateHeader
-          backTo={getLocaleRoot(locale)}
-          backLabel={t('nav.backToPlanner')}
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <TemplateHeader
           title={t('blog.title')}
           subtitle={t('blog.subtitle')}
+          breadcrumbs={[{ label: t('blog.title') }]}
           className="max-w-2xl"
         />
+
+        {blogIndex.hubs && blogIndex.hubs.length > 0 && (
+          <HubFilter
+            hubs={blogIndex.hubs}
+            basePath="/blog"
+            allLabel={t('blog.allPosts')}
+            filterLabel={t('blog.filterLabel')}
+          />
+        )}
 
         {sortedPosts.length === 0 ? (
           <div className="text-center py-12">
@@ -103,7 +118,7 @@ const Blog = () => {
           )}
 
         </div>
-        <div className="mx-6 sm:mx-0">
+        <div className="mx-6 md:mx-0">
           <PageFooter />
         </div>
       </div>

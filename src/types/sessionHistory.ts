@@ -32,4 +32,6 @@ export interface SessionHistoryEntry {
    * Used to navigate to `/?id=<serverKey>`.
    */
   serverKey?: string;
+  /** True when the server confirmed that the dynamic link no longer exists. */
+  unavailable?: boolean;
 }

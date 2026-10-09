@@ -20,6 +20,7 @@ import { ItemActionsMenu } from './ItemActionsMenu';
 import { GapIndicator } from './atoms/GapIndicator';
 import { BlockTitleInput } from './BlockTitleInput';
 import { useIsLg } from '@/hooks/use-lg';
+import { useHoverHighlightHandlers } from '@/hooks/useHoverHighlight';
 
 interface GroupCardProps {
   item: WorkshopItem;
@@ -90,6 +91,10 @@ export const GroupCard = ({
   const { t } = useTranslation('common');
   const { activeParentId: contextActiveParentId } = useDragDropContext();
   const isLg = useIsLg();
+  // Cross-highlight with the time-visualization strip: hovering the group's
+  // title card brightens the group's line in the strip (same mechanism as
+  // BlockCard/BreakoutCard).
+  const hoverHandlers = useHoverHighlightHandlers(item.id);
   
   // Set up droppable for group
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
@@ -150,8 +155,9 @@ export const GroupCard = ({
         {/* Title card */}
         <div
           onClick={onEditDetails}
+          {...hoverHandlers}
           className={cn(
-            'group-title-area cursor-pointer bg-block-group-bg border-2 border-dashed border-block-group/60 p-4 hover:bg-block-group/10 hover:shadow-md transition-shadow print:border-gray-200 print:pr-1',
+            'group-title-area group cursor-pointer bg-block-group-bg border-2 border-dashed border-block-group/60 p-4 hover:bg-block-group/10 hover:shadow-md transition-shadow print:border-gray-200 print:pr-1',
             'relative',
             isExpanded ? 'rounded-t-lg border-b-block-group/40' : 'rounded-lg',
             playState === 'current' && 'border-primary',

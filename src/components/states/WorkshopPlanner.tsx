@@ -7,7 +7,7 @@
  *       together. Accepts optional prefillData to bootstrap from a landing page.
  * Used by: Index, LandingPage
  */
-import { useState, useCallback, useEffect, useMemo, useRef, useContext, useLayoutEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, useContext, useLayoutEffect, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
@@ -34,6 +34,7 @@ import {
   calculateEffectiveDuration,
   exportWorkshopAsJson,
   importWorkshopFromJson,
+  parseWorkshopJson,
   saveBlockToLibrary,
   saveTemplate,
   clearAllData,
@@ -42,7 +43,7 @@ import {
   WorkshopTemplate,
   encodeWorkshopToUrl,
 } from '@/lib/workshopStorage';
-import { getSidebarCollapsed, setSidebarCollapsed as persistSidebarCollapsed, hasSidebarPreference, getShowFullPreviewText, setShowFullPreviewText as persistShowFullPreviewText, getPlayModeSounds, setPlayModeSounds as persistPlayModeSounds, getDefaultPrefs, upsertSessionToHistory, getTempWorkshopStore, getSessionHistory } from '@/lib/workshopLocalStorage';
+import { getSidebarCollapsed, setSidebarCollapsed as persistSidebarCollapsed, hasSidebarPreference, getShowFullPreviewText, setShowFullPreviewText as persistShowFullPreviewText, getPlayModeSounds, setPlayModeSounds as persistPlayModeSounds, getTimeVisualizationStrip, setTimeVisualizationStrip as persistTimeVisualizationStrip, getDefaultPrefs, upsertSessionToHistory, getTempWorkshopStore, getSessionHistory } from '@/lib/workshopLocalStorage';
 import { WorkshopPageContext } from '@/contexts/WorkshopPageContext';
 import { WorkshopItem, WorkshopPrefillData, generateId } from '@/types/workshop';
 import {
@@ -61,9 +62,29 @@ import { focusSessionInput, focusSessionElement, focusLastBlockTitleInput, scrol
 import { getWorkshopTitle } from '@/lib/workshopUtils';
 import { HeaderActionButtons } from '@/modules/planner/HeaderActionButtons';
 import { IncomingUpdateBanner } from '@/modules/planner/IncomingUpdateBanner';
+import { UnsyncedChangesBanner } from '@/modules/planner/UnsyncedChangesBanner';
 import { Button } from '@/components/primitives/button';
 import { toast } from 'sonner';
 import { PlannerDialogs } from '@/modules/planner/PlannerDialogs';
+// Lazy-loaded so the strip's chunk only ships to desktop users with the
+// setting enabled. Combined with the `isLg && timeVisualizationStrip` gate
+// below, mobile / opted-out users pay zero cost for the feature.
+const TimeVisualizationStrip = lazy(() =>
+  import('@/modules/planner/TimeVisualizationStrip')
+    .then((m) => ({
+      default: m.TimeVisualizationStrip,
+    }))
+    .catch((error) => {
+      // Deploy deletes old hashed chunks — recover with a single guarded reload.
+      if (handleChunkLoadError(error)) {
+        return new Promise<{ default: m.TimeVisualizationStrip }>(() => {});
+      }
+      throw error;
+    }),
+);
+import { useElementHeight } from '@/hooks/useElementHeight';
+import { computeLiveCurrentMinute } from '@/lib/timeVisualization';
+import { handleChunkLoadError } from '@/lib/lazyRoute';
 
 interface WorkshopPlannerProps {
   prefillData?: WorkshopPrefillData;
@@ -102,6 +123,8 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     loadSessionFromHistory,
     sessionNotFound,
     clearSessionNotFound,
+    sessionUnavailable,
+    clearSessionUnavailable,
     serverKey,
     isLoadingFromServer,
     isEnablingServerMode,
@@ -109,6 +132,7 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     disableServerMode,
     pollNow,
     incomingUpdate,
+    hasSyncError,
     acceptIncomingUpdate,
     forkSession,
     undo,
@@ -121,6 +145,7 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getSidebarCollapsed);
   const [showFullPreviewText, setShowFullPreviewTextState] = useState(getShowFullPreviewText);
   const [playModeSounds, setPlayModeSoundsState] = useState(getPlayModeSounds);
+  const [timeVisualizationStrip, setTimeVisualizationStripState] = useState(getTimeVisualizationStrip);
   const [startTimePopoverOpen, setStartTimePopoverOpen] = useState(false);
   const [saveTemplateDialog, setSaveTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
@@ -131,6 +156,11 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
   const handleSetPlayModeSounds = useCallback((value: boolean) => {
     setPlayModeSoundsState(value);
     persistPlayModeSounds(value);
+  }, []);
+
+  const handleSetTimeVisualizationStrip = useCallback((value: boolean) => {
+    setTimeVisualizationStripState(value);
+    persistTimeVisualizationStrip(value);
   }, []);
 
   const workshopPageRef = useContext(WorkshopPageContext);
@@ -144,12 +174,30 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
 
   const totalDuration = calculateEffectiveDuration(workshop.items, workshop.workshop.startTime);
 
+  // Ref + observed height of the sticky planner chrome. The TimeVisualizationStrip
+  // positions itself just below this element so it never collides with the
+  // header, PlayModeBar, or incoming-update banners.
+  const plannerHeaderRef = useRef<HTMLDivElement | null>(null);
+  const plannerHeaderHeight = useElementHeight(plannerHeaderRef);
+
+  // Ref to the timeline content root (the wrapper around <Timeline />). The
+  // TimeVisualizationStrip reads block card positions inside this container
+  // to compute the viewport indicator.
+  const timelineContentRef = useRef<HTMLDivElement | null>(null);
+
   const snapshotUrl = useMemo(() => {
     const encoded = encodeWorkshopToUrl(workshop);
     return encoded ? `${window.location.origin}${window.location.pathname}#data=${encoded}` : window.location.href;
   }, [workshop]);
 
   const playMode = usePlayMode(workshop, totalDuration, playModeSounds);
+
+  // Live Mode's current minute, fed into the strip's "now" marker. null when
+  // Live Mode is off or the elapsed value isn't determinable.
+  const liveCurrentMinute = computeLiveCurrentMinute({
+    isActive: playMode.isActive,
+    elapsedMinutes: playMode.elapsedMinutes,
+  });
 
   const prevItemCountRef = useRef(workshop.items.length);
 
@@ -171,12 +219,29 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     }
   }, [sessionNotFound, clearSessionNotFound, t]);
 
+  // Show toast when the shared session can't be reached (offline / network /
+  // server / timeout). The key is kept in the URL so the user can retry.
+  useEffect(() => {
+    if (sessionUnavailable) {
+      toast.error(t(`planner.sessionUnavailable.${sessionUnavailable}`));
+      clearSessionUnavailable();
+    }
+  }, [sessionUnavailable, clearSessionUnavailable, t]);
+
   // Update page title when session title changes (only when workshop has content)
   useEffect(() => {
     if (workshop.items.length > 0) {
       document.title = formatTitle(workshop.workshop.title);
     }
   }, [workshop.workshop.title, workshop.items.length]);
+
+  const hasTrackedRef = useRef(false);
+  useEffect(() => {
+    if (isLoadingFromServer) return;
+    if (hasTrackedRef.current) return;
+    hasTrackedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingFromServer]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -254,6 +319,12 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
       toast.error(t('planner.importFailed'));
     }
   }, [loadWorkshop]);
+
+  const handleImportText = useCallback(async (text: string) => {
+    const data = parseWorkshopJson(text);
+    loadWorkshop(data);
+    toast.success(t('planner.importSuccess'));
+  }, [loadWorkshop, t]);
 
   const handleAddBlock = useCallback((blockTypeId: string) => {
     addItem({
@@ -345,6 +416,7 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     setSidebarCollapsed(getDefaultPrefs().sidebarCollapsed);
     setShowFullPreviewTextState(getDefaultPrefs().showFullPreviewText);
     setPlayModeSoundsState(getDefaultPrefs().playModeSounds);
+    setTimeVisualizationStripState(getDefaultPrefs().timeVisualizationStrip);
     setTheme('system');
     setEmptyStateRevision((revision) => revision + 1);
     toast.success(t('settings.clearAllSuccess'));
@@ -479,7 +551,10 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
       )}
       <DragDropProvider value={{ activeId, activeData, activeParentId, dropIndicator }}>
         {/* Planner chrome stays at the top; page-provided empty content follows it. */}
-        <div className={`sticky top-0 z-30 print:static print:px-0 print:pt-0 transition-[padding-left] duration-200 ease-out ${sidebarCollapsed ? '' : 'lg:pl-72'}`}>
+        <div
+          ref={plannerHeaderRef}
+          className={`sticky top-0 z-30 print:static print:px-0 print:pt-0 transition-[padding-left] duration-200 ease-out ${sidebarCollapsed ? '' : 'lg:pl-72'}`}
+        >
           <div className="flex flex-col items-stretch gap-0 sm:flex-row sm:items-start sm:gap-3 sm:px-4 sm:pt-3 bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/80 sm:bg-transparent sm:backdrop-blur-none sm:border-0">
             <WorkshopHeader
               metadata={workshop.workshop}
@@ -549,6 +624,9 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
               serverKey={serverKey}
             />
           )}
+          {serverKey && hasSyncError && !incomingUpdate && (
+            <UnsyncedChangesBanner onDownload={handleExport} />
+          )}
         </div>
         {workshop.items.length === 0 && renderEmptyState && (
           <main className={`w-full ${sidebarCollapsed ? '' : 'lg:pl-72'}`}>
@@ -585,8 +663,11 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
         }}
         playModeSounds={playModeSounds}
         onSetPlayModeSounds={handleSetPlayModeSounds}
+        timeVisualizationStrip={timeVisualizationStrip}
+        onSetTimeVisualizationStrip={handleSetTimeVisualizationStrip}
         onExport={handleExport}
         onImport={handleImport}
+        onImportText={handleImportText}
         onReset={handleReset}
         onClearAll={handleClearAll}
         onSaveAsTemplate={workshop.items.length > 0 ? () => setSaveTemplateDialog(true) : undefined}
@@ -603,7 +684,11 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
           {/* Main content */}
           <div className="flex-1 min-w-0">
         {/* Timeline */}
-        <div className="mx-auto px-6 md:px-0 overflow-x-clip lg:overflow-x-visible">
+        <div
+          ref={timelineContentRef}
+          data-testid="timeline-content"
+          className="mx-auto px-6 md:px-0 overflow-x-clip lg:overflow-x-visible"
+        >
           <Timeline
             items={workshop.items}
             blockTypes={workshop.blockTypes}
@@ -637,7 +722,6 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
           {/* Footer */}
           <PageFooter
             className="mt-12"
-            showLanguageSwitcher={false}
             leadingContent={serverKey ? undefined : t('planner.savedToBrowser')}
             onBeforeNavigate={(path) => {
               saveTempWorkshop(workshop);
@@ -674,6 +758,25 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
         onShowDisableServerDialogChange={setShowDisableServerDialog}
         onConfirmDisableServer={() => { disableServerMode(); setShowDisableServerDialog(false); clearSessionNotFound(); }}
       />
+
+      {/* Slim time-distribution visualization anchored to the bottom of the
+          sticky planner chrome. Opt-in (settings toggle, default OFF) AND
+          desktop only; pure rendering — no DnD, no business logic. The
+          setting fully unmounts the component; the lg gate below also keeps
+          it from mounting on mobile / tablet. Wrapped in Suspense so the
+          lazy chunk can load asynchronously. */}
+      {timeVisualizationStrip && isLg && (
+        <Suspense fallback={null}>
+          <TimeVisualizationStrip
+            items={workshop.items}
+            blockTypes={workshop.blockTypes}
+            startTime={workshop.workshop.startTime}
+            topOffsetPx={plannerHeaderHeight}
+            timelineContentRef={timelineContentRef}
+            liveCurrentMinute={liveCurrentMinute}
+          />
+        </Suspense>
+      )}
       </DndContext>
       )}
     </>

@@ -100,7 +100,7 @@ export const BreakoutLane = ({
       ref={setNodeRef}
       className={cn(
         'min-w-0 space-y-2 px-1 md:px-2 py-2 rounded border-2 border-dashed flex flex-col',
-        isOver ? 'border-block-breakout/90 bg-block-breakout/10' : 'border-transparent',
+        isOver ? 'border-none bg-block-breakout/10' : 'border-transparent',
       )}
     >
       <div className="flex justify-center items-center gap-2 mb-2">
@@ -179,6 +179,7 @@ export const BreakoutLane = ({
                       blockTypes={blockTypes}
                       persons={persons}
                       showFullPreviewText={showFullPreviewText}
+                      stackPreviewFields={true}
                       timeDisplay={onCalculateChildTime?.(parentItem, actualChildIndex) || null}
                       onUpdate={(updates) => onUpdateChild?.(child.id, updates)}
                       onDelete={() => onDeleteChild?.(child.id)}

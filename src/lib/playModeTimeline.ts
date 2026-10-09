@@ -11,7 +11,7 @@ export interface FlatBlock {
 }
 
 /** Converts an "HH:MM" string to absolute minutes. */
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
   return h * 60 + m;
 }
