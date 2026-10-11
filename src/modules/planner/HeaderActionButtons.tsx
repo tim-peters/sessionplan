@@ -32,6 +32,11 @@ interface HeaderActionButtonsProps {
   isEnablingServerMode: boolean;
   onToggleServerMode: (checked: boolean) => Promise<void> | void;
   getShareUrl: () => string;
+  getEditorShareUrl: () => string;
+  getReadOnlyShareUrl: () => string;
+  canEditServerSession: boolean;
+  isLegacyServerSession: boolean;
+  onMigrateLegacyLink: () => Promise<void>;
   snapshotUrl: string;
   lastModified?: string;
   dateLocale: string;
@@ -49,6 +54,11 @@ export const HeaderActionButtons = ({
   isEnablingServerMode,
   onToggleServerMode,
   getShareUrl,
+  getEditorShareUrl,
+  getReadOnlyShareUrl,
+  canEditServerSession,
+  isLegacyServerSession,
+  onMigrateLegacyLink,
   snapshotUrl,
   lastModified,
   dateLocale,
@@ -70,22 +80,21 @@ export const HeaderActionButtons = ({
     await onToggleServerMode(checked);
     if (checked) {
       try {
-        await navigator.clipboard.writeText(window.location.href);
-        triggerCopied();
+        await navigator.clipboard.writeText(getShareUrl());
       } catch {
         // silent
       }
     }
-  }, [onToggleServerMode, triggerCopied]);
+  }, [onToggleServerMode, getShareUrl]);
 
-  const handleCopyLink = useCallback(async () => {
+  const handleCopyEditorLink = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(getShareUrl());
+      await navigator.clipboard.writeText(getEditorShareUrl());
       triggerCopied();
     } catch {
       // silent
     }
-  }, [getShareUrl, triggerCopied, serverKey]);
+  }, [getEditorShareUrl, triggerCopied]);
 
   const handleCopySnapshotLink = useCallback(async () => {
     try {
@@ -95,6 +104,11 @@ export const HeaderActionButtons = ({
       // silent
     }
   }, [snapshotUrl, triggerCopiedSnapshot]);
+
+  const handleCopyReadOnlyLink = useCallback(async () => {
+    await navigator.clipboard.writeText(getReadOnlyShareUrl());
+    triggerCopied();
+  }, [getReadOnlyShareUrl, triggerCopied]);
 
   const handleShareButtonClick = useCallback(async () => {
     const isFirstTime = !hasSeenPopoverRef.current;
@@ -133,7 +147,11 @@ export const HeaderActionButtons = ({
     isEnablingServerMode,
     onToggleServerMode: handleToggleServerModeWithCopy,
     wasCopied,
-    onCopyLink: handleCopyLink,
+    onCopyReadOnlyLink: handleCopyReadOnlyLink,
+    onCopyEditorLink: handleCopyEditorLink,
+    canEditServerSession,
+    isLegacyServerSession,
+    onMigrateLegacyLink,
     snapshotUrl,
     wasCopiedSnapshot,
     onCopySnapshotLink: handleCopySnapshotLink,

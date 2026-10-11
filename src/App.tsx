@@ -27,7 +27,7 @@ import {
 
 import { siteRoutes, SiteFeedback } from '@/integrations/site';
 
-// Layout component with page view tracking
+// Layout component that wires page chrome and document title handling
 function RootLayout() {
   const location = useLocation();
   const navigation = useNavigation();

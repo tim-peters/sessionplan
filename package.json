@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "SP_ENV=development php -S localhost:8081 -t .",
+    "dev:full": "concurrently -k \"npm run dev\" \"npm run dev:api\"",
     "build": "vite build",
     "build:spa": "vite build",
     "build:dev": "vite build --mode development",
@@ -87,6 +89,7 @@
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.24",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",

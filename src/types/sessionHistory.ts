@@ -28,10 +28,12 @@ export interface SessionHistoryEntry {
    */
   urlHash?: string;
   /**
-   * 12-char hex server key. Only present for `type === 'dynamic'`.
+   * Legacy 12-char hex or encrypted 22-char Base64url server key.
    * Used to navigate to `/?id=<serverKey>`.
    */
   serverKey?: string;
+  /** URL fragment containing the encryption key and optional write capability. */
+  serverHash?: string;
   /** True when the server confirmed that the dynamic link no longer exists. */
   unavailable?: boolean;
 }

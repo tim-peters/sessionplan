@@ -61,8 +61,7 @@ import { usePlayMode } from '@/hooks/usePlayMode';
 import { focusSessionInput, focusSessionElement, focusLastBlockTitleInput, scrollToLastBlock } from '@/lib/domUtils';
 import { getWorkshopTitle } from '@/lib/workshopUtils';
 import { HeaderActionButtons } from '@/modules/planner/HeaderActionButtons';
-import { IncomingUpdateBanner } from '@/modules/planner/IncomingUpdateBanner';
-import { UnsyncedChangesBanner } from '@/modules/planner/UnsyncedChangesBanner';
+import { IncomingUpdateBanner, ReadOnlyChangesBanner, UnsyncedChangesBanner } from '@/modules/planner/SessionBanners';
 import { Button } from '@/components/primitives/button';
 import { toast } from 'sonner';
 import { PlannerDialogs } from '@/modules/planner/PlannerDialogs';
@@ -126,15 +125,22 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     sessionUnavailable,
     clearSessionUnavailable,
     serverKey,
+    canEditServerSession,
+    isLegacyServerSession,
     isLoadingFromServer,
     isEnablingServerMode,
     enableServerMode,
     disableServerMode,
     pollNow,
     incomingUpdate,
+    hasUnsyncedChanges,
     hasSyncError,
+    syncFailureReason,
     acceptIncomingUpdate,
     forkSession,
+    createLocalCopy,
+    resetSyncState,
+    getHasUnsavedCloseRisk,
     undo,
     redo,
     canUndo,
@@ -150,8 +156,16 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
   const [saveTemplateDialog, setSaveTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [showDisableServerDialog, setShowDisableServerDialog] = useState(false);
+  const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkshopItem | null>(null);
   const dateLocale = locale === 'en' ? 'en-GB' : 'de-DE';
+
+  // Keyboard shortcuts read this ref to avoid stale closures: the Esc/X
+  // shortcut fires from a callback created at mount, so we keep a live mirror
+  // of "would closing now drop changes?" in a ref. The actual close still
+  // flows through handleReset so dialog wiring stays consistent.
+  const hasUnsavedCloseRiskRef = useRef(false);
+  hasUnsavedCloseRiskRef.current = getHasUnsavedCloseRisk();
 
   const handleSetPlayModeSounds = useCallback((value: boolean) => {
     setPlayModeSoundsState(value);
@@ -283,15 +297,26 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     await enableServerMode();
   }, [enableServerMode]);
 
-  const getShareUrl = useCallback(() => {
+  const getEditorShareUrl = useCallback(() => {
     if (serverKey) {
       const url = new URL(window.location.href);
-      url.hash = '';
       url.searchParams.set('id', serverKey);
       return url.toString();
     }
     return window.location.href;
   }, [serverKey]);
+
+  const getReadOnlyShareUrl = useCallback(() => {
+    const url = new URL(getEditorShareUrl());
+    const hash = new URLSearchParams(url.hash.slice(1));
+    hash.delete('w');
+    url.hash = hash.toString();
+    return url.toString();
+  }, [getEditorShareUrl]);
+
+  const getShareUrl = useCallback(() => (
+    isLegacyServerSession ? getEditorShareUrl() : getReadOnlyShareUrl()
+  ), [getEditorShareUrl, getReadOnlyShareUrl, isLegacyServerSession]);
 
   const handleToggleServerMode = useCallback(async (checked: boolean) => {
     if (checked) {
@@ -404,13 +429,25 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     }
   }, [templateName, workshop, refreshTemplates]);
 
-  const handleReset = useCallback(() => {
+  const performCloseSession = useCallback(() => {
+    // Null out all server-sync bookkeeping first so no banner or stale
+    // server key survives the close (resetWorkshop only touches the data).
+    resetSyncState();
     resetWorkshop();
     onReset?.();
-  }, [resetWorkshop, onReset]);
+  }, [resetSyncState, resetWorkshop, onReset]);
+
+  const handleReset = useCallback(() => {
+    if (getHasUnsavedCloseRisk()) {
+      setShowCloseConfirmDialog(true);
+      return;
+    }
+    performCloseSession();
+  }, [getHasUnsavedCloseRisk, performCloseSession]);
 
   const handleClearAll = useCallback(async () => {
     await clearAllData();
+    resetSyncState();
     clearWorkshopCompletely();
     refreshAll();
     setSidebarCollapsed(getDefaultPrefs().sidebarCollapsed);
@@ -421,7 +458,7 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
     setEmptyStateRevision((revision) => revision + 1);
     toast.success(t('settings.clearAllSuccess'));
     onReset?.();
-  }, [clearWorkshopCompletely, refreshAll, onReset, setTheme, t]);
+  }, [resetSyncState, clearWorkshopCompletely, refreshAll, onReset, setTheme, t]);
 
   // Shortcut-only handlers: add a generic (untyped) block / group / breakout
   // to the end of the root timeline. Mirror the sticky add buttons in Timeline.
@@ -484,9 +521,14 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
   }, [playMode]);
 
   const handleCloseSessionShortcut = useCallback(() => {
-    resetWorkshop();
-    onReset?.();
-  }, [resetWorkshop, onReset]);
+    // Read the ref, not getHasUnsavedCloseRisk — shortcuts close over a
+    // callback created at mount and would otherwise pin stale state.
+    if (hasUnsavedCloseRiskRef.current) {
+      setShowCloseConfirmDialog(true);
+      return;
+    }
+    performCloseSession();
+  }, [performCloseSession]);
 
   const handleFocusSessionTitleShortcut = useCallback(() => {
     focusSessionInput('data-session-title-input');
@@ -580,6 +622,11 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
               isEnablingServerMode={isEnablingServerMode}
               onToggleServerMode={handleToggleServerMode}
               getShareUrl={getShareUrl}
+              getEditorShareUrl={getEditorShareUrl}
+              getReadOnlyShareUrl={getReadOnlyShareUrl}
+              canEditServerSession={canEditServerSession}
+              isLegacyServerSession={isLegacyServerSession}
+              onMigrateLegacyLink={forkSession}
               snapshotUrl={snapshotUrl}
               lastModified={workshop.workshop.lastModified}
               dateLocale={dateLocale}
@@ -624,8 +671,12 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
               serverKey={serverKey}
             />
           )}
-          {serverKey && hasSyncError && !incomingUpdate && (
-            <UnsyncedChangesBanner onDownload={handleExport} />
+          {serverKey && !incomingUpdate && (
+            (!canEditServerSession && hasUnsyncedChanges) || syncFailureReason === 'forbidden' ? (
+              <ReadOnlyChangesBanner onCreateLocalCopy={createLocalCopy} />
+            ) : syncFailureReason === 'server' ? (
+              <UnsyncedChangesBanner onDownload={handleExport} />
+            ) : null
           )}
         </div>
         {workshop.items.length === 0 && renderEmptyState && (
@@ -756,7 +807,25 @@ export const WorkshopPlanner = ({ prefillData, renderEmptyState, onReset }: Work
         onSaveTemplate={handleSaveAsTemplate}
         showDisableServerDialog={showDisableServerDialog}
         onShowDisableServerDialogChange={setShowDisableServerDialog}
-        onConfirmDisableServer={() => { disableServerMode(); setShowDisableServerDialog(false); clearSessionNotFound(); }}
+        onConfirmDisableServer={async () => {
+          if (await disableServerMode()) {
+            setShowDisableServerDialog(false);
+            clearSessionNotFound();
+          } else {
+            toast.error(t('planner.permanentLinkDeleteError'));
+          }
+        }}
+        showCloseConfirmDialog={showCloseConfirmDialog}
+        onShowCloseConfirmDialogChange={(open) => {
+          // Track cancellations triggered by the X (Esc / overlay click).
+          if (!open && showCloseConfirmDialog) {
+          }
+          setShowCloseConfirmDialog(open);
+        }}
+        onConfirmCloseSession={() => {
+          setShowCloseConfirmDialog(false);
+          performCloseSession();
+        }}
       />
 
       {/* Slim time-distribution visualization anchored to the bottom of the

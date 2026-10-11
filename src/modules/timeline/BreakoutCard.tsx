@@ -357,7 +357,7 @@ export const BreakoutCard = ({
                         className="text-xs text-muted-foreground cursor-pointer select-none -mr-1"
                       >
                         <span className="hidden sm:inline">{t('dialog.sameInAllRooms').split(' ').slice(0, -1).join(' ')} </span>{t('dialog.sameInAllRooms').split(' ').at(-1)}
-                      </label>
+                      </label>                      
                       <Switch
                         id={`same-${item.id}`}
                         checked={item.sameInAllBreakouts || false}

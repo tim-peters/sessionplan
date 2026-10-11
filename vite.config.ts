@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import fs from "fs";
+import { pathToFileURL } from "node:url";
 import { VitePWA } from "vite-plugin-pwa";
 
 // Standalone static pages under public/<slug>/index.html (e.g. /enterprise) are
@@ -37,6 +38,33 @@ try {
   appBuild = JSON.parse(raw).build ?? 0;
 } catch { /* build-info.json not available (dev mode) */ }
 
+// Mirror the backend/ PHP runtime into dist/ right after the bundle is
+// written. The script is dynamically imported: vite.config.ts is also
+// consumed by the public-export build (config/public-export/manifest.json
+// copies it) and the public export has no backend/manifest.json nor the
+// scripts/ directory. A static import would break the public build.
+function backendMirrorPlugin(): Plugin {
+  return {
+    name: "sessionplan-backend-mirror",
+    apply: "build",
+    async closeBundle() {
+      const repoRoot = __dirname;
+      if (!fs.existsSync(path.join(repoRoot, "backend/manifest.json"))) return;
+      const script = path.join(repoRoot, "scripts/assemble-backend.mjs");
+      if (!fs.existsSync(script)) {
+        // A public build has no backend/manifest.json and returns above; a
+        // private build with a manifest but without the assembly script would
+        // otherwise produce a PHP-less dist/ with exit 0.
+        throw new Error("backend/manifest.json exists but scripts/assemble-backend.mjs is missing; cannot mirror the PHP backend.");
+      }
+      const { runBackendAssembleFor } = await import(
+        pathToFileURL(script).href
+      );
+      runBackendAssembleFor(repoRoot);
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
@@ -49,7 +77,9 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
-      // Static content is served by Vite; only PHP endpoints use the optional backend.
+      // Only PHP endpoints use the optional PHP backend; everything else is
+      // static content served by Vite. Operator-only endpoint groups are
+      // proxied by a private source region.
       '^/(?:data/.*|mcp|sitemap|bot-tracker)\\.php(?:\\?|$)': {
         target: 'http://localhost:8081',
         changeOrigin: true,
@@ -63,6 +93,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     standaloneStaticPages(),
+    backendMirrorPlugin(),
     react(),
     VitePWA({
       registerType: "autoUpdate",

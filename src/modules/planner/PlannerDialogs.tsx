@@ -18,7 +18,6 @@ import {
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { Label } from '@/components/primitives/label';
-
 interface PlannerDialogsProps {
   saveTemplateDialog: boolean;
   onSaveTemplateDialogChange: (open: boolean) => void;
@@ -28,6 +27,9 @@ interface PlannerDialogsProps {
   showDisableServerDialog: boolean;
   onShowDisableServerDialogChange: (open: boolean) => void;
   onConfirmDisableServer: () => void;
+  showCloseConfirmDialog: boolean;
+  onShowCloseConfirmDialogChange: (open: boolean) => void;
+  onConfirmCloseSession: () => void;
 }
 
 export const PlannerDialogs = ({
@@ -39,6 +41,9 @@ export const PlannerDialogs = ({
   showDisableServerDialog,
   onShowDisableServerDialogChange,
   onConfirmDisableServer,
+  showCloseConfirmDialog,
+  onShowCloseConfirmDialogChange,
+  onConfirmCloseSession,
 }: PlannerDialogsProps) => {
   const { t } = useTranslation('common');
 
@@ -86,6 +91,30 @@ export const PlannerDialogs = ({
               onClick={onConfirmDisableServer}
             >
               {t('planner.disableServerModeAction')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showCloseConfirmDialog} onOpenChange={onShowCloseConfirmDialogChange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('planner.closeSessionConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('planner.closeSessionConfirmText')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('planner.closeSessionConfirmCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                onConfirmCloseSession();
+              }}
+            >
+              {t('planner.closeSessionConfirmAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

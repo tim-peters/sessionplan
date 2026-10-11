@@ -2,10 +2,10 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 /**
  * Hook that manages a "copied" boolean state with an auto-reset timer.
- * Returns [ copied, trigger ] where `trigger()` sets copied=true for `timeout` ms.
- * Cleans up the timeout on unmount.
+ * Returns [ copied, trigger, reset ] where `trigger()` sets copied=true for
+ * `timeout` ms and `reset()` clears it immediately. Cleans up the timeout on unmount.
  */
-export function useCopiedState(timeout = 3000): [boolean, () => void] {
+export function useCopiedState(timeout = 3000): [boolean, () => void, () => void] {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -17,5 +17,10 @@ export function useCopiedState(timeout = 3000): [boolean, () => void] {
     timerRef.current = setTimeout(() => setCopied(false), timeout);
   }, [timeout]);
 
-  return [copied, trigger];
+  const reset = useCallback(() => {
+    clearTimeout(timerRef.current);
+    setCopied(false);
+  }, []);
+
+  return [copied, trigger, reset];
 }

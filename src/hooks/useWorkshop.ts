@@ -155,15 +155,15 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     recordExternalUpdateRef.current(version);
   }, []);
 
-  const debounceTrackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const metadataTrackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const titlePageViewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const itemEditDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const metadataEditDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const titleChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(
     () => () => {
-      if (debounceTrackingTimeoutRef.current) clearTimeout(debounceTrackingTimeoutRef.current);
-      if (metadataTrackingTimeoutRef.current) clearTimeout(metadataTrackingTimeoutRef.current);
-      if (titlePageViewTimeoutRef.current) clearTimeout(titlePageViewTimeoutRef.current);
+      if (itemEditDebounceRef.current) clearTimeout(itemEditDebounceRef.current);
+      if (metadataEditDebounceRef.current) clearTimeout(metadataEditDebounceRef.current);
+      if (titleChangeDebounceRef.current) clearTimeout(titleChangeDebounceRef.current);
     },
     [],
   );
@@ -271,7 +271,7 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (isWorkshopPage()) {
+      if (isWorkshopPage() && !sync.serverKey) {
         setWorkshopToHash(workshop);
       }
     };
@@ -352,23 +352,23 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     (updates: Partial<WorkshopData['workshop']>) => {
       const changedAttributes = Object.keys(updates).join(', ');
       if (changedAttributes) {
-        if (metadataTrackingTimeoutRef.current) {
-          clearTimeout(metadataTrackingTimeoutRef.current);
+        if (metadataEditDebounceRef.current) {
+          clearTimeout(metadataEditDebounceRef.current);
         }
-        metadataTrackingTimeoutRef.current = setTimeout(() => {
-          metadataTrackingTimeoutRef.current = null;
-        }, DEBOUNCE_TIMES.METADATA_TRACKING);
+        metadataEditDebounceRef.current = setTimeout(() => {
+          metadataEditDebounceRef.current = null;
+        }, DEBOUNCE_TIMES.EDIT_DEBOUNCE);
       }
-      // After the LAST change of the session title, send a pageview event so
-      // Record the visit under the new title (site-title format).
+      // After the LAST change of the session title, only run the deferred
+      // title handling once the title has settled (truthy format checks).
       if (typeof updates.title === 'string' && updates.title.length > 0) {
         const newTitle = updates.title;
-        if (titlePageViewTimeoutRef.current) {
-          clearTimeout(titlePageViewTimeoutRef.current);
+        if (titleChangeDebounceRef.current) {
+          clearTimeout(titleChangeDebounceRef.current);
         }
-        titlePageViewTimeoutRef.current = setTimeout(() => {
-          titlePageViewTimeoutRef.current = null;
-        }, DEBOUNCE_TIMES.TITLE_PAGEVIEW);
+        titleChangeDebounceRef.current = setTimeout(() => {
+          titleChangeDebounceRef.current = null;
+        }, DEBOUNCE_TIMES.TITLE_CHANGE);
       }
       setWorkshopState((prev) =>
         withLastModified({
@@ -481,18 +481,18 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
         updatedItems = updateGroupDurations(updatedItems);
 
         if (item) {
-          if (debounceTrackingTimeoutRef.current) {
-            clearTimeout(debounceTrackingTimeoutRef.current);
+          if (itemEditDebounceRef.current) {
+            clearTimeout(itemEditDebounceRef.current);
           }
 
-          debounceTrackingTimeoutRef.current = setTimeout(() => {
+          itemEditDebounceRef.current = setTimeout(() => {
             const changedAttributes = Object.keys(updates).join(', ');
             if (item.type === 'block') {
             } else if (item.type === 'group') {
             } else if (item.type === 'breakout') {
             }
-            debounceTrackingTimeoutRef.current = null;
-          }, DEBOUNCE_TIMES.METADATA_TRACKING);
+            itemEditDebounceRef.current = null;
+          }, DEBOUNCE_TIMES.EDIT_DEBOUNCE);
         }
 
         return withLastModified({ ...prev, items: updatedItems }, `item:${id}`);
@@ -776,8 +776,8 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
       clearUndoHistory();
       updateSessionLastOpened(entry.id);
       if (entry.type === 'dynamic' && entry.serverKey) {
-        navigate(`/?id=${entry.serverKey}`);
-        sync.loadServerSession(entry.serverKey);
+        navigate(`/?id=${entry.serverKey}${entry.serverHash ?? ''}`);
+        sync.loadServerSession(entry.serverKey, entry.serverHash);
         return;
       }
 
@@ -822,6 +822,8 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     redo,
     canUndo: undoStackRef.current.length > 0,
     serverKey: sync.serverKey,
+    canEditServerSession: sync.canEditServerSession,
+    isLegacyServerSession: sync.isLegacyServerSession,
     isLoadingFromServer: sync.isLoadingFromServer,
     isEnablingServerMode: sync.isEnablingServerMode,
     enableServerMode: sync.enableServerMode,
@@ -830,7 +832,11 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     incomingUpdate: sync.incomingUpdate,
     hasUnsyncedChanges: sync.hasUnsyncedChanges,
     hasSyncError: sync.hasSyncError,
+    syncFailureReason: sync.syncFailureReason,
     acceptIncomingUpdate: sync.acceptIncomingUpdate,
     forkSession: sync.forkSession,
+    createLocalCopy: sync.createLocalCopy,
+    resetSyncState: sync.resetSyncState,
+    getHasUnsavedCloseRisk: sync.getHasUnsavedCloseRisk,
   };
 };

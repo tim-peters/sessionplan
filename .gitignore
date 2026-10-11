@@ -5,3 +5,4 @@ dist/
 .env.local
 .env.*.local
 .DS_Store
+sessions_data/

@@ -9,7 +9,7 @@ import { SeoSection } from '@/components/landingcontent/SeoSection';
 import { LandingPageContent } from '@/types/landingPage';
 import { SessionHistoryEntry } from '@/types/sessionHistory';
 import { getSessionHistory } from '@/lib/workshopLocalStorage';
-import { SessionHistoryList } from '@/components/states/SessionHistoryList';
+import { SessionHistoryList } from '@/components/sections/SessionHistoryList';
 import { DropZone } from '@/modules/timeline/DropZone';
 import { parseFormatting } from '@/lib/textFormatting';
 
@@ -55,7 +55,7 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
   }, [resolvedTheme]);
 
   return (
-    <div id="hero-planner" className="relative mx-auto min-h-[calc(100vh-210px)] p-6 pt-10 lg:pt-[10vh]">
+    <div id="hero-planner" className="relative mx-auto min-h-[calc(100vh-210px)] p-6 pt-10 lg:pt-[10vh]">    
       {/* Content */}
       <div className="relative z-10 mx-auto lg:px-10 flex items-center justify-center gap-8 md:gap-16 flex-col md:flex-row">
         <div className="flex-1 max-w-md">

@@ -14,7 +14,7 @@ import { BlogPost } from '@/types/blog';
 import type { BlogHub } from '@/lib/routeLoaders';
 import { PageFooter } from '@/components/layout/PageFooter';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
-import { Calendar, User } from 'lucide-react';
+import { Calendar, CalendarClock, User, LayoutGrid } from 'lucide-react';
 import { Badge } from '@/components/primitives/badge';
 import { formatDate } from '@/lib/formatDate';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
@@ -23,6 +23,7 @@ import { getLocaleRoot, getLocalizedPath } from '@/lib/localeUtils';
 import { getAbsoluteImageUrl, getCanonicalUrl, getOrganizationSchema, ORGANIZATION_ID } from '@/lib/metaConfig';
 import { buildBreadcrumbList } from '@/lib/breadcrumbStructuredData';
 import { TemplateHeader } from '@/components/layout/TemplateHeader';
+
 
 const BlogArticle = () => {
   const { t } = useTranslation('common');
@@ -38,6 +39,12 @@ const BlogArticle = () => {
   const canonicalPath = getLocalizedPath(locale, `/blog/${post.slug}`);
   const canonicalUrl = getCanonicalUrl(canonicalPath);
   const imageUrl = getAbsoluteImageUrl(post.ogImage || authorImage);
+
+  // Only show an "Updated" date when the article was actually modified after it
+  // was published (the loader may also fall back to the publish date).
+  const modifiedDate = post.lastModified ? Date.parse(post.lastModified) : NaN;
+  const showUpdated =
+    Number.isFinite(modifiedDate) && modifiedDate > Date.parse(post.publishedDate);
 
   const structuredData = post.structuredData || {
     '@context': 'https://schema.org',
@@ -107,6 +114,14 @@ const BlogArticle = () => {
                 <Calendar className="h-4 w-4" />
                 <time dateTime={post.publishedDate}>{formatDate(post.publishedDate)}</time>
               </div>
+              {showUpdated && (
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4" />
+                  <time dateTime={post.lastModified}>
+                    {t('blog.updated', { date: formatDate(post.lastModified!) })}
+                  </time>
+                </div>
+              )}
               {post.author && (
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
@@ -119,28 +134,19 @@ const BlogArticle = () => {
                   )}
                 </div>
               )}
+              {post.hub && (
+                  <Link
+                    to={getLocalizedPath(locale, `/blog/${post.hub.slug}`)}
+                    className="inline-flex items-center rounded-full bg-secondary gap-1 px-3 py-1 text-sm font-medium text-secondary-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+                    title={t('blog.moreOnTopic', { hub: post.hub.shortLabel ?? post.hub.title })}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    {post.hub.title }
+                  </Link>
+              )}            
             </div>
 
-            {post.hub && (
-              <div className="mb-3">
-                <Link
-                  to={getLocalizedPath(locale, `/blog/${post.hub.slug}`)}
-                  className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-                >
-                  {t('blog.moreOnTopic', { hub: post.hub.shortLabel ?? post.hub.title })} →
-                </Link>
-              </div>
-            )}
 
-            {post.tags && post.tags.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {post.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
           </header>
 
           <div
@@ -202,6 +208,22 @@ const BlogArticle = () => {
               </div>
             </div>
           )}
+              <div className="flex gap-2 flex-wrap">
+                {post.tags && post.tags.length > 0 && post.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))}
+                {post.hub && (
+                    <Link
+                      to={getLocalizedPath(locale, `/blog/${post.hub.slug}`)}
+                      className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+                      title={t('blog.moreOnTopic', { hub: post.hub.shortLabel ?? post.hub.title })}
+                    >
+                      {post.hub.title } →
+                    </Link>
+                )}
+              </div>
 
         </article>
 

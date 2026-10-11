@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sessionplan.de/data/sessionplan.schema.json",
+  "title": "Sessionplan document",
+  "type": "object",
+  "required": [
+    "version",
+    "workshop",
+    "blockTypes",
+    "persons",
+    "items"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Document format version, currently 1.0; distinct from the v2 link codec and MCP protocol version."
+    },
+    "workshop": {
+      "$ref": "#/$defs/workshop",
+      "description": "Workshop metadata."
+    },
+    "blockTypes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/blockType"
+      },
+      "description": "Declared block categories referenced by blockTypeId."
+    },
+    "persons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/person"
+      },
+      "description": "Declared facilitators or participants referenced by personIds and lanePersons."
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/item"
+      },
+      "description": "Ordered top-level blocks, groups or breakouts. The complete tree may contain at most 500 items."
+    }
+  },
+  "$defs": {
+    "workshop": {
+      "type": "object",
+      "required": [
+        "title",
+        "description"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Session title."
+        },
+        "description": {
+          "type": "string",
+          "description": "Session description or facilitator notes."
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional calendar date (YYYY-MM-DD). Use null when no date is planned.",
+          "format": "date",
+          "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}$(?![\\s\\S])"
+        },
+        "startTime": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional local start time (HH:MM, 00:00–23:59). Use null when no start time is planned.",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$(?![\\s\\S])"
+        },
+        "targetDuration": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional target duration in minutes, greater than or equal to zero."
+        },
+        "durationLocked": {
+          "type": "boolean",
+          "description": "Whether the target duration is locked."
+        },
+        "lastModified": {
+          "type": "string",
+          "description": "Optional timestamp with T separator, seconds 00–59 and a time zone (Z or ±HH:MM), e.g. 2026-09-15T09:00:00.000Z.",
+          "format": "date-time",
+          "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]+)?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$(?![\\s\\S])"
+        }
+      }
+    },
+    "blockType": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "color"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Non-empty identifier, unique within this collection.",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name."
+        },
+        "color": {
+          "type": "string",
+          "description": "CSS color, commonly a hexadecimal color such as #2C8DFE."
+        }
+      }
+    },
+    "person": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "color"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Non-empty identifier, unique within this collection.",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name."
+        },
+        "color": {
+          "type": "string",
+          "description": "CSS color, commonly a hexadecimal color such as #2C8DFE."
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "blockTypeId",
+        "title",
+        "duration",
+        "notes",
+        "material"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Non-empty stable identifier, unique across the complete item tree."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "block",
+            "group",
+            "breakout"
+          ],
+          "description": "Item kind: block, sequential group, or parallel breakout."
+        },
+        "blockTypeId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ID of a declared block type, or null."
+        },
+        "title": {
+          "type": "string",
+          "description": "Agenda item title."
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Explicit section duration in minutes. Groups normally use the sum of children; breakouts use the longest lane. The encoder does not recalculate durations."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Facilitator notes; supports *bold*, _italic_ and [label](URL)."
+        },
+        "material": {
+          "type": "string",
+          "description": "Materials, links or resources."
+        },
+        "durationLocked": {
+          "type": "boolean",
+          "description": "Preserve the explicit container duration when the editor recalculates the plan."
+        },
+        "fixedStartTime": {
+          "type": "string",
+          "description": "Optional local fixed start time (HH:MM, 00:00–23:59).",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$(?![\\s\\S])"
+        },
+        "personIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of declared persons assigned to this item."
+        },
+        "parallel": {
+          "type": "boolean",
+          "description": "Whether a breakout runs in parallel. Use true for breakouts."
+        },
+        "lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of breakout lanes, from 1 to 10 as supported by the editor. Defaults to 2 when omitted.",
+          "maximum": 10
+        },
+        "sameInAllBreakouts": {
+          "type": "boolean",
+          "description": "Show lane-zero content in every lane; child laneIndex must then be zero or omitted."
+        },
+        "lanePersons": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "Map of zero-based lane indices to arrays of declared person IDs. Keep this as a JSON object, including when empty.",
+          "propertyNames": {
+            "pattern": "^(0|[1-9][0-9]*)$(?![\\s\\S])"
+          }
+        },
+        "laneIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Zero-based lane index within the parent breakout; defaults to 0. Must be less than the parent lane count."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/item"
+          },
+          "description": "Groups contain blocks or breakouts; breakouts contain blocks. Blocks cannot have children."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "block"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "children"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "group"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "children"
+            ],
+            "properties": {
+              "children": {
+                "items": {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "block",
+                        "breakout"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "breakout"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "children"
+            ],
+            "properties": {
+              "children": {
+                "items": {
+                  "properties": {
+                    "type": {
+                      "const": "block"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "description": "Canonical format for newly generated Sessionplan documents. Include all required fields and only documented properties. Use declared category/person IDs and the supported item hierarchy."
+}
