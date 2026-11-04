@@ -18,21 +18,21 @@ const variantStyles: Record<
 > = {
   sidebar: {
     container: 'flex items-center gap-1 px-3 border-l shrink-0',
-    option: 'px-2 py-0.5 rounded text-xs font-medium transition-colors',
+    option: 'inline-flex h-6 items-center justify-center px-2 rounded text-xs leading-none font-medium transition-colors',
     active: 'bg-primary text-primary-foreground',
-    inactive: 'hover:bg-muted',
+    inactive: 'hover:bg-accent active:bg-accent-active',
   },
   header: {
     container: 'flex items-center gap-1 pl-3',
-    option: 'rounded px-2 py-0.5 text-xs font-medium transition-colors',
+    option: 'inline-flex h-6 items-center justify-center rounded px-2 text-xs leading-none font-medium transition-colors',
     active: 'bg-primary text-primary-foreground',
-    inactive: 'hover:bg-muted',
+    inactive: 'hover:bg-accent active:bg-accent-active',
   },
   footer: {
     container: 'flex items-center gap-1',
-    option: 'rounded px-2 py-0.5 text-xs transition-colors',
-    active: 'bg-primary font-semibold text-background',
-    inactive: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+    option: 'inline-flex h-6 items-center justify-center rounded px-2 text-xs leading-none transition-colors',
+    active: 'bg-primary font-semibold text-primary-foreground',
+    inactive: 'text-muted-foreground hover:bg-accent active:bg-accent-active hover:text-foreground',
   },
 };
 
@@ -53,7 +53,7 @@ export const LanguageSwitcher = ({
         className="icon-button text-xs font-semibold"
         title={locale === 'de' ? 'Switch to English' : 'Zu Deutsch wechseln'}
       >
-        {locale.toUpperCase()}
+        <span>{locale.toUpperCase()}</span>
       </Link>
     );
   }
@@ -75,7 +75,7 @@ export const LanguageSwitcher = ({
           )}
           aria-current={locale === targetLocale ? 'true' : undefined}
         >
-          {targetLocale.toUpperCase()}
+          <span>{targetLocale.toUpperCase()}</span>
         </Link>
       ))}
     </div>

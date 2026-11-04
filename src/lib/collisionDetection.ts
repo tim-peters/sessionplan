@@ -175,12 +175,12 @@ const handleTimelineDrag = (args: CollisionArgs, workshopItems: WorkshopItem[], 
   
   // PRIORITY 3: Check for same-level vs cross-level collisions
   const sameLevelCollisions = itemCollisions.filter((collision: Collision) => {
-    const targetParentId = findParentId(workshopItems, collision.id);
+    const targetParentId = findParentId(workshopItems, collision.id as string);
     return targetParentId === activeParentId;
   });
   
   const crossLevelCollisions = itemCollisions.filter((collision: Collision) => {
-    const targetParentId = findParentId(workshopItems, collision.id);
+    const targetParentId = findParentId(workshopItems, collision.id as string);
     return targetParentId !== activeParentId;
   });
   

@@ -1,6 +1,5 @@
 export const DEFAULT_BLOCK_DURATION = 15;
 export const DEFAULT_BREAKOUT_DURATION = 30;
-export const DEFAULT_GROUP_DURATION = 0;
 export const DEFAULT_LANES = 2;
 export const MIN_LANES = 1;
 export const MAX_LANES = 10;

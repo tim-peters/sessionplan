@@ -9,7 +9,7 @@ const toBase64Url = (bytes: Uint8Array): string => {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-const fromBase64Url = (value: string): Uint8Array => {
+const fromBase64Url = (value: string): Uint8Array<ArrayBuffer> => {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(normalized + '='.repeat((4 - normalized.length % 4) % 4));
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
@@ -19,11 +19,6 @@ export const createDynamicSecret = (byteLength = 32): string => {
   const bytes = new Uint8Array(byteLength);
   crypto.getRandomValues(bytes);
   return toBase64Url(bytes);
-};
-
-export const getDynamicSecretsFromHash = (): { encryptionKey: string | null; writeCapability: string | null } => {
-  const params = new URLSearchParams(window.location.hash.slice(1));
-  return { encryptionKey: params.get('k'), writeCapability: params.get('w') };
 };
 
 export const hashWriteCapability = async (capability: string): Promise<string> =>

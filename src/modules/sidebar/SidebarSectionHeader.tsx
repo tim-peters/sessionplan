@@ -1,3 +1,4 @@
+import { Button } from '@/components/primitives/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface SidebarSectionHeaderProps {
@@ -15,9 +16,10 @@ export const SidebarSectionHeader = ({
   onClick,
   badge,
 }: SidebarSectionHeaderProps) => (
-  <button
+  <Button variant="plain" size="none"
     onClick={onClick}
-    className="flex items-center justify-between w-full text-sm font-medium hover:text-primary"
+    aria-expanded={isOpen}
+    className="-mx-3 flex min-h-10 w-[calc(100%+1.5rem)] items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:text-primary-text"
   >
     <span className="flex items-center gap-2">
       <Icon className="h-4 w-4" />
@@ -29,5 +31,5 @@ export const SidebarSectionHeader = ({
     ) : (
       <ChevronRight className="h-4 w-4" />
     )}
-  </button>
+  </Button>
 );

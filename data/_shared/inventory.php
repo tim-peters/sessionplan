@@ -12,10 +12,9 @@
  * have no reservation surface — they cannot reject a delete on capacity
  * grounds.
  *
- * The constants and helpers in here are intentionally small and idempotent
- * so the public distribution can ship them without leaking operator
- * identifiers or escrow markers. All on-disk values are sha256(ip|ns) hashed
- * where applicable so no raw IP ever touches disk.
+ * The constants and helpers in here are intentionally small and idempotent.
+ * All on-disk values are sha256(ip|ns) hashed where applicable so no raw IP
+ * ever touches disk.
  */
 
 declare(strict_types=1);

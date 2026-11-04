@@ -8,23 +8,16 @@ import { GapIndicator } from './atoms/GapIndicator';
 import { useDragDropContext } from '@/hooks/useDragDropContext';
 import { useIsLg } from '@/hooks/use-lg';
 import { cn } from '@/lib/utils';
+import type { PlayState } from '@/lib/playModeUtils';
+import { bindChildBlockActions, type ChildItemCallbacks } from '@/lib/timelineItemProps';
 
-interface SameInAllLanesViewProps {
+interface SameInAllLanesViewProps extends ChildItemCallbacks {
   item: WorkshopItem;
   blockTypes: BlockType[];
   persons: Person[];
   showFullPreviewText?: boolean;
-  onCalculateChildTime?: (parentItem: WorkshopItem, childIndex: number) => string | null;
-  onUpdateChild?: (childId: string, updates: Partial<WorkshopItem>) => void;
-  onDeleteChild?: (childId: string) => void;
-  onDuplicateChild?: (childId: string) => void;
-  onSaveChildToLibrary?: (childId: string) => void;
-  onEditChildDetails?: (childId: string) => void;
-  onCreateBelowChild?: (childId: string) => void;
-  onDeleteChildAndFocusPrev?: (childId: string) => void;
   onAddChild?: (type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
-  depth: number;
-  childPlayStates?: Map<string, string>;
+  childPlayStates?: Map<string, PlayState>;
 }
 
 export const SameInAllLanesView = ({
@@ -32,17 +25,9 @@ export const SameInAllLanesView = ({
   blockTypes,
   persons,
   showFullPreviewText,
-  onCalculateChildTime,
-  onUpdateChild,
-  onDeleteChild,
-  onDuplicateChild,
-  onSaveChildToLibrary,
-  onEditChildDetails,
-  onCreateBelowChild,
-  onDeleteChildAndFocusPrev,
   onAddChild,
-  depth,
   childPlayStates,
+  ...childCallbacks
 }: SameInAllLanesViewProps) => {
   const { t } = useTranslation('common');
   const { activeId } = useDragDropContext();
@@ -60,16 +45,11 @@ export const SameInAllLanesView = ({
     <div className={cn('-m-4 p-4 rounded-b-lg')}>
       {item.children && item.children.length > 0 ? (
         <SortableContext
-          items={item.children
-            .filter((child) => child && (child.laneIndex === 0 || child.laneIndex === undefined))
-            .map((c) => c.id)}
+          items={lane0Children.map((c) => c.id)}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-2">
-            {item.children
-              .filter((child) => child && (child.laneIndex === 0 || child.laneIndex === undefined))
-              .map((child) => {
-                const childBlockType = blockTypes.find((bt) => bt.id === child.blockTypeId);
+            {lane0Children.map((child) => {
                 const actualChildIndex = item.children?.indexOf(child) || 0;
 
                 return (
@@ -92,31 +72,24 @@ export const SameInAllLanesView = ({
 
                     {(item.lanes || 2) > 5 && !isAnyBlockBeingDragged && (
                       <div className="absolute bottom-2 -right-2 z-10">
-                        <div className="text-xs font-bold px-2 py-0.5 rounded-full shadow-sm bg-block-breakout-bg text-block-breakout">
+                        <div className="text-xs font-bold px-2 py-0.5 rounded-full shadow-sm bg-block-breakout-bg text-block-breakout-foreground">
                           ×{item.lanes}
                         </div>
                       </div>
                     )}
 
                     <BlockCard
+                      {...bindChildBlockActions(child, childCallbacks)}
                       item={child}
-                      blockType={childBlockType}
+                      blockType={blockTypes.find((bt) => bt.id === child.blockTypeId)}
                       blockTypes={blockTypes}
                       persons={persons}
                       showFullPreviewText={showFullPreviewText}
-                      timeDisplay={onCalculateChildTime?.(item, actualChildIndex) || null}
-                      onUpdate={(updates) => onUpdateChild?.(child.id, updates)}
-                      onDelete={() => onDeleteChild?.(child.id)}
-                      onDuplicate={() => onDuplicateChild?.(child.id)}
-                      onSaveToLibrary={() => onSaveChildToLibrary?.(child.id)}
-                      onEditDetails={() => onEditChildDetails?.(child.id)}
-                      onCreateBelow={(childItem) => onCreateBelowChild?.(childItem.id)}
-                      onDeleteAndFocusPrev={(childItem) => onDeleteChildAndFocusPrev?.(childItem.id)}
+                      timeDisplay={childCallbacks.onCalculateChildTime?.(item, actualChildIndex) || null}
                       parentId={item.id}
                       parentType="breakout"
                       isNested={true}
-                      depth={depth + 1}
-                      playState={childPlayStates?.get(child.id) as never}
+                      playState={childPlayStates?.get(child.id)}
                     />
                   </div>
                 );

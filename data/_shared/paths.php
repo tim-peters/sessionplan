@@ -37,3 +37,4 @@ function backend_sessions_dir(): string
     // same anchor for relative overrides so dev and CLI resolve identically.
     return rtrim(dirname(__DIR__, 3) . '/' . $configured, '/');
 }
+

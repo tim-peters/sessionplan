@@ -57,7 +57,7 @@ export const FeaturesSection = ({ section }: FeaturesSectionProps) => {
                 {Icon && (
                   <span
                     aria-hidden="true"
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary-text"
                   >
                     <Icon className="h-5 w-5" />
                   </span>
@@ -65,7 +65,7 @@ export const FeaturesSection = ({ section }: FeaturesSectionProps) => {
                 <h3 className="mt-5 text-lg font-semibold text-foreground">{item.title}</h3>
                 {item.description && (
                   <p
-                    className="mt-2 text-sm md:text-base leading-6 text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline"
+                    className="mt-2 text-sm md:text-base leading-6 text-muted-foreground [&_a]:text-primary-text [&_a]:underline-offset-4 [&_a]:underline [&_a:hover]:decoration-2"
                     dangerouslySetInnerHTML={{ __html: item.description }}
                   />
                 )}

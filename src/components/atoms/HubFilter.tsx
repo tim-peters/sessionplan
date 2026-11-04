@@ -10,7 +10,6 @@
  * blog hub index, and any future landing-page hub page.
  */
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import type { Hub } from '@/types/hub';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalizedPath } from '@/lib/localeUtils';
@@ -38,19 +37,20 @@ export const HubFilter = ({ hubs, activeSlug, basePath, allLabel, filterLabel }:
     cn(
       'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
       isActive
-        ? 'border-primary bg-primary text-primary-foreground'
-        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+        ? 'border-primary bg-primary text-primary-foreground active:bg-primary-active'
+        : 'border-border text-muted-foreground hover:bg-accent active:bg-accent-active hover:text-foreground'
     );
 
   return (
     <nav aria-label={filterLabel} className="mb-10 flex flex-wrap items-center gap-2">
-      <Link to={getLocalizedPath(locale, basePath)} className={chipClass(!activeSlug)}>
+      <Link to={getLocalizedPath(locale, basePath)} aria-current={!activeSlug ? 'page' : undefined} className={chipClass(!activeSlug)}>
         {allLabel}
       </Link>
       {(hubs ?? []).map((hub) => (
         <Link
           key={hub.slug}
           to={getLocalizedPath(locale, `${basePath}/${hub.slug}`)}
+          aria-current={activeSlug === hub.slug ? 'page' : undefined}
           className={chipClass(activeSlug === hub.slug)}
         >
           {hub.shortLabel ?? hub.title}

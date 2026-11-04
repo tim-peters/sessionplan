@@ -25,7 +25,7 @@ export const FaqSection = ({ section }: FaqSectionProps) => {
                 <AccordionTrigger className="text-left text-base md:text-lg font-medium text-foreground">
                   {item.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-sm md:text-base leading-7 text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline">
+                <AccordionContent className="text-sm md:text-base leading-7 text-muted-foreground [&_a]:text-primary-text [&_a]:underline-offset-4 [&_a]:underline [&_a:hover]:decoration-2">
                   <div dangerouslySetInnerHTML={{ __html: item.answer }} />
                 </AccordionContent>
               </AccordionItem>
@@ -34,7 +34,7 @@ export const FaqSection = ({ section }: FaqSectionProps) => {
         )}
         {section.content && (
           <p
-            className="mt-6 text-base md:text-lg text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline"
+            className="mt-6 text-base md:text-lg text-muted-foreground [&_a]:text-primary-text [&_a]:underline-offset-4 [&_a]:underline [&_a:hover]:decoration-2"
             dangerouslySetInnerHTML={{ __html: section.content }}
           />
         )}

@@ -13,20 +13,20 @@ const tintClasses: Record<NonNullable<SeoCalloutSection['tint']>, string> = {
     'bg-blue-50 border-blue-200 text-blue-950',
     'dark:bg-blue-950/40 dark:border-blue-800/60 dark:text-blue-100',
     '[&_a]:text-blue-700 dark:[&_a]:text-blue-300',
-    '[&_a:hover]:underline',
+    '[&_a]:underline [&_a:hover]:decoration-2',
   ].join(' '),
   default: [
     'bg-card text-foreground',
     'border-border border',
     'dark:bg-card',
-    '[&_a]:text-primary',
-    '[&_a:hover]:underline',
+    '[&_a]:text-primary-text',
+    '[&_a]:underline [&_a:hover]:decoration-2',
   ].join(' '),
   muted: [
     'bg-muted text-foreground',
     'dark:bg-muted/20',
-    '[&_a]:text-primary',
-    '[&_a:hover]:underline',
+    '[&_a]:text-primary-text',
+    '[&_a]:underline [&_a:hover]:decoration-2',
   ].join(' '),
 };
 

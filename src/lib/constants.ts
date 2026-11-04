@@ -2,3 +2,6 @@
 
 /** Tailwind `lg` breakpoint (px). Used for sidebar auto-close and "add" button visibility. */
 export const LG_BREAKPOINT = 1024;
+
+/** Tailwind `sm` breakpoint (px). */
+export const SM_BREAKPOINT = 640;

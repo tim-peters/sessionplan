@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Sessionplan</title>
+  <defs>
+    <clipPath id="squircle">
+      <path d="M 28.57 0 H 99.43 Q 128 0 128 28.57 V 99.43 Q 128 128 99.43 128 H 28.57 Q 0 128 0 99.43 V 28.57 Q 0 0 28.57 0 Z"/>
+    </clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5B8DEF"/>
+      <stop offset="1" stop-color="#1D4FC4"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#squircle)">
+    <rect width="128" height="128" fill="url(#bg)"/>
+    <rect x="24" y="34" width="64" height="14" rx="4" fill="#FFFFFF" fill-opacity="0.36"/>
+    <rect x="24" y="57" width="80" height="14" rx="4" fill="#FFFFFF"/>
+    <rect x="24" y="80" width="52" height="14" rx="4" fill="#FFFFFF" fill-opacity="0.36"/>
+  </g>
+</svg>

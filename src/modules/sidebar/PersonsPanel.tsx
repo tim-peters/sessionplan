@@ -1,3 +1,4 @@
+import { Button } from '@/components/primitives/button';
 import { Pencil, Plus, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Person } from '@/types/workshop';
@@ -39,7 +40,7 @@ export const PersonsPanel = ({
   const { t } = useTranslation('common');
 
   return (
-    <div className="p-4">
+    <div className="sidebar-panel">
       <SidebarSectionHeader
         icon={Users}
         label={
@@ -73,19 +74,19 @@ export const PersonsPanel = ({
               <div key={person.id} className="sidebar-item group">
                 <PersonAvatar name={person.name} color={person.color} size="sm" />
                 <span className="flex-1 truncate">{person.name}</span>
-                <button
+                <Button variant="plain" size="none"
                   onClick={(e) => {
                     e.stopPropagation();
                     onStartEditPerson(person.id);
                   }}
                   className={cn(
-                    'opacity-0 group-hover:opacity-100 p-1 hover:bg-muted-foreground/10 rounded transition-opacity',
+                    'sidebar-action p-1 hover:bg-muted-foreground/10 rounded transition-opacity',
                   )}
                   title={t('sidebar.modify')}
                   aria-label={t('sidebar.modify')}
                 >
                   <Pencil className="h-3 w-3 text-muted-foreground" />
-                </button>
+                </Button>
               </div>
             ),
           )}
@@ -99,13 +100,13 @@ export const PersonsPanel = ({
               onCancel={onHideNewPersonForm}
             />
           ) : (
-            <button
+            <Button variant="plain" size="none"
               onClick={onShowNewPersonForm}
               className="sidebar-item text-muted-foreground hover:text-foreground"
             >
               <Plus className="h-4 w-4" />
               <span>{t('sidebar.addPerson')}</span>
-            </button>
+            </Button>
           )}
         </div>
       )}

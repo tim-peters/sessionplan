@@ -30,12 +30,17 @@ const STATIC_BILATERAL_PATHS: Array<[string, string]> = [
 
 export const useLanguageSwitcher = () => {
   const { locale, alternates } = useLocale();
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
 
-  // Dynamic sessions use the query string for the server-side session ID.
+  // Dynamic sessions use the query string for the server-side session ID and
+  // the fragment for their secrets. Creating or closing a session writes both
+  // past the router, so only the live URL knows whether one is open.
   const withCurrentSearch = (path: string): string => {
+    const { search, hash } = window.location;
     if (!search) return path;
-    return `${path}${path.includes('?') ? '&' : '?'}${search.slice(1)}`;
+    const hasLiveSession = new URLSearchParams(search).has('id');
+    const secrets = hasLiveSession && /^#(?:.*&)?k=/.test(hash) ? hash : '';
+    return `${path}${path.includes('?') ? '&' : '?'}${search.slice(1)}${secrets}`;
   };
 
   /**
@@ -44,7 +49,7 @@ export const useLanguageSwitcher = () => {
    * query string (e.g. the dynamic-link session id) like `getTargetUrl`.
    */
   const getAlternateUrl = (targetLocale: Locale): string | null => {
-    if (targetLocale === locale) return `${pathname}${search}`;
+    if (targetLocale === locale) return withCurrentSearch(pathname);
 
     // 1. Explicit alternate provided by the current content page
     const explicit = alternates[targetLocale];

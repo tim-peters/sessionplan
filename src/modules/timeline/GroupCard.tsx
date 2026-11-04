@@ -1,14 +1,19 @@
 import { useState, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSortable } from '@dnd-kit/sortable';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { WorkshopItem, BlockType, Person } from '@/types/workshop';
-import { ChevronDown, ChevronRight, Plus, Lock, Unlock, FolderPlus, SquareSplitHorizontal } from 'lucide-react';
+import { Plus, SquareSplitHorizontal } from 'lucide-react';
 import { Button } from '@/components/primitives/button';
-import { DurationInput } from './atoms/DurationInput';
+import { containerId } from '@/lib/dndConstants';
+import { bindChildActions, bindChildBlockActions, type ChildItemCallbacks } from '@/lib/timelineItemProps';
+import { calculateChildrenDuration, calculateFixedStartGap } from '@/lib/workshopUtils';
+import { ContainerDurationInput } from './atoms/ContainerDurationInput';
 import { DragHandle } from './atoms/DragHandle';
+import { DurationLockButton } from './atoms/DurationLockButton';
+import { ExpandToggle } from './atoms/ExpandToggle';
+import { ItemStartTime } from './atoms/ItemStartTime';
 import { cn } from '@/lib/utils';
 import { BlockPreview } from './BlockPreview';
 import { useDragDropContext } from '@/hooks/useDragDropContext';
@@ -22,13 +27,12 @@ import { BlockTitleInput } from './BlockTitleInput';
 import { useIsLg } from '@/hooks/use-lg';
 import { useHoverHighlightHandlers } from '@/hooks/useHoverHighlight';
 
-interface GroupCardProps {
+interface GroupCardProps extends ChildItemCallbacks {
   item: WorkshopItem;
   blockTypes: BlockType[];
   persons: Person[];
   showFullPreviewText?: boolean;
   timeDisplay: string | null;
-  startTime: string | null;
   onUpdate: (updates: Partial<WorkshopItem>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -36,21 +40,10 @@ interface GroupCardProps {
   onEditDetails: () => void;
   onAddChild?: (type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
   onAddToChild?: (childId: string, type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
-  onUpdateChild?: (childId: string, updates: Partial<WorkshopItem>) => void;
-  onDeleteChild?: (childId: string) => void;
-  onDuplicateChild?: (childId: string) => void;
-  onSaveChildToLibrary?: (childId: string) => void;
-  onEditChildDetails?: (childId: string) => void;
   onEditDetailsOnTime?: () => void;
-  onEditChildDetailsOnTime?: (childId: string) => void;
-  onCalculateChildTime?: (parentItem: WorkshopItem, childIndex: number) => string | null;
   onCreateBelow?: (item: WorkshopItem) => void;
-  onCreateBelowChild?: (childId: string) => void;
   onDeleteAndFocusPrev?: (item: WorkshopItem) => void;
-  onDeleteChildAndFocusPrev?: (childId: string) => void;
   parentId?: string | null;
-  depth?: number;
-  dropIndicator?: { overId: string; position: 'before' | 'after' } | null;
   playState?: PlayState;
   childPlayStates?: Map<string, PlayState>;
 }
@@ -61,7 +54,6 @@ export const GroupCard = ({
   persons,
   showFullPreviewText = false,
   timeDisplay,
-  startTime,
   onUpdate,
   onDelete,
   onDuplicate,
@@ -69,23 +61,13 @@ export const GroupCard = ({
   onEditDetails,
   onAddChild,
   onAddToChild,
-  onUpdateChild,
-  onDeleteChild,
-  onDuplicateChild,
-  onSaveChildToLibrary,
-  onEditChildDetails,
   onEditDetailsOnTime,
-  onEditChildDetailsOnTime,
-  onCalculateChildTime,
   onCreateBelow,
-  onCreateBelowChild,
   onDeleteAndFocusPrev,
-  onDeleteChildAndFocusPrev,
   parentId = null,
-  depth = 0,
-  dropIndicator,
   playState,
   childPlayStates,
+  ...childCallbacks
 }: GroupCardProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { t } = useTranslation('common');
@@ -96,23 +78,14 @@ export const GroupCard = ({
   // BlockCard/BreakoutCard).
   const hoverHandlers = useHoverHighlightHandlers(item.id);
   
-  // Set up droppable for group
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: `container-${item.id}`,
+    id: containerId(item.id),
     disabled: !isExpanded || contextActiveParentId === item.id,
     data: {
       containerId: item.id,
     },
   });
-  
-  // Use sortable for the group card itself
-  const sortable = useSortable({ 
-    id: item.id,
-    data: {
-      parentId: parentId,
-    },
-  });
-  
+
   const {
     attributes,
     listeners,
@@ -120,25 +93,28 @@ export const GroupCard = ({
     transform,
     transition,
     isDragging,
-  } = sortable;
+  } = useSortable({
+    id: item.id,
+    data: {
+      parentId: parentId,
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0 : 1,
   };
-  
-  // Calculate children duration sum
-  const childrenDurationSum = item.children 
-    ? item.children.reduce((sum, child) => {
-        // For breakouts, use their duration directly (parallel time)
-        // For blocks, add their duration (sequential time)
-        return sum + child.duration;
-      }, 0)
-    : 0;
-  
-  const durationDifference = item.duration - childrenDurationSum;
+
+  const durationDifference = item.duration - calculateChildrenDuration(item.children);
   const totalBlocks = item.children?.length || 0;
+  const startTimeProps = {
+    isFixed: !!item.fixedStartTime,
+    onUnlock: () => onUpdate({ fixedStartTime: undefined }),
+    onEdit: onEditDetailsOnTime ?? onEditDetails,
+  };
+  const handleToggleDurationLock = () => onUpdate({ durationLocked: !item.durationLocked });
+  const { onCalculateChildTime } = childCallbacks;
 
   return (
     <div 
@@ -147,7 +123,7 @@ export const GroupCard = ({
       className={cn(
         'group-container fade-in -mx-8 my-6 print:mx-0',
         isDragging && 'opacity-50',
-        playState === 'past' && 'opacity-50 grayscale',
+        playState === 'past' && 'is-past',
       )}
     >
       {/* Title area with background */}
@@ -157,7 +133,7 @@ export const GroupCard = ({
           onClick={onEditDetails}
           {...hoverHandlers}
           className={cn(
-            'group-title-area group cursor-pointer bg-block-group-bg border-2 border-dashed border-block-group/60 p-4 hover:bg-block-group/10 hover:shadow-md transition-shadow print:border-gray-200 print:pr-1',
+            'group-title-area group cursor-pointer bg-block-group-bg border-2 border-dashed border-block-group/60 p-4 hover:bg-block-group/10 transition-colors print:border-gray-200 print:pr-1',
             'relative',
             isExpanded ? 'rounded-t-lg border-b-block-group/40' : 'rounded-lg',
             playState === 'current' && 'border-primary',
@@ -166,139 +142,67 @@ export const GroupCard = ({
         >
 
           <div className="flex items-start gap-3 pl-2 mt-2 print:pl-0 print:mt-0">
-            <DragHandle attributes={attributes} listeners={listeners} />
+            {/* Mobile: toggle stacked under the drag handle to free horizontal space */}
+            <div className="flex flex-col items-start shrink-0 sm:contents print:hidden">
+              <DragHandle label={t('actions.move')} attributes={attributes} listeners={listeners} />
+              <ExpandToggle isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} stacked className="sm:hidden" />
+            </div>
 
             {/* Duration elements - desktop only */}
             <div className="hidden sm:flex flex-col items-end shrink-0 -mt-2 mr-5 print:hidden">
               {timeDisplay && (
-                <div className="flex items-center gap-1">
-                  {item.fixedStartTime && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onUpdate({ fixedStartTime: undefined }); }}
-                      className="text-primary hover:text-foreground transition-colors p-0.5 print:hidden -mr-1"
-                      title={t('block.unlockStartTime')}
-                    >
-                      <Lock className="h-3 w-3" />
-                    </button>
-                  )}
-                  <span
-                    className="text-xs font-medium text-primary mr-1 time-badge is-clickable"
-                    onClick={(e) => { e.stopPropagation(); (onEditDetailsOnTime ?? onEditDetails)(); }}
-                  >{timeDisplay}</span>
-                </div>
+                <ItemStartTime
+                  {...startTimeProps}
+                  time={timeDisplay}
+                  className="flex items-center gap-1"
+                  unlockButtonClassName="inline-flex items-center justify-center rounded-md p-1.5 text-primary-text hover:text-foreground transition-colors print:hidden -mr-1"
+                  lockIconClassName="h-3 w-3"
+                  timeButtonClassName="text-xs font-medium text-primary-text mr-1 time-badge is-clickable"
+                />
               )}
               <div className="flex items-center gap-1 mt-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUpdate({ durationLocked: !item.durationLocked });
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-0.5 print:hidden"
-                  title={item.durationLocked ? t('dialog.unlockDuration') : t('planner.unlockDuration')}
-                >
-                  {item.durationLocked ? (
-                    <Lock className="h-3 w-3 text-primary" />
-                  ) : (
-                    <Unlock className="h-3 w-3" />
-                  )}
-                </button>
-                <DurationInput
-                  value={item.duration}
-                  onChange={(e) => {
-                    if (!item.durationLocked) return;
-                    onUpdate({ duration: parseInt(e.target.value) || 0 });
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!item.durationLocked) {
-                      onUpdate({ durationLocked: true });
-                    }
-                  }}
-                  className={cn(
-                    "w-10 h-6",
-                    !item.durationLocked && "opacity-50 cursor-pointer"
-                  )}
-                  min={0}
+                <DurationLockButton
+                  isLocked={!!item.durationLocked}
+                  onToggle={handleToggleDurationLock}
+                  className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground transition-colors print:hidden"
+                  iconClassName="h-3 w-3"
                 />
+                <ContainerDurationInput item={item} onUpdate={onUpdate} className="w-10 h-6" />
               </div>
             <span className="text-xs text-muted-foreground mr-2">Min.</span>
             </div>
 
-            {/* Expand/collapse */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(!isExpanded);
-              }}
-              className="mt-1 text-muted-foreground hover:text-foreground transition-colors print:hidden"
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-5 w-5" />
-              ) : (
-                <ChevronRight className="h-5 w-5" />
-              )}
-            </button>
+            {/* Expand/collapse - desktop position */}
+            <ExpandToggle isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} className="hidden sm:inline-flex" />
 
             {/* Content */}
             <div className="flex-1 min-w-0">
               {/* Mobile duration - only on mobile */}
               <div className="sm:hidden flex items-center gap-2 mb-2 text-xs print:flex print:mb-0">
                 {timeDisplay && (
-                  <div className="flex items-center gap-1">
-                    {item.fixedStartTime && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onUpdate({ fixedStartTime: undefined }); }}
-                        className="text-primary print:hidden"
-                        title={t('block.unlockStartTime')}
-                      >
-                        <Lock className="h-3 w-3" />
-                      </button>
-                    )}
-                    <span
-                      className="font-medium text-primary time-badge is-clickable"
-                      onClick={(e) => { e.stopPropagation(); (onEditDetailsOnTime ?? onEditDetails)(); }}
-                    >{timeDisplay}</span>
-                  </div>
+                  <ItemStartTime
+                    {...startTimeProps}
+                    time={timeDisplay}
+                    className="flex items-center gap-1"
+                    unlockButtonClassName="inline-flex items-center justify-center rounded-md p-1.5 text-primary-text hover:text-foreground transition-colors print:hidden"
+                    lockIconClassName="h-3 w-3"
+                    timeButtonClassName="font-medium text-primary-text time-badge is-clickable"
+                  />
                 )}
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUpdate({ durationLocked: !item.durationLocked });
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors p-0.5 print:hidden"
-                    title={item.durationLocked ? t('dialog.unlockDuration') : t('planner.unlockDuration')}
-                  >
-                    {item.durationLocked ? (
-                      <Lock className="h-3.5 w-3.5 text-primary" />
-                    ) : (
-                      <Unlock className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                  <DurationInput
-                    value={item.duration}
-                    onChange={(e) => {
-                      if (!item.durationLocked) return;
-                      onUpdate({ duration: parseInt(e.target.value) || 0 });
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!item.durationLocked) {
-                        onUpdate({ durationLocked: true });
-                      }
-                    }}
-                    className={cn(
-                      "w-12 h-6 print:w-8",
-                      !item.durationLocked && "opacity-50 cursor-pointer"
-                    )}
-                    min={0}
+                  <DurationLockButton
+                    isLocked={!!item.durationLocked}
+                    onToggle={handleToggleDurationLock}
+                    className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground transition-colors print:hidden"
+                    iconClassName="h-3.5 w-3.5"
                   />
+                  <ContainerDurationInput item={item} onUpdate={onUpdate} className="w-12 h-6 print:w-8" />
                   <span className="text-muted-foreground">Min.</span>
                 </div>
               </div>
               
-              <div className="flex justify-between gap-4 items-start">
-                <div className="flex-1">
+              <div className="flex flex-wrap sm:flex-nowrap justify-between gap-2 sm:gap-4 items-start">
+                <div className="w-full sm:w-auto sm:flex-1 min-w-0">
                   <BlockTitleInput
                     item={item}
                     onUpdate={onUpdate}
@@ -308,10 +212,10 @@ export const GroupCard = ({
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
-                <div className="flex items-center gap-2 justify-end">
-                  {/* Group type label */}
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
+                  {/* Group type label - mobile: text flush with the title above */}
                   <span
-                    className="inline-block text-xs px-2 py-0.5 rounded-full font-medium bg-block-group-bg text-block-group"
+                    className="inline-block -ml-2 sm:ml-0 text-xs px-2 py-0.5 rounded-full font-medium bg-block-group-bg text-block-group-foreground"
                   >
                     Gruppe
                     {totalBlocks > 0 && (
@@ -325,12 +229,13 @@ export const GroupCard = ({
                   {/* Persons */}
                   <PersonAvatarList personIds={item.personIds || []} persons={persons} />
                   
-                  {/* Actions */}
+                  {/* Actions - always pinned to the right edge */}
                   <ItemActionsMenu
                     onEditDetails={onEditDetails}
                     onDuplicate={onDuplicate}
                     onSaveToLibrary={onSaveToLibrary}
                     onDelete={onDelete}
+                    className="ml-auto"
                   />
                 </div>
               </div>
@@ -361,87 +266,48 @@ export const GroupCard = ({
             >
               <div className="space-y-4">
                 {item.children.map((child, childIndex) => {
-                  const childBlockType = blockTypes.find(bt => bt.id === child.blockTypeId);
                   const childTimeDisplay = onCalculateChildTime?.(item, childIndex) || null;
+                  const gapMinutes = childIndex === 0
+                    ? calculateFixedStartGap(child.fixedStartTime, timeDisplay)
+                    : calculateFixedStartGap(
+                        child.fixedStartTime,
+                        onCalculateChildTime?.(item, childIndex - 1),
+                        item.children![childIndex - 1].duration,
+                      );
 
-                  // Compute gap before this child if it has a fixedStartTime
-                  let gapMinutes: number | null = null;
-                  if (child.fixedStartTime) {
-                    if (childIndex === 0 && timeDisplay) {
-                      const [ph, pm] = timeDisplay.split(':').map(Number);
-                      const [fh, fm] = child.fixedStartTime.split(':').map(Number);
-                      gapMinutes = fh * 60 + fm - (ph * 60 + pm);
-                    } else if (childIndex > 0 && onCalculateChildTime) {
-                      const prevChildTime = onCalculateChildTime(item, childIndex - 1);
-                      const prevChild = item.children![childIndex - 1];
-                      if (prevChildTime) {
-                        const [ph, pm] = prevChildTime.split(':').map(Number);
-                        const [fh, fm] = child.fixedStartTime.split(':').map(Number);
-                        gapMinutes = fh * 60 + fm - (ph * 60 + pm + prevChild.duration);
-                      }
-                    }
-                  }
-
-                  if (child.type === 'breakout') {
-                    return (
-                      <Fragment key={child.id}>
-                        <GapIndicator minutes={gapMinutes ?? 0} size="sm" />
-                        <BreakoutCard
-                        item={child}
-                        blockTypes={blockTypes}
-                        persons={persons}
-                        showFullPreviewText={showFullPreviewText}
-                        timeDisplay={childTimeDisplay}
-                        onUpdate={(updates) => onUpdateChild?.(child.id, updates)}
-                        onDelete={() => onDeleteChild?.(child.id)}
-                        onDuplicate={() => onDuplicateChild?.(child.id)}
-                        onSaveToLibrary={() => onSaveChildToLibrary?.(child.id)}
-                        onEditDetails={() => onEditChildDetails?.(child.id)}
-                        onEditDetailsOnTime={() => onEditChildDetailsOnTime?.(child.id)}
-                        onAddChild={(type, laneIndex) => onAddToChild?.(child.id, type, laneIndex)}
-                        onUpdateChild={onUpdateChild}
-                        onDeleteChild={onDeleteChild}
-                        onDuplicateChild={onDuplicateChild}
-                        onSaveChildToLibrary={onSaveChildToLibrary}
-                        onEditChildDetails={onEditChildDetails}
-                        onEditChildDetailsOnTime={onEditChildDetailsOnTime}
-                        onCalculateChildTime={onCalculateChildTime}
-                        parentId={item.id}
-                        isNested={false}
-                        depth={depth + 1}
-                        dropIndicator={dropIndicator}
-                        playState={childPlayStates?.get(child.id)}
-                        childPlayStates={childPlayStates}
-                        />
-                      </Fragment>
-                    );
-                  }
-                  
-                  // Render block
                   return (
                     <Fragment key={child.id}>
                       <GapIndicator minutes={gapMinutes ?? 0} size="sm" />
-                      <BlockCard
-                      item={child}
-                      blockType={childBlockType}
-                      blockTypes={blockTypes}
-                      persons={persons}
-                      showFullPreviewText={showFullPreviewText}
-                      timeDisplay={childTimeDisplay}
-                      onUpdate={(updates) => onUpdateChild?.(child.id, updates)}
-                      onDelete={() => onDeleteChild?.(child.id)}
-                      onDuplicate={() => onDuplicateChild?.(child.id)}
-                      onSaveToLibrary={() => onSaveChildToLibrary?.(child.id)}
-                      onEditDetails={() => onEditChildDetails?.(child.id)}
-                      onEditDetailsOnTime={() => onEditChildDetailsOnTime?.(child.id)}
-                      onCreateBelow={(childItem) => onCreateBelowChild?.(childItem.id)}
-                      onDeleteAndFocusPrev={(childItem) => onDeleteChildAndFocusPrev?.(childItem.id)}
-                      parentId={item.id}
-                      parentType="group"
-                      isNested={false}
-                      depth={depth + 1}
-                      playState={childPlayStates?.get(child.id)}
-                    />
+                      {child.type === 'breakout' ? (
+                        <BreakoutCard
+                          {...childCallbacks}
+                          {...bindChildActions(child, childCallbacks)}
+                          onCreateBelowChild={undefined}
+                          onDeleteChildAndFocusPrev={undefined}
+                          item={child}
+                          blockTypes={blockTypes}
+                          persons={persons}
+                          showFullPreviewText={showFullPreviewText}
+                          timeDisplay={childTimeDisplay}
+                          onAddChild={(type, laneIndex) => onAddToChild?.(child.id, type, laneIndex)}
+                          parentId={item.id}
+                          playState={childPlayStates?.get(child.id)}
+                          childPlayStates={childPlayStates}
+                        />
+                      ) : (
+                        <BlockCard
+                          {...bindChildBlockActions(child, childCallbacks)}
+                          item={child}
+                          blockType={blockTypes.find((bt) => bt.id === child.blockTypeId)}
+                          blockTypes={blockTypes}
+                          persons={persons}
+                          showFullPreviewText={showFullPreviewText}
+                          timeDisplay={childTimeDisplay}
+                          parentId={item.id}
+                          parentType="group"
+                          playState={childPlayStates?.get(child.id)}
+                        />
+                      )}
                     </Fragment>
                   );
                 })}
@@ -465,36 +331,27 @@ export const GroupCard = ({
           {onAddChild && (!isLg || !item.children || item.children.length === 0) && (
             <div className="my-3 print:hidden">
               <div className="flex gap-2 justify-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "gap-2 text-xs hover:text-foreground",
-                    item.children.length > 0 ? "text-muted-foreground" : "text-foreground"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddChild('block');
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                  {t('block.addBlock')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "gap-2 text-xs hover:text-foreground",
-                    item.children.length > 0 ? "text-muted-foreground" : "text-foreground"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddChild('breakout');
-                  }}
-                >
-                  <SquareSplitHorizontal className="h-4 w-4" />
-                  {t('sidebar.addBreakout')}
-                </Button>
+                {([
+                  { type: 'block', icon: Plus, label: t('block.addBlock') },
+                  { type: 'breakout', icon: SquareSplitHorizontal, label: t('sidebar.addBreakout') },
+                ] as const).map(({ type, icon: Icon, label }) => (
+                  <Button
+                    key={type}
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "gap-2 text-xs hover:text-foreground",
+                      item.children.length > 0 ? "text-muted-foreground" : "text-foreground"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddChild(type);
+                    }}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </Button>
+                ))}
               </div>
             </div>
           )}

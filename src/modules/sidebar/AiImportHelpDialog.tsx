@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Check, Copy, ExternalLink, Loader2, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -8,8 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/primitives/dialog';
-import { Button } from '@/components/primitives/button';
-import { Textarea } from '@/components/primitives/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/primitives/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Drawer,
@@ -18,10 +17,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/primitives/drawer';
+import { AiImportPathConnect } from '@/modules/sidebar/AiImportPathConnect';
+import { AiImportPathManual } from '@/modules/sidebar/AiImportPathManual';
+import { AiImportPathAgent } from '@/modules/sidebar/AiImportPathAgent';
 
-const SCHEMA_URL = 'https://sessionplan.de/import-schema.md';
-const API_SKILL_URL = 'https://sessionplan.de/data/sessionplan-api.md';
-const CUSTOM_GPT_URL = import.meta.env.VITE_SESSIONPLAN_CUSTOM_GPT_URL as string | undefined;
+type AiPath = 'connect' | 'manual' | 'agent';
+const DEFAULT_PATH: AiPath = 'connect';
 
 interface AiImportHelpDialogProps {
   open: boolean;
@@ -30,155 +31,117 @@ interface AiImportHelpDialogProps {
   onImportFile?: (file: File) => Promise<void>;
 }
 
+/**
+ * Orchestrator for the AI-assisted session import dialog.
+ *
+ * Owns the dialog/drawer shell, the tab state, the manual-tab state (so user
+ * input survives tab switches — Radix TabsContent unmounts inactive panels),
+ * and the tracking of tab views. Delegates pure presentation to one of three
+ * "path" components. `onImportText` / `onImportFile` are only relevant for the
+ * manual path.
+ */
 export const AiImportHelpDialog = ({ open, onOpenChange, onImportText, onImportFile }: AiImportHelpDialogProps) => {
   const { t } = useTranslation('common');
   const isMobile = useIsMobile();
-  const [copied, setCopied] = useState(false);
+  const [activePath, setActivePath] = useState<AiPath>(DEFAULT_PATH);
+
+  // Manual-tab state lives here (not in AiImportPathManual) so the user-typed
+  // response, copy-button feedback, validation error and picker ref survive
+  // Radix unmounting inactive TabsContent panels.
   const [response, setResponse] = useState('');
+  const [manualCopied, setManualCopied] = useState(false);
   const [importError, setImportError] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const prompt = t('settings.aiPrompt', { schemaUrl: SCHEMA_URL });
 
-  const handleCopy = async () => {
-    let copiedSuccessfully = false;
-    try {
-      await navigator.clipboard.writeText(prompt);
-      copiedSuccessfully = true;
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = prompt;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      copiedSuccessfully = document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
-    if (!copiedSuccessfully) return;
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  };
+  useEffect(() => {
+    // Always record the currently active tab whenever the dialog becomes
+    // visible — this covers both the first open and re-opens after a tab
+    // switch (otherwise the default tab would mask the user's choice).
+    if (!open) return;
+  }, [open, activePath]);
 
-  const handleImport = async () => {
-    if (!response.trim() || !onImportText) return;
-    setIsImporting(true);
+  const handleManualImported = useCallback(() => {
+    setResponse('');
     setImportError(false);
-    try {
-      await onImportText(response);
-      setResponse('');
-      onOpenChange(false);
-    } catch {
-      setImportError(true);
-    } finally {
-      setIsImporting(false);
-    }
-  };
+    setIsImporting(false);
+    onOpenChange(false);
+  }, [onOpenChange]);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file || !onImportFile) return;
+  const handleImportText = useCallback(
+    async (text: string) => {
+      if (!onImportText) return;
+      setIsImporting(true);
+      setImportError(false);
+      try {
+        await onImportText(text);
+        handleManualImported();
+      } catch {
+        setImportError(true);
+        setIsImporting(false);
+      }
+    },
+    [onImportText, handleManualImported]
+  );
 
-    setIsImporting(true);
-    try {
-      await onImportFile(file);
-      onOpenChange(false);
-    } finally {
-      setIsImporting(false);
-    }
-  };
+  const handleImportFile = useCallback(
+    async (file: File) => {
+      if (!onImportFile) return;
+      setIsImporting(true);
+      try {
+        await onImportFile(file);
+        handleManualImported();
+      } catch {
+        // File import failures show the same error banner as text imports;
+        // don't close the dialog so the user can retry with a different file.
+        setImportError(true);
+        setIsImporting(false);
+      }
+    },
+    [onImportFile, handleManualImported]
+  );
 
-  const body = (
-    <div className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="ai-prompt" className="text-sm font-medium">
-              {t('settings.aiPromptLabel')}
-            </label>
-            <Textarea id="ai-prompt" value={prompt} readOnly className="min-h-28 resize-none" />
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
-            <Button type="button" onClick={handleCopy} className="w-full sm:w-auto">
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? t('settings.aiPromptCopied') : t('settings.aiCopyPrompt')}
-            </Button>
-            <a
-              href={SCHEMA_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            >
-              {t('settings.aiSchemaLink')}
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </div>
-          {CUSTOM_GPT_URL && (
-            <a
-              href={CUSTOM_GPT_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              {t('settings.aiOpenCustomGpt')}
-            </a>
-          )}
-          <div className="space-y-2 border-t pt-4">
-            <label htmlFor="ai-response" className="text-sm font-medium">
-              {t('settings.aiResponseLabel')}
-            </label>
-            <Textarea
-              id="ai-response"
-              value={response}
-              onChange={(event) => {
-                setResponse(event.target.value);
-                setImportError(false);
-              }}
-              placeholder={t('settings.aiResponsePlaceholder')}
-              className="min-h-36 font-mono text-xs"
-              spellCheck={false}
-            />
-            {importError && <p className="text-sm text-destructive">{t('settings.aiResponseError')}</p>}
-            <div className="flex justify-between gap-2 flex-col sm:flex-row items-start sm:items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isImporting || !onImportFile}
-                className="w-full sm:w-auto"
-              >
-                {t('settings.aiChooseFile')}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                onClick={handleImport}
-                disabled={!response.trim() || isImporting || !onImportText}
-                className="w-full sm:w-auto"
-              >
-                {isImporting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {t('settings.aiImportResponse')}
-             </Button>
-            </div>
-          </div>
-          <div className="space-y-2 border-t pt-4">
-            <a
-              href={API_SKILL_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-            >
-              {t('settings.aiApiSkillLink')}
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </div>
+  const tabs = (
+    <Tabs
+      value={activePath}
+      onValueChange={(value) => setActivePath(value as AiPath)}
+      className="w-full"
+    >
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="connect" className="h-8 px-2 text-xs sm:px-3 sm:text-sm">
+          {isMobile ? t('settings.aiTabConnectShort') : t('settings.aiTabConnect')}
+        </TabsTrigger>
+        <TabsTrigger value="manual" className="h-8 px-2 text-xs sm:px-3 sm:text-sm">
+          {isMobile ? t('settings.aiTabManualShort') : t('settings.aiTabManual')}
+        </TabsTrigger>
+        <TabsTrigger value="agent" className="h-8 px-2 text-xs sm:px-3 sm:text-sm">
+          {isMobile ? t('settings.aiTabAgentShort') : t('settings.aiTabAgent')}
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="connect" className="mt-4 focus-visible:outline-none">
+        <AiImportPathConnect />
+      </TabsContent>
+      <TabsContent value="manual" className="mt-4 focus-visible:outline-none">
+        <AiImportPathManual
+          response={response}
+          onResponseChange={(value) => {
+            setResponse(value);
+            setImportError(false);
+          }}
+          copied={manualCopied}
+          onCopiedChange={setManualCopied}
+          importError={importError}
+          isImporting={isImporting}
+          onImportText={onImportText ? handleImportText : undefined}
+          onImportFile={onImportFile ? handleImportFile : undefined}
+          onPickFile={() => fileInputRef.current?.click()}
+          fileInputRef={fileInputRef}
+        />
+      </TabsContent>
+      <TabsContent value="agent" className="mt-4 focus-visible:outline-none">
+        <AiImportPathAgent />
+      </TabsContent>
+    </Tabs>
   );
 
   if (isMobile) {
@@ -187,12 +150,12 @@ export const AiImportHelpDialog = ({ open, onOpenChange, onImportText, onImportF
         <DrawerContent className="max-h-[92dvh]">
           <DrawerHeader className="text-left">
             <DrawerTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <Sparkles className="h-5 w-5 text-primary-text" />
               {t('settings.aiTitle')}
             </DrawerTitle>
             <DrawerDescription>{t('settings.aiDescription')}</DrawerDescription>
           </DrawerHeader>
-          <div className="overflow-y-auto px-4 pb-6">{body}</div>
+          <div className="overflow-y-auto px-4 pb-6">{tabs}</div>
         </DrawerContent>
       </Drawer>
     );
@@ -200,15 +163,15 @@ export const AiImportHelpDialog = ({ open, onOpenChange, onImportText, onImportF
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-xl max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkles className="h-5 w-5 text-primary-text" />
             {t('settings.aiTitle')}
           </DialogTitle>
           <DialogDescription>{t('settings.aiDescription')}</DialogDescription>
         </DialogHeader>
-        {body}
+        <div className="flex-1 overflow-y-auto px-6 pb-6">{tabs}</div>
       </DialogContent>
     </Dialog>
   );

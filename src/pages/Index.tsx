@@ -14,7 +14,9 @@ import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { LandingPageContent } from '@/types/landingPage';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocaleRoot } from '@/lib/localeUtils';
-import { deriveFaqPageSchema, mergeStructuredData } from '@/lib/landingPageSeo';
+import { appendGraphNodes, deriveFaqPageSchema, mergeStructuredData, withAggregateRating, withApplicationSameAs } from '@/lib/landingPageSeo';
+import { siteApplicationSameAs } from '@/integrations/site';
+import { getOrganizationSchema, getWebSiteSchema } from '@/lib/metaConfig';
 
 const Index = () => {
   const content = useLoaderData() as LandingPageContent;
@@ -30,13 +32,22 @@ const Index = () => {
 
   const structuredData = useMemo(
     () =>
-      mergeStructuredData(
-        content.structuredData,
-        deriveFaqPageSchema(
-          content.emptyStateFallback?.seoContent?.sections ?? content.seoContent?.sections,
+      appendGraphNodes(
+        withApplicationSameAs(
+          withAggregateRating(
+            mergeStructuredData(
+              content.structuredData,
+              deriveFaqPageSchema(
+                content.emptyStateFallback?.seoContent?.sections ?? content.seoContent?.sections,
+              ),
+            ),
+            content.siteStats?.rating,
+          ),
+          siteApplicationSameAs,
         ),
+        [getOrganizationSchema(), getWebSiteSchema()],
       ),
-    [content.structuredData, content.emptyStateFallback, content.seoContent],
+    [content.structuredData, content.emptyStateFallback, content.seoContent, content.siteStats],
   );
 
   return (

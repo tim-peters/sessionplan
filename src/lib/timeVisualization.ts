@@ -17,6 +17,7 @@
  */
 import { WorkshopItem, BlockType } from '@/types/workshop';
 import { timeToMinutes } from '@/lib/playModeUtils';
+import { formatMinAsHHMM } from '@/lib/clock-time';
 
 export type SegmentKind = 'block' | 'breakout' | 'group';
 
@@ -226,12 +227,7 @@ export function hasRenderableSegments(segments: Segment[]): boolean {
  * The hour component is wrapped modulo 24 — sessions that cross midnight
  * roll over. We accept this as the simpler, less-surprising behaviour.
  */
-export function formatMinAsHHMM(min: number): string {
-  const total = Math.max(0, Math.round(min));
-  const h = Math.floor(total / 60) % 24;
-  const m = total % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
+export { formatMinAsHHMM };
 
 /**
  * Resolve the "current minute" of a running Live Mode session for the time-
@@ -462,16 +458,3 @@ export function buildBlockAnchors(
   }
   return anchors;
 }
-
-// ── Colour helpers ─────────────────────────────────────────────────────────────
-
-/** Hex color matcher — accepts `#rgb` (3-digit) and `#rrggbb` (6-digit). */
-const HEX_COLOR_RE = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-
-/** Parse a 3-digit hex (#abc → #aabbcc) to a 6-digit hex string. */
-const expandShortHex = (s: string): string => {
-  const r = s[0];
-  const g = s[1];
-  const b = s[2];
-  return r + r + g + g + b + b;
-};

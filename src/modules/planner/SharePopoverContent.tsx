@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/primitives/switch';
 import { Label } from '@/components/primitives/label';
@@ -6,7 +5,6 @@ import { Separator } from '@/components/primitives/separator';
 import { Loader2, Trash2 } from 'lucide-react';
 import { CopyButton } from './CopyButton';
 import { Button } from '@/components/primitives/button';
-import { useCopiedState } from '@/hooks/useCopiedState';
 
 interface SharePopoverContentProps {
   serverKey: string | null;
@@ -14,12 +12,14 @@ interface SharePopoverContentProps {
   onToggleServerMode: (checked: boolean) => void;
   onCopyReadOnlyLink: () => void;
   onCopyEditorLink: () => void;
-  /** Copied-state of the share button / hash-link copy (owned by the parent). Used by the `!serverKey` branch. */
+  /** Confirmation for the currently selected link, owned by the sharing controller. */
   wasCopied?: boolean;
   canEditServerSession: boolean;
   isLegacyServerSession: boolean;
   onMigrateLegacyLink: () => Promise<void>;
-  snapshotUrl?: string;
+  legacyMigrationStatus: 'new' | 'existing' | 'missing';
+  allowEditing: boolean;
+  onAllowEditingChange: (checked: boolean) => void;
   wasCopiedSnapshot?: boolean;
   onCopySnapshotLink?: () => void;
 }
@@ -30,34 +30,21 @@ export const SharePopoverContent = ({
   onToggleServerMode,
   onCopyReadOnlyLink,
   onCopyEditorLink,
-  wasCopied: wasCopiedHashLink,
+  wasCopied,
   canEditServerSession,
   isLegacyServerSession,
   onMigrateLegacyLink,
-  snapshotUrl,
+  legacyMigrationStatus,
+  allowEditing,
+  onAllowEditingChange,
   wasCopiedSnapshot,
   onCopySnapshotLink,
 }: SharePopoverContentProps) => {
   const { t } = useTranslation('common');
-  const [allowEditing, setAllowEditing] = useState(false);
-  // Single copied-state for the adaptive dynamic-link copy button so the
-  // "copied" label never dangles from a stale mode after toggling.
-  const [wasCopied, triggerCopied, resetCopied] = useCopiedState();
-
-  // Restore the auto-flash on the copy button when a dynamic link has just
-  // been enabled (clipboard already contains the new link at that point).
-  const prevServerKeyRef = useRef(serverKey);
-  useEffect(() => {
-    if (prevServerKeyRef.current === null && serverKey !== null) triggerCopied();
-    prevServerKeyRef.current = serverKey;
-  }, [serverKey, triggerCopied]);
-
-  // Effective mode for the adaptive copy button.
-  const copyAsEditor = isLegacyServerSession || allowEditing;
+  const copyAsEditor = canEditServerSession && (isLegacyServerSession || allowEditing);
   const handleCopyDynamicLink = () => {
     if (copyAsEditor) onCopyEditorLink();
     else onCopyReadOnlyLink();
-    triggerCopied();
   };
 
   return (
@@ -68,7 +55,7 @@ export const SharePopoverContent = ({
           <p className="text-sm font-medium">{t('planner.urlLinkLabel')}</p>
           <p className="text-xs text-muted-foreground">{t('planner.urlLinkDescription')}</p>
           <CopyButton
-            copied={wasCopiedHashLink ?? false}
+            copied={wasCopied ?? false}
             label={t('planner.copyLink')}
             copiedLabel={t('planner.copyLinkCopied')}
             onClick={onCopyEditorLink}
@@ -117,12 +104,12 @@ export const SharePopoverContent = ({
                 aria-label={t('planner.deleteDynamicLink')}
                 title={t('planner.deleteDynamicLink')}
               >
-                <Trash2 className="h-4 w-4 text-destructive" />
+                <Trash2 className="h-4 w-4 text-destructive-text" />
               </Button>
             )}
           </div>
           <CopyButton
-            copied={wasCopied}
+            copied={wasCopied ?? false}
             variant="outline"
             label={copyAsEditor ? t('planner.copyEditorLink') : t('planner.copyReaderLink')}
             copiedLabel={copyAsEditor ? t('planner.copyEditorLinkCopied') : t('planner.copyReaderLinkCopied')}
@@ -145,20 +132,17 @@ export const SharePopoverContent = ({
               <Switch
                 id="allow-editing-toggle"
                 checked={allowEditing}
-                onCheckedChange={(checked) => {
-                  setAllowEditing(checked);
-                  // The clipboard content of the last copy no longer matches
-                  // the new mode — drop the "kopiert" state so the label and
-                  // the copy target switch together.
-                  resetCopied();
-                }}
+                onCheckedChange={onAllowEditingChange}
               />
             </div>
           )}
           {isLegacyServerSession && (
             <Button variant="outline" className="w-full" onClick={onMigrateLegacyLink} disabled={isEnablingServerMode}>
-              {t('planner.migrateLegacyLink')}
+              {t(legacyMigrationStatus === 'existing' ? 'planner.openMigratedLink' : legacyMigrationStatus === 'missing' ? 'planner.recreateMigratedLink' : 'planner.migrateLegacyLink')}
             </Button>
+          )}
+          {isLegacyServerSession && legacyMigrationStatus === 'missing' && (
+            <p className="text-xs text-muted-foreground">{t('planner.migratedLinkMissing')}</p>
           )}
           <Separator className="!my-5 sm:!my-2" />
           {onCopySnapshotLink && (

@@ -107,7 +107,7 @@ const parseFormattingInner = (text: string, enclosing: FormatKind[], keyRef: Par
             href: match[7],
             target: '_blank',
             rel: 'noopener noreferrer',
-            className: 'text-primary hover:underline',
+            className: 'inline-link',
             onClick: (e: React.MouseEvent) => e.stopPropagation(),
           },
           hasFormatMatch(linkText) ? parseFormattingInner(linkText, [...enclosing, 'link'], keyRef) : linkText,
@@ -146,11 +146,11 @@ export type FormatKind = 'bold' | 'italic' | 'link';
  */
 export type FormatToken =
   | { kind: 'plain'; text: string; styles?: FormatKind[] }
-  | { kind: 'marker'; text: string }
+  | { kind: 'marker'; text: string; styles?: undefined }
   | { kind: 'bold'; text: string; styles?: FormatKind[] }
   | { kind: 'italic'; text: string; styles?: FormatKind[] }
   | { kind: 'link-text'; text: string; styles?: FormatKind[] }
-  | { kind: 'link-url'; text: string };
+  | { kind: 'link-url'; text: string; styles?: undefined };
 
 /**
  * Splits text into styling tokens for live-formatting overlays (e.g.

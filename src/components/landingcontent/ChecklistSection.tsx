@@ -19,7 +19,7 @@ export const ChecklistSection = ({ section }: ChecklistSectionProps) => {
               <li key={item.label} className="flex items-start gap-3">
                 <span
                   aria-hidden="true"
-                  className="mt-1 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                  className="mt-1 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-text"
                 >
                   <Check className="h-4 w-4" />
                 </span>
@@ -27,7 +27,7 @@ export const ChecklistSection = ({ section }: ChecklistSectionProps) => {
                   <p className="text-base md:text-lg font-semibold text-foreground">{item.label}</p>
                   {item.description && (
                     <p
-                      className="mt-1 text-sm md:text-base text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline"
+                      className="mt-1 text-sm md:text-base text-muted-foreground [&_a]:text-primary-text [&_a]:underline-offset-4 [&_a]:underline [&_a:hover]:decoration-2"
                       dangerouslySetInnerHTML={{ __html: item.description }}
                     />
                   )}

@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
+import typography from "@tailwindcss/typography";
 
 export default {
   darkMode: ["class"],
@@ -19,7 +21,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Archivo', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -30,6 +32,9 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          text: "hsl(var(--primary-text))",
+          hover: "hsl(var(--primary-hover))",
+          active: "hsl(var(--primary-active))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -38,6 +43,9 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          text: "hsl(var(--destructive-text))",
+          hover: "hsl(var(--destructive-hover))",
+          active: "hsl(var(--destructive-active))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -46,6 +54,7 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          active: "hsl(var(--accent-active))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -78,8 +87,10 @@ export default {
           "energizer-bg": "hsl(var(--block-energizer-bg))",
           group: "hsl(var(--block-group))",
           "group-bg": "hsl(var(--block-group-bg))",
+          "group-foreground": "hsl(var(--block-group-foreground))",
           breakout: "hsl(var(--block-breakout))",
           "breakout-bg": "hsl(var(--block-breakout-bg))",
+          "breakout-foreground": "hsl(var(--block-breakout-foreground))",
         },
       },
       borderRadius: {
@@ -108,5 +119,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: [animate, typography],
 } satisfies Config;

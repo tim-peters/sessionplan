@@ -23,6 +23,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, fireEvent, createEvent, act } from '@testing-library/react';
 import { FormattedTextField } from '@/components/atoms/FormattedTextField';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/primitives/dialog';
 
 /** Minimal stateful harness so onChange can update the value via React. */
 const Harness = ({
@@ -119,6 +120,19 @@ describe('FormattedTextField — toolbar visibility', () => {
 });
 
 describe('FormattedTextField — toolbar interactions', () => {
+  it('keeps the toolbar inside the modal scope and applies bold without closing the dialog', () => {
+    render(<Dialog open><DialogContent><DialogTitle>Bearbeiten</DialogTitle><DialogDescription>Notizen formatieren</DialogDescription><Harness initialValue="hello world" /></DialogContent></Dialog>);
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    act(() => textarea.focus());
+    textarea.setSelectionRange(0, 5);
+    fireEvent.mouseUp(textarea);
+    const bold = screen.getByTitle(/Fett/);
+    expect(screen.getByRole('dialog').contains(bold)).toBe(true);
+    fireEvent.click(bold);
+    expect(textarea.value).toBe('*hello* world');
+    expect(screen.getByRole('dialog')).toBeTruthy();
+  });
+
   it('clicking Bold with a selection wraps ONLY the selection and leaves surrounding text untouched', () => {
     const onChange = vi.fn();
     render(<Harness initialValue="hello world" onChange={onChange} />);

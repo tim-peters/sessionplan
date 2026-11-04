@@ -1,129 +1,24 @@
-@import '@fontsource-variable/familjen-grotesk/wght.css';
+@import '../public/assets/ui-theme.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 98%;
-    --foreground: 220 20% 10%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
-
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 20% 10%;
-
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 10% 46%;
-
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 20% 10%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 221 83% 53%;
-
-    --radius: 0.625rem;
-
-    /* Block type colors */
-    --block-input: 217 91% 60%;
-    --block-input-bg: 217 91% 97%;
-    --block-activity: 142 71% 45%;
-    --block-activity-bg: 142 71% 97%;
-    --block-break: 220 9% 46%;
-    --block-break-bg: 220 9% 96%;
-    --block-discussion: 25 95% 53%;
-    --block-discussion-bg: 25 95% 97%;
-    --block-energizer: 270 91% 65%;
-    --block-energizer-bg: 270 91% 97%;
-    --block-group: 258 90% 66%;
-    --block-group-bg: 258 91% 98.5%;
-    --block-breakout: 330 81% 60%;
-    --block-breakout-bg: 330 41% 97%;
-
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 20% 10%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 92%;
-    --sidebar-accent-foreground: 220 20% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221 83% 53%;
-
-    /* Custom properties */
-    --header-height: 4rem;
-    --sidebar-width: 280px;
-    --timeline-max-width: 800px;
-  }
-
-  .dark {
-    --background: 220 20% 10%;
-    --foreground: 0 0% 98%;
-
-    --card: 220 18% 14%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 220 18% 14%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 220 20% 10%;
-
-    --secondary: 220 14% 18%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 220 14% 18%;
-    --muted-foreground: 220 10% 60%;
-
-    --accent: 220 14% 18%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 220 14% 20%;
-    --input: 220 14% 20%;
-    --ring: 217 91% 60%;
-
-    /* Block type colors - dark mode */
-    --block-input-bg: 217 91% 15%;
-    --block-activity-bg: 142 71% 12%;
-    --block-break-bg: 220 9% 18%;
-    --block-discussion-bg: 25 95% 15%;
-    --block-energizer-bg: 270 91% 15%;
-    --block-group-bg: 258 30% 10%;
-    --block-breakout-bg: 330 30% 8%;
-
-    --sidebar-background: 220 18% 12%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 220 20% 10%;
-    --sidebar-accent: 220 14% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 14% 20%;
-  }
-}
 
 @layer base {
+  :where(a[href]):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Familjen Grotesk', system-ui, sans-serif;
+    font-family: 'Archivo', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -132,6 +27,68 @@
 }
 
 @layer components {
+  .ui-focus:focus-visible,
+  .editable-field:focus-visible,
+  .icon-button:focus-visible,
+  .formatted-field:focus-within {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  .ui-button {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  .dialog-field-label { min-height: 1.75rem; }
+
+  .navigation-card:focus-visible { border-radius: var(--radius); }
+
+  .inline-link {
+    @apply text-primary-text underline underline-offset-4 hover:decoration-2 active:text-foreground;
+  }
+
+  .nav-link {
+    @apply underline-offset-4 hover:underline active:text-primary-text transition-colors;
+  }
+
+  .is-past { @apply grayscale text-muted-foreground; }
+
+  .sidebar-action {
+    opacity: 1;
+  }
+
+  .selection-outline {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  .selection-outline:focus-visible { outline-width: 3px; outline-offset: 4px; }
+
+  .content-table {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .content-table:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .sidebar-action { opacity: 0; }
+    .sidebar-item:hover .sidebar-action,
+    .sidebar-item:focus-within .sidebar-action,
+    .sidebar-action:focus-visible { opacity: 1; }
+  }
+
+  @media (pointer: coarse) {
+    .ui-button:not(.color-swatch) { min-width: 2.75rem; min-height: 2.75rem; }
+    .color-swatch { min-width: 2rem; min-height: 2rem; }
+    .dialog-field-label { min-height: 2.75rem; }
+  }
+
   .timeline-connector {
     @apply absolute left-6 top-0 bottom-0 w-0.5 bg-border;
   }
@@ -140,9 +97,14 @@
     @apply outline outline-black/0 relative bg-card rounded-sm rounded-r-lg overflow-hidden border shadow-sm transition-all duration-200;
   }
 
-  .block-card:hover {
+  .block-card:hover,
+  .session-history-card:hover {
     @apply outline outline-black/5 dark:outline-white/5;
   }
+
+  .session-history-card { @apply outline outline-transparent; }
+
+  .editable-field-no-fill:hover { background-color: transparent !important; }
 
   .block-card.dragging {
     @apply shadow-xl ring-2 ring-primary/20;
@@ -156,6 +118,11 @@
     @apply mt-3 space-y-1 bg-[rgb(60,90,160,0.04)] dark:bg-black/15 -mx-4 pl-4 py-2 border-b border-sidebar-border;
   }
 
+  .sidebar-panel { padding: 1rem; }
+  .sidebar-library-label { margin-top: 1rem; padding-top: .75rem; }
+  .planner-header-content { @apply px-4 pb-3 md:py-2.5; }
+  .planner-chrome-row { @apply md:pt-3; }
+
   .sidebar-item {
     @apply flex items-center gap-3 mr-2 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer;
   }
@@ -164,8 +131,18 @@
     @apply bg-sidebar-accent;
   }
 
+  @media (pointer: coarse) {
+    /* A 44px action plus vertical row padding previously made touch rows 60px. */
+    .sidebar-item { min-height: 2.75rem; padding-top: 0; padding-bottom: 0; }
+    .sidebar-panel { padding-block: .5rem; }
+    .sidebar-section { @apply mt-2 space-y-0 py-1; }
+    .sidebar-library-label { margin-top: .5rem; padding-top: .25rem; }
+    .planner-header-content { padding-bottom: .25rem; padding-top: .25rem; }
+    .session-title-input { height: 2rem; align-self: center; }
+  }
+
   .inline-edit {
-    @apply bg-transparent border-none outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 -mx-1;
+    @apply bg-transparent border-none outline-none focus:ring-2 focus:ring-ring rounded px-1 -mx-1;
   }
 
   /* Editable-in-place affordance for planner text fields (workshop/block/group/
@@ -227,7 +204,7 @@
   }
 
   .icon-button {
-    @apply flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors;
+    @apply flex items-center justify-center w-8 h-8 rounded-md hover:bg-accent active:bg-accent-active transition-colors;
   }
 
   /* Group Container Styles */
@@ -291,6 +268,15 @@
     border-radius: 0.5rem;
   }
 
+  .prose :where(a):not(.cta-button):not(.cta-box a:not(.minor)) {
+    @apply text-primary-text underline underline-offset-4 hover:decoration-2 active:text-foreground;
+  }
+
+  .prose table { @apply text-foreground; }
+  .prose thead { @apply bg-muted text-foreground; }
+  .prose tbody tr:nth-child(even) { @apply bg-muted/50; }
+  .prose :where(th, td) { @apply border-border; }
+
   /* Blog Content Boxes - must work within prose */
   .prose .cta-box {
     @apply -mx-6 my-6 mt-10 p-6 md:pr-10 md:rounded-md bg-primary/10 md:border-2 border-primary/30 shadow-sm;
@@ -319,15 +305,15 @@
   }
 
   .prose .cta-box a:not(.minor) {
-    @apply font-semibold text-primary hover:text-primary/80 no-underline px-4 py-2 rounded my-2 mt-4 bg-background inline-block shadow-md transition-colors;
-  }
-
-  .prose .cta-box a:hover {
-    @apply no-underline;
+    @apply inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 py-2 my-2 mt-4 text-sm font-medium text-primary-foreground no-underline transition-colors;
   }
 
   .prose .cta-box a:not(.minor):hover {
-    @apply bg-primary text-primary-foreground;
+    @apply bg-primary-hover text-primary-foreground no-underline;
+  }
+
+  .prose .cta-box a:not(.minor):active {
+    @apply bg-primary-active;
   }
 
   .prose .at-a-glance-box {
@@ -397,40 +383,16 @@
     margin-bottom: 0;
   }
 
-  /* CTA Button */
   .prose .cta-button {
-    display: inline-block;
-    padding: 0.875rem 2rem;
-    margin: 1.5rem 0;
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    font-weight: 600;
-    font-size: 1rem;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 0.5rem;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    @apply inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-8 py-2 my-6 text-sm font-medium text-primary-foreground no-underline transition-colors;
   }
 
   .prose .cta-button:hover {
-    background: hsl(var(--primary));
-    opacity: 0.9;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    text-decoration: none;
-    color: hsl(var(--primary-foreground));
+    @apply bg-primary-hover text-primary-foreground no-underline;
   }
 
   .prose .cta-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  /* CTA Button centered */
-  .prose .text-center .cta-button,
-  .prose p.text-center .cta-button {
-    display: inline-block;
+    @apply bg-primary-active;
   }
 
   /* Dark mode adjustments for blog boxes */
@@ -601,6 +563,10 @@
     -moz-appearance: textfield !important;
   }
 
+  .ui-focus:focus-visible,
+  .editable-field:focus-visible,
+  .formatted-field:focus-within { outline: none !important; }
+
   /* Hide input focus indicators */
   input:focus,
   textarea:focus {
@@ -622,5 +588,14 @@
   /* Force expand all collapsible sections */
   [data-state="closed"] {
     display: block !important;
+  }
+}
+
+/* Keep runtime status visible without continuous or spatial motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
   }
 }

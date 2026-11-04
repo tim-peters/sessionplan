@@ -7,6 +7,7 @@ import {
   templatesIndexLoader,
   landingPageLoader,
   landingPagesLoader,
+  fetchJsonOrThrow,
 } from '@/lib/routeLoaders';
 import { mockFetchResponse, mockFetchJsonResponse } from './test-helpers';
 
@@ -208,6 +209,21 @@ describe('homePageLoader', () => {
     await homePageLoader({ request: fakeRequest('/') } as never);
     expect(fetchMock).toHaveBeenCalledWith('/data/landing/home.json');
   });
+
+  it('attaches site stats for the social proof badge', async () => {
+    const stats = { rating: { value: 4.8, count: 4 }, monthlyUsers: 2000 };
+    globalThis.fetch = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      text: async () => JSON.stringify(url.endsWith('site-stats.json') ? stats : { slug: 'home' }),
+    })) as unknown as typeof fetch;
+
+    await expect(homePageLoader({ request: fakeRequest('/') } as never)).resolves.toEqual({
+      slug: 'home',
+      siteStats: stats,
+    });
+  });
 });
 
 describe('templateArticleLoader', () => {
@@ -396,7 +412,7 @@ describe('fetchJsonOrThrow retries transient failures (runtime resilience)', () 
       .mockResolvedValueOnce(jsonResponse({ slug: 'home', title: 'Home' }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const promise = homePageLoader({ request: fakeRequest('/') } as never);
+    const promise = fetchJsonOrThrow('/data/landing/home.json', 'Home page content not found');
     await vi.advanceTimersByTimeAsync(250);
 
     await expect(promise).resolves.toEqual({ slug: 'home', title: 'Home' });
@@ -417,7 +433,7 @@ describe('fetchJsonOrThrow retries transient failures (runtime resilience)', () 
       .mockResolvedValueOnce(jsonResponse({ slug: 'home', title: 'Home' }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const promise = homePageLoader({ request: fakeRequest('/') } as never);
+    const promise = fetchJsonOrThrow('/data/landing/home.json', 'Home page content not found');
     await vi.advanceTimersByTimeAsync(250);
 
     await expect(promise).resolves.toEqual({ slug: 'home', title: 'Home' });
@@ -427,7 +443,7 @@ describe('fetchJsonOrThrow retries transient failures (runtime resilience)', () 
   it('does not retry a 404 (definitive)', async () => {
     const fetchMock = mockFetchResponse({ status: 404, body: {} });
     await expect(
-      homePageLoader({ request: fakeRequest('/') } as never),
+      fetchJsonOrThrow('/data/landing/home.json', 'Home page content not found'),
     ).rejects.toMatchObject({ status: 404 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -443,7 +459,7 @@ describe('fetchJsonOrThrow retries transient failures (runtime resilience)', () 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(
-      homePageLoader({ request: fakeRequest('/') } as never),
+      fetchJsonOrThrow('/data/landing/home.json', 'Home page content not found'),
     ).rejects.toThrow('Expected JSON');
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -453,7 +469,7 @@ describe('fetchJsonOrThrow retries transient failures (runtime resilience)', () 
     const fetchMock = vi.fn().mockRejectedValue(new TypeError('fetch failed'));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const promise = homePageLoader({ request: fakeRequest('/') } as never);
+    const promise = fetchJsonOrThrow('/data/landing/home.json', 'Home page content not found');
     // Attach the rejection handler before advancing timers so Node doesn't
     // flag the rejection as "handled asynchronously".
     const assertion = expect(promise).rejects.toThrow('Failed to fetch');

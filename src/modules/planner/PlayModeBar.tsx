@@ -5,6 +5,8 @@ import { Button } from '@/components/primitives/button';
 import { cn } from '@/lib/utils';
 
 interface PlayModeBarProps {
+  /** Day of a multi-day plan that is running; null for single-day plans. */
+  dayLabel?: string | null;
   label: string | null;
   prevLabel: string | null;
   nextLabel: string | null;
@@ -18,6 +20,7 @@ interface PlayModeBarProps {
 }
 
 export const PlayModeBar = ({
+  dayLabel = null,
   label,
   prevLabel,
   nextLabel,
@@ -40,7 +43,7 @@ export const PlayModeBar = ({
 
   const isSessionEnded = label === null;
   const [isSoundPulsing, setIsSoundPulsing] = useState(false);
-  const soundPulseClass = isSoundPulsing ? 'bg-primary/20 text-primary' : '';
+  const soundPulseClass = isSoundPulsing ? 'bg-primary/20 text-primary-text' : '';
 
   useEffect(() => {
     if (soundPulse === 0) return;
@@ -81,12 +84,17 @@ export const PlayModeBar = ({
       <div className="mx-auto px-4 sm:px-8 lg:px-20 py-2 flex items-center gap-3 min-h-[40px]">
         {/* Current + next block info */}
         <div className="flex-1 min-w-0 flex items-center gap-2">
+          {dayLabel && (
+            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-text">
+              {dayLabel}
+            </span>
+          )}
           {isSessionEnded ? (
             <span className="text-sm font-medium text-muted-foreground">{t('playMode.sessionEnded')}</span>
           ) : (
             <>
               <span className="text-sm font-semibold truncate">{label}</span>
-              <span className="flex items-center gap-1 text-xs text-primary shrink-0 tabular-nums">
+              <span className="flex items-center gap-1 text-xs text-primary-text shrink-0 tabular-nums">
                 {/* Live indicator */}
                 <div
                   className={cn(
@@ -97,7 +105,7 @@ export const PlayModeBar = ({
                   <Radio
                     className={cn(
                       'h-2.5 w-2.5',
-                      isSessionEnded ? 'text-muted-foreground' : 'text-primary',
+                      isSessionEnded ? 'text-muted-foreground' : 'text-primary-text',
                     )}
                   />
                 </div>

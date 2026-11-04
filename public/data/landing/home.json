@@ -176,12 +176,7 @@
           "name": "Sessionplan",
           "url": "https://sessionplan.de/"
         },
-        "applicationSubCategory": "Project Management",
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "5",
-          "ratingCount": "4"
-        }
+        "applicationSubCategory": "Project Management"
       }
     ]
   }

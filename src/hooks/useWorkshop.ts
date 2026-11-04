@@ -2,14 +2,19 @@
  * useWorkshop — Master state hook for the workshop planner.
  *
  * Role: Single source of truth for WorkshopData. Handles init priority
- *       (URL hash → prefillData → localStorage temp save → empty workshop),
- *       auto-persists to localStorage + URL hash on every change, and
- *       generates share links. All workshop mutations go through this hook.
+ *       (URL hash → prefillData → empty workshop), auto-persists to the session
+ *       history + URL hash on every change, and generates share links. All
+ *       workshop mutations go through this hook.
+ *
+ * History rules: saving never adds a browser history entry. Only opening a
+ *       session from the list does, closing replaces the entry. The session
+ *       history stays reachable either way, so Back always leads to the previous
+ *       page. Each browser history entry names its session in `history.state`.
  *       Server-mode state is delegated to useWorkshopServerSync; this hook
  *       composes it and forwards the relevant fields to callers.
  * Used by: WorkshopPlanner, Index, LandingPage
  */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   WorkshopData,
@@ -23,23 +28,39 @@ import {
 import { SessionHistoryEntry } from '@/types/sessionHistory';
 import {
   getWorkshopFromHash,
-  hasWorkshopItems,
   setWorkshopToHash,
   encodeWorkshopToUrl,
   decodeWorkshopFromUrl,
-  getTempWorkshop,
-  getTempWorkshopStore,
-  saveTempWorkshop,
-  clearTempWorkshop,
-  shouldRestoreTempWorkshopOnEntry,
-  clearTempWorkshopRestoreMarker,
+  clearSessionFromUrl,
+  createOpenedFromListState,
+  getHistorySessionId,
+  setHistorySessionId,
+  notifySessionUrlChanged,
+  wasOpenedFromList,
   getKeyFromSearch,
-  clearKeyFromUrl,
   getSessionHistory,
   upsertSessionToHistory,
   removeSessionFromHistory,
   updateSessionLastOpened,
+  setDayParamInUrl,
 } from '@/lib/workshopStorage';
+import {
+  addDay as addDayToPlan,
+  duplicateDay as duplicateDayInPlan,
+  removeDay as removeDayFromPlan,
+  moveDay as moveDayInPlan,
+  updateDayItems,
+  updateDayMeta,
+  updatePlanMetadata,
+  getDay,
+  getDays,
+  getAllItems,
+  getPlanStats,
+  hasAnyItems,
+  projectDay,
+  findDayIdOfItem,
+  type DayMetaUpdates,
+} from '@/lib/workshop-days';
 import {
   updateItemInTree,
   removeItemFromTree,
@@ -48,9 +69,12 @@ import {
   findItemAndParent,
 } from '@/lib/workshopUtils';
 import { useWorkshopServerSync } from './useWorkshopServerSync';
+import { useActiveDay } from './useActiveDay';
 import type { SessionUnavailableReason } from '@/lib/workshopServer';
 import { DEBOUNCE_TIMES } from '@/lib/timing';
 import { formatTitle } from '@/lib/metaConfig';
+import { getLocaleRoot } from '@/lib/localeUtils';
+import { getLocaleFromPathname } from '@/lib/i18n';
 
 const UNDO_LIMIT = 20;
 const UNDO_COALESCE_MS = 500;
@@ -81,44 +105,46 @@ const createWorkshopFromPrefill = (prefillData: WorkshopPrefillData) => {
       prefillData?.items && prefillData.items.length > 0
         ? [...prefillData.items]
         : emptyWorkshop.items,
+    ...(prefillData?.days && { days: prefillData.days }),
   };
 };
 
-const hasUrlData = (): boolean =>
-  window.location.hash.startsWith('#data=') || window.location.search.includes('id=');
+/**
+ * The local session the current URL shows. A browser history entry that names
+ * its session gets the latest state from the session history, as its own hash
+ * may be older. A snapshot without one only matches an identical entry, so
+ * opening it can never overwrite a different session.
+ */
+const resolveSessionFromUrl = (): { data: WorkshopData; sessionId: string | null } | null => {
+  if (getKeyFromSearch()) return null;
+  const fromHash = getWorkshopFromHash();
+  if (!hasAnyItems(fromHash)) return null;
 
-const stripDataFromUrl = () => {
-  if (hasUrlData()) {
-    window.history.pushState(null, '', window.location.pathname);
-  } else {
-    window.history.replaceState(null, '', window.location.pathname);
+  const sessions = getSessionHistory();
+  const sessionId = getHistorySessionId();
+  const entry = sessions.find((s) => s.id === sessionId);
+  if (sessionId && entry?.type !== 'dynamic') {
+    const stored = entry?.urlHash ? decodeWorkshopFromUrl(entry.urlHash) : null;
+    return { data: hasAnyItems(stored) ? stored : fromHash, sessionId };
   }
+
+  const encoded = window.location.hash.substring('#data='.length);
+  const identical = sessions.find((s) => s.type === 'local' && s.urlHash === encoded);
+  return { data: fromHash, sessionId: identical?.id ?? null };
 };
 
 export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const hasPrefillData = !!prefillData;
 
-  const isWorkshopPage = useCallback(() => {
-    if (location.pathname === '/') return true;
-    if (location.pathname === '/en') return true;
-    const exactNonWorkshop = [
-      '/templates', '/en/templates', '/blog', '/en/blog',
-      '/impressum', '/datenschutz', '/landing-pages', '/en/landing-pages',
-    ];
-    if (exactNonWorkshop.includes(location.pathname)) return false;
-    if (location.pathname.startsWith('/blog/') || location.pathname.startsWith('/en/blog/')) return false;
-    return true;
-  }, [location.pathname]);
+  const [sessionFromUrl] = useState(resolveSessionFromUrl);
 
   const [workshop, setWorkshopState] = useState<WorkshopData>(() => {
     if (getKeyFromSearch()) {
       return createEmptyWorkshop();
     }
-    const fromHash = getWorkshopFromHash();
-    if (hasWorkshopItems(fromHash)) {
-      return fromHash;
+    if (sessionFromUrl) {
+      return sessionFromUrl.data;
     }
     if (prefillData) {
       return createWorkshopFromPrefill(prefillData);
@@ -132,12 +158,7 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     setWorkshopState((prev) => (typeof updater === 'function' ? (updater as (p: WorkshopData) => WorkshopData)(prev) : updater));
   }, []);
 
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
-    if (hasWorkshopItems(getWorkshopFromHash())) {
-      return getTempWorkshopStore()?.sessionId ?? null;
-    }
-    return null;
-  });
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionFromUrl?.sessionId ?? null);
   const currentSessionIdRef = useRef(currentSessionId);
   currentSessionIdRef.current = currentSessionId;
 
@@ -146,7 +167,9 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
 
   const workshopRef = useRef(workshop);
   workshopRef.current = workshop;
+
   const workshopEntryHandledRef = useRef(false);
+  const pendingSaveRef = useRef(false);
   const undoStackRef = useRef<WorkshopData[]>([]);
   const redoStackRef = useRef<WorkshopData[]>([]);
   const lastUndoRecordRef = useRef<{ key: string; at: number } | null>(null);
@@ -174,136 +197,118 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
 
   // Restore priority when entering workshop page
   useEffect(() => {
-    if (!isWorkshopPage()) return;
     if (workshopEntryHandledRef.current) return;
     workshopEntryHandledRef.current = true;
 
-    const fromHash = getWorkshopFromHash();
-    if (hasWorkshopItems(fromHash)) {
-      setWorkshopState(fromHash);
-      clearTempWorkshopRestoreMarker();
+    const fromUrl = resolveSessionFromUrl();
+    if (fromUrl) {
+      setWorkshopState(fromUrl.data);
+      setCurrentSessionId(fromUrl.sessionId);
+      currentSessionIdRef.current = fromUrl.sessionId;
       return;
     }
 
-    const fromTemp = getTempWorkshop();
-    const shouldRestoreFromTemp = shouldRestoreTempWorkshopOnEntry();
-
-    if (shouldRestoreFromTemp && fromTemp && !hasPrefillData) {
-      setWorkshopState(fromTemp);
-      clearTempWorkshopRestoreMarker();
-      const storedId = getTempWorkshopStore()?.sessionId;
-      if (storedId) {
-        setCurrentSessionId(storedId);
-        currentSessionIdRef.current = storedId;
-      }
-      return;
-    }
-
-    clearTempWorkshopRestoreMarker();
-
-    if (prefillData && workshopRef.current.items.length === 0) {
+    if (prefillData && !hasAnyItems(workshopRef.current)) {
       setWorkshopState(createWorkshopFromPrefill(prefillData));
     }
-  }, [location.pathname, isWorkshopPage, hasPrefillData, prefillData]);
+  }, [location.pathname, prefillData]);
 
   const sync = useWorkshopServerSync({
     workshop,
-    currentSessionId,
     setCurrentSessionId,
     currentSessionIdRef,
     setWorkshop,
-    setEmptyWorkshop: () => setWorkshopState(createEmptyWorkshop()),
-    navigate,
     onExternalUpdate,
     onSessionNotFound: () => setSessionNotFound(true),
     onSessionUnavailable: (reason) => setSessionUnavailable(reason),
   });
 
-  // Update hash when workshop changes (on workshop pages with debounce)
+  const { loadServerSession } = sync;
+
+  const { activeDayId, activeDayRef, setActiveDay, resetDaySelection, showChangedDay } = useActiveDay(
+    workshop,
+    sync.isLoadingFromServer,
+  );
+
+  const serverKeyRef = useRef(sync.serverKey);
+  serverKeyRef.current = sync.serverKey;
+
+  const writeSessionToUrl = useCallback((data: WorkshopData) => {
+    // A Dynamic Link opened from the list has no server key yet while it loads.
+    if (getKeyFromSearch()) return;
+    setWorkshopToHash(data);
+    setHistorySessionId(hasAnyItems(data) ? currentSessionIdRef.current : null);
+  }, []);
+
+  // Update hash when workshop changes (with debounce)
   useEffect(() => {
-    if (isWorkshopPage() && !sync.serverKey) {
-      const timeoutId = setTimeout(() => {
-        const currentlyHasHash = window.location.hash.startsWith('#data=');
-        if (!currentlyHasHash && hasWorkshopItems(workshop)) {
-          window.history.pushState(null, '', window.location.href);
-        }
-        setWorkshopToHash(workshop);
-      }, DEBOUNCE_TIMES.HASH_WRITE);
+    if (!sync.serverKey) {
+      const timeoutId = setTimeout(() => writeSessionToUrl(workshop), DEBOUNCE_TIMES.HASH_WRITE);
       return () => clearTimeout(timeoutId);
     }
-  }, [workshop, location.pathname, isWorkshopPage, sync.serverKey]);
+  }, [workshop, location.pathname, sync.serverKey, writeSessionToUrl]);
 
-  // Keep temporary storage fresh and maintain session history
+  /**
+   * Write a local session to the session history. A dynamic entry holds its
+   * link's secrets, so local data only ever goes into an entry of its own.
+   */
+  const saveLocalSession = useCallback((data: WorkshopData) => {
+    let sessionId = currentSessionIdRef.current;
+    let existing = getSessionHistory().find((s) => s.id === sessionId);
+    if (!sessionId || existing?.type === 'dynamic') {
+      sessionId = generateId();
+      existing = undefined;
+      setCurrentSessionId(sessionId);
+      currentSessionIdRef.current = sessionId;
+    }
+
+    const now = Date.now();
+    upsertSessionToHistory({
+      id: sessionId,
+      title: data.workshop.title,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      lastOpenedAt: now,
+      ...getPlanStats(data),
+      type: 'local',
+      urlHash: encodeWorkshopToUrl(data),
+    });
+  }, []);
+
+  const flushPendingSave = useCallback(() => {
+    if (!pendingSaveRef.current) return;
+    pendingSaveRef.current = false;
+    saveLocalSession(workshopRef.current);
+  }, [saveLocalSession]);
+
+  // Maintain the session history
   useEffect(() => {
-    if (!isWorkshopPage()) return;
-    if (workshop.items.length === 0) return;
+    pendingSaveRef.current = false;
+    if (sync.serverKey || !hasAnyItems(workshop)) return;
 
+    pendingSaveRef.current = true;
     const timeoutId = setTimeout(() => {
-      let sessionId = currentSessionIdRef.current;
-      if (!sessionId) {
-        sessionId = generateId();
-        setCurrentSessionId(sessionId);
-        currentSessionIdRef.current = sessionId;
-      }
-
-      saveTempWorkshop(workshop, sessionId);
-
-      if (!sync.serverKey) {
-        const totalDuration = workshop.items.reduce((sum, item) => sum + (item.duration ?? 0), 0);
-        const now = Date.now();
-        const existing = getSessionHistory().find((s) => s.id === sessionId);
-        upsertSessionToHistory({
-          id: sessionId,
-          title: workshop.workshop.title,
-          createdAt: existing?.createdAt ?? now,
-          updatedAt: now,
-          lastOpenedAt: now,
-          itemCount: workshop.items.length,
-          totalDuration,
-          type: 'local',
-          urlHash: encodeWorkshopToUrl(workshop),
-        });
-      }
-    }, DEBOUNCE_TIMES.TEMP_SAVE);
+      pendingSaveRef.current = false;
+      saveLocalSession(workshop);
+    }, DEBOUNCE_TIMES.SESSION_SAVE);
 
     return () => clearTimeout(timeoutId);
-  }, [workshop, isWorkshopPage, sync.serverKey]);
+  }, [workshop, sync.serverKey, saveLocalSession]);
+
+  // In-app navigation away from the planner must not drop the last edit.
+  useEffect(() => flushPendingSave, [flushPendingSave]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (isWorkshopPage() && !sync.serverKey) {
-        setWorkshopToHash(workshop);
+      if (!serverKeyRef.current) {
+        flushPendingSave();
+        writeSessionToUrl(workshopRef.current);
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [workshop, location.pathname, isWorkshopPage]);
-
-  // React to browser back/forward navigation (popstate).
-  useEffect(() => {
-    const handlePopState = () => {
-      const key = getKeyFromSearch();
-      const fromHash = getWorkshopFromHash();
-
-      if (key) {
-        if (key !== sync.serverKey) {
-          // Re-trigger server load by updating the URL search param
-          // The server sync watches ?id=; a new key will load itself.
-          // For now, force a reload by navigating to the same URL.
-          window.location.reload();
-        }
-      } else if (hasWorkshopItems(fromHash)) {
-        setWorkshopState(fromHash);
-        clearTempWorkshopRestoreMarker();
-      } else {
-        setWorkshopState(createEmptyWorkshop());
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [sync.serverKey]);
+  }, [flushPendingSave, writeSessionToUrl]);
 
   // Mark workshop as dirty when a mutation runs. We can't intercept setWorkshop
   // directly, so this is a sentinel the mutations themselves must flip.
@@ -314,6 +319,35 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     redoStackRef.current = [];
     lastUndoRecordRef.current = null;
   }, []);
+
+  const leaveServerSession = sync.leaveServerSession;
+
+  // React to browser back/forward navigation (popstate).
+  useEffect(() => {
+    const handlePopState = () => {
+      const key = getKeyFromSearch();
+      if (key) {
+        if (key !== serverKeyRef.current) {
+          // The server sync only reads ?id= when it mounts.
+          window.location.reload();
+        }
+        return;
+      }
+
+      flushPendingSave();
+      leaveServerSession();
+      clearUndoHistory();
+      resetDaySelection();
+      const fromUrl = resolveSessionFromUrl();
+      setWorkshopState(fromUrl?.data ?? createEmptyWorkshop());
+      setCurrentSessionId(fromUrl?.sessionId ?? null);
+      currentSessionIdRef.current = fromUrl?.sessionId ?? null;
+      notifySessionUrlChanged();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [clearUndoHistory, flushPendingSave, leaveServerSession, resetDaySelection]);
 
   const recordUndoState = useCallback((previous: WorkshopData, key = 'mutation') => {
     const now = Date.now();
@@ -370,14 +404,13 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
           titleChangeDebounceRef.current = null;
         }, DEBOUNCE_TIMES.TITLE_CHANGE);
       }
+      // Description, date, start time and target belong to the active day;
+      // the title stays plan-wide.
       setWorkshopState((prev) =>
-        withLastModified({
-          ...prev,
-          workshop: { ...prev.workshop, ...updates },
-        }, 'metadata'),
+        withLastModified(updatePlanMetadata(prev, activeDayRef.current, updates), 'metadata'),
       );
     },
-    [withLastModified],
+    [withLastModified, activeDayRef],
   );
 
   const addItem = useCallback(
@@ -385,50 +418,56 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
       const newItem: WorkshopItem = { ...item, id: generateId() };
 
       setWorkshopState((prev) => {
-        let updatedItems = prev.items;
+        const dayId = (parentId && findDayIdOfItem(prev, parentId)) || activeDayRef.current;
+        const next = updateDayItems(prev, dayId, (dayItems) => {
+          let updatedItems = dayItems;
 
-        if (parentId) {
-          const addToParent = (items: WorkshopItem[]): WorkshopItem[] => {
-            return items.map((i) => {
-              if (i.id === parentId) {
-                return { ...i, children: [...(i.children || []), newItem] };
-              }
-              if (i.children) {
-                return { ...i, children: addToParent(i.children) };
-              }
-              return i;
-            });
-          };
-          updatedItems = addToParent(prev.items);
-        } else {
-          updatedItems = [...prev.items, newItem];
-        }
+          if (parentId) {
+            const addToParent = (items: WorkshopItem[]): WorkshopItem[] => {
+              return items.map((i) => {
+                if (i.id === parentId) {
+                  return { ...i, children: [...(i.children || []), newItem] };
+                }
+                if (i.children) {
+                  return { ...i, children: addToParent(i.children) };
+                }
+                return i;
+              });
+            };
+            updatedItems = addToParent(dayItems);
+          } else {
+            updatedItems = [...dayItems, newItem];
+          }
 
-        updatedItems = updateGroupDurations(updatedItems);
-        return withLastModified({ ...prev, items: updatedItems });
+          return updateGroupDurations(updatedItems);
+        });
+        return withLastModified(next);
       });
 
       return newItem.id;
     },
-    [withLastModified],
+    [withLastModified, activeDayRef],
   );
 
   const insertItemAfter = useCallback(
     (afterId: string, newItem: Omit<WorkshopItem, 'id'>): string | null => {
       // The state updater may run asynchronously. Validate the reference before
       // scheduling the update so the generated ID can be returned synchronously.
-      if (!findItemById(workshopRef.current.items, afterId)) return null;
+      if (!findItemById(getAllItems(workshopRef.current), afterId)) return null;
 
       const generated: WorkshopItem = { ...newItem, id: generateId() };
 
       setWorkshopState((prev) => {
-        const { parentId } = findItemAndParent(prev.items, afterId);
-        const reference = findItemById(prev.items, afterId);
+        const dayId = findDayIdOfItem(prev, afterId);
+        if (!dayId) return prev;
+        const dayItems = getDay(prev, dayId).items;
+        const { parentId } = findItemAndParent(dayItems, afterId);
+        const reference = findItemById(dayItems, afterId);
         if (!reference) return prev;
 
         let finalItem: WorkshopItem = generated;
         if (parentId) {
-          const parent = findItemById(prev.items, parentId);
+          const parent = findItemById(dayItems, parentId);
           if (parent?.type === 'breakout' && generated.laneIndex === undefined) {
             finalItem = { ...generated, laneIndex: reference.laneIndex ?? 0 };
           }
@@ -451,9 +490,8 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
           });
         };
 
-        let updatedItems = insertInto(prev.items);
-        updatedItems = updateGroupDurations(updatedItems);
-        return withLastModified({ ...prev, items: updatedItems });
+        const updatedItems = updateGroupDurations(insertInto(dayItems));
+        return withLastModified(updateDayItems(prev, dayId, () => updatedItems));
       });
 
       return generated.id;
@@ -475,10 +513,9 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
           return null;
         };
 
-        const item = findItem(prev.items);
-
-        let updatedItems = updateItemInTree(prev.items, id, updates);
-        updatedItems = updateGroupDurations(updatedItems);
+        const item = findItem(getAllItems(prev));
+        // Live Mode may extend a block of a day other than the visible one.
+        const dayId = findDayIdOfItem(prev, id) ?? activeDayRef.current;
 
         if (item) {
           if (itemEditDebounceRef.current) {
@@ -495,10 +532,13 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
           }, DEBOUNCE_TIMES.EDIT_DEBOUNCE);
         }
 
-        return withLastModified({ ...prev, items: updatedItems }, `item:${id}`);
+        const next = updateDayItems(prev, dayId, (items) =>
+          updateGroupDurations(updateItemInTree(items, id, updates)),
+        );
+        return withLastModified(next, `item:${id}`);
       });
     },
-    [withLastModified],
+    [withLastModified, activeDayRef],
   );
 
   const deleteItem = useCallback(
@@ -515,30 +555,31 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
           return null;
         };
 
-        const itemType = findItemType(prev.items);
-
-        let updatedItems = removeItemFromTree(prev.items, id);
-        updatedItems = updateGroupDurations(updatedItems);
+        const itemType = findItemType(getAllItems(prev));
+        const dayId = findDayIdOfItem(prev, id) ?? activeDayRef.current;
 
         if (itemType === 'block') {
         } else if (itemType === 'group') {
         } else if (itemType === 'breakout') {
         }
 
-        return withLastModified({ ...prev, items: updatedItems });
+        const next = updateDayItems(prev, dayId, (items) =>
+          updateGroupDurations(removeItemFromTree(items, id)),
+        );
+        return withLastModified(next);
       });
     },
-    [withLastModified],
+    [withLastModified, activeDayRef],
   );
 
   const reorderItems = useCallback(
     (newItems: WorkshopItem[]) => {
       setWorkshopState((prev) => {
         const updatedItems = updateGroupDurations(newItems);
-        return withLastModified({ ...prev, items: updatedItems });
+        return withLastModified(updateDayItems(prev, activeDayRef.current, () => updatedItems));
       });
     },
-    [withLastModified],
+    [withLastModified, activeDayRef],
   );
 
   const moveItem = useCallback(
@@ -549,6 +590,9 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
       additionalUpdates?: Partial<WorkshopItem>,
     ) => {
       setWorkshopState((prev) => {
+        const dayId = findDayIdOfItem(prev, itemId);
+        if (!dayId) return prev;
+        const dayItems = getDay(prev, dayId).items;
         let movedItem: WorkshopItem | null = null;
 
         const removeItem = (items: WorkshopItem[]): WorkshopItem[] => {
@@ -568,7 +612,7 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
           return result;
         };
 
-        const itemsWithoutMoved = removeItem(prev.items);
+        const itemsWithoutMoved = removeItem(dayItems);
 
         if (!movedItem) return prev;
 
@@ -576,13 +620,13 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
           movedItem = { ...movedItem, ...additionalUpdates };
         }
 
-        let updatedItems: WorkshopItem[];
+        let placedItems: WorkshopItem[];
 
         if (targetParentId === null) {
           const targetIdx = targetIndex ?? itemsWithoutMoved.length;
           const newItems = [...itemsWithoutMoved];
           newItems.splice(targetIdx, 0, movedItem);
-          updatedItems = newItems;
+          placedItems = newItems;
         } else {
           const addToParent = (items: WorkshopItem[]): WorkshopItem[] => {
             return items.map((item) => {
@@ -598,17 +642,17 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
               return item;
             });
           };
-          updatedItems = addToParent(itemsWithoutMoved);
+          placedItems = addToParent(itemsWithoutMoved);
         }
 
-        updatedItems = updateGroupDurations(updatedItems);
+        const updatedItems = updateGroupDurations(placedItems);
 
         if (movedItem.type === 'block') {
         } else if (movedItem.type === 'group') {
         } else if (movedItem.type === 'breakout') {
         }
 
-        return withLastModified({ ...prev, items: updatedItems });
+        return withLastModified(updateDayItems(prev, dayId, () => updatedItems));
       });
     },
     [withLastModified],
@@ -703,27 +747,55 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
   );
 
   const loadWorkshop = useCallback((data: WorkshopData) => {
-    if (workshop.items.length > 0) {
-      saveTempWorkshop(workshop);
-      const sessionId = getTempWorkshopStore()?.sessionId ?? generateId();
-      const existing = getSessionHistory().find((s) => s.id === sessionId);
-      const now = Date.now();
-      upsertSessionToHistory({
-        id: sessionId,
-        title: workshop.workshop.title,
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-        lastOpenedAt: now,
-        itemCount: workshop.items.length,
-        totalDuration: workshop.items.reduce((sum, item) => sum + (item.duration ?? 0), 0),
-        type: 'local',
-        urlHash: encodeWorkshopToUrl(workshop),
-      });
+    if (hasAnyItems(workshop) && !sync.serverKey) {
+      saveLocalSession(workshop);
     }
+    pendingSaveRef.current = false;
+    resetDaySelection();
+    setDayParamInUrl(null);
     setWorkshopState(data);
     clearUndoHistory();
     setCurrentSessionId(null);
-  }, [workshop, clearUndoHistory]);
+    currentSessionIdRef.current = null;
+    setHistorySessionId(null);
+  }, [workshop, sync.serverKey, saveLocalSession, clearUndoHistory, resetDaySelection]);
+
+  const addDay = useCallback((): string | null => {
+    const result = addDayToPlan(workshopRef.current, getDays(workshopRef.current).at(-1)?.id);
+    if (!result) return null;
+    setWorkshopState(withLastModified(result.data, `day-add:${result.dayId}`));
+    setActiveDay(result.dayId);
+    return result.dayId;
+  }, [withLastModified, setActiveDay]);
+
+  const duplicateDay = useCallback((dayId: string): string | null => {
+    const result = duplicateDayInPlan(workshopRef.current, dayId);
+    if (!result) return null;
+    setWorkshopState(withLastModified(result.data, `day-add:${result.dayId}`));
+    setActiveDay(result.dayId);
+    return result.dayId;
+  }, [withLastModified, setActiveDay]);
+
+  const removeDay = useCallback((dayId: string) => {
+    const current = workshopRef.current;
+    const days = getDays(current);
+    const index = days.findIndex((day) => day.id === dayId);
+    if (index === -1 || days.length <= 1) return;
+    const neighbour = days[index + 1] ?? days[index - 1];
+    setWorkshopState(withLastModified(removeDayFromPlan(current, dayId), `day-remove:${dayId}`));
+    if (dayId === activeDayRef.current) setActiveDay(neighbour.id);
+  }, [withLastModified, setActiveDay, activeDayRef]);
+
+  const moveDay = useCallback((dayId: string, toIndex: number) => {
+    const current = workshopRef.current;
+    const next = moveDayInPlan(current, dayId, toIndex);
+    if (next === current) return;
+    setWorkshopState(withLastModified(next, `day-move:${dayId}`));
+  }, [withLastModified]);
+
+  const updateDay = useCallback((dayId: string, updates: DayMetaUpdates) => {
+    setWorkshopState((prev) => withLastModified(updateDayMeta(prev, dayId, updates), `day:${dayId}`));
+  }, [withLastModified]);
 
   const undo = useCallback(() => {
     const previous = undoStackRef.current.pop();
@@ -731,11 +803,12 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
 
     redoStackRef.current = [...redoStackRef.current.slice(-(UNDO_LIMIT - 1)), workshopRef.current];
     lastUndoRecordRef.current = null;
+    showChangedDay(workshopRef.current, previous);
     setWorkshopState(previous);
     workshopRef.current = previous;
     markDirty();
     return true;
-  }, [markDirty]);
+  }, [markDirty, showChangedDay]);
 
   const redo = useCallback(() => {
     const next = redoStackRef.current.pop();
@@ -743,48 +816,58 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
 
     undoStackRef.current = [...undoStackRef.current.slice(-(UNDO_LIMIT - 1)), workshopRef.current];
     lastUndoRecordRef.current = null;
+    showChangedDay(workshopRef.current, next);
     setWorkshopState(next);
     workshopRef.current = next;
     markDirty();
     return true;
-  }, [markDirty]);
+  }, [markDirty, showChangedDay]);
 
-  const resetWorkshop = useCallback(() => {
+  const resetWorkshop = useCallback(({ navigatesAway = false }: { navigatesAway?: boolean } = {}) => {
+    flushPendingSave();
+    resetDaySelection();
     setWorkshopState(createEmptyWorkshop());
     clearUndoHistory();
-    clearTempWorkshop();
-    clearTempWorkshopRestoreMarker();
     setCurrentSessionId(null);
-    stripDataFromUrl();
-  }, [clearUndoHistory]);
+    currentSessionIdRef.current = null;
+    // The entry before one opened from the list already is this empty state.
+    if (!navigatesAway && wasOpenedFromList()) window.history.back();
+    else clearSessionFromUrl();
+  }, [clearUndoHistory, flushPendingSave, resetDaySelection]);
 
   const clearWorkshopCompletely = useCallback(() => {
+    pendingSaveRef.current = false;
+    resetDaySelection();
     const sessionId = currentSessionIdRef.current;
     if (sessionId) {
       removeSessionFromHistory(sessionId);
     }
     setWorkshopState(createEmptyWorkshop());
     clearUndoHistory();
-    clearTempWorkshop();
-    clearTempWorkshopRestoreMarker();
     setCurrentSessionId(null);
-    stripDataFromUrl();
-  }, [clearUndoHistory]);
+    currentSessionIdRef.current = null;
+    clearSessionFromUrl();
+  }, [clearUndoHistory, resetDaySelection]);
+
+  const localeRoot = getLocaleRoot(getLocaleFromPathname(location.pathname));
 
   const loadSessionFromHistory = useCallback(
     (entry: SessionHistoryEntry) => {
       clearUndoHistory();
+      resetDaySelection();
       updateSessionLastOpened(entry.id);
       if (entry.type === 'dynamic' && entry.serverKey) {
-        navigate(`/?id=${entry.serverKey}${entry.serverHash ?? ''}`);
-        sync.loadServerSession(entry.serverKey, entry.serverHash);
+        navigate(`${localeRoot}?id=${entry.serverKey}${entry.serverHash ?? ''}`, {
+          state: createOpenedFromListState(),
+        });
+        loadServerSession(entry.serverKey, entry.serverHash);
         return;
       }
 
       if (entry.type === 'local' && entry.urlHash) {
         const data = decodeWorkshopFromUrl(entry.urlHash);
         if (data) {
-          window.history.pushState(null, '', window.location.pathname);
+          window.history.pushState(createOpenedFromListState(entry.id), '', window.location.pathname);
           setWorkshopState(data);
           setWorkshopToHash(data);
           setCurrentSessionId(entry.id);
@@ -792,11 +875,31 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
         }
       }
     },
-    [navigate, sync.loadServerSession, clearUndoHistory],
+    [navigate, localeRoot, loadServerSession, clearUndoHistory, resetDaySelection],
   );
+
+  const days = useMemo(() => getDays(workshop), [workshop]);
+  const dayWorkshop = useMemo(() => projectDay(workshop, activeDayId), [workshop, activeDayId]);
+
+  const migrateServerSession = sync.migrateLegacySession;
+  const migrateLegacySession = useCallback(async () => {
+    const url = await migrateServerSession();
+    if (url) clearUndoHistory();
+    return url;
+  }, [migrateServerSession, clearUndoHistory]);
 
   return {
     workshop,
+    /** The active day as a regular single-day plan (the full plan when single-day). */
+    dayWorkshop,
+    days,
+    activeDayId,
+    setActiveDay,
+    addDay,
+    duplicateDay,
+    removeDay,
+    moveDay,
+    updateDay,
     updateMetadata,
     addItem,
     insertItemAfter,
@@ -825,6 +928,7 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     canEditServerSession: sync.canEditServerSession,
     isLegacyServerSession: sync.isLegacyServerSession,
     isLoadingFromServer: sync.isLoadingFromServer,
+    isServerSessionLoaded: sync.isServerSessionLoaded,
     isEnablingServerMode: sync.isEnablingServerMode,
     enableServerMode: sync.enableServerMode,
     disableServerMode: sync.disableServerMode,
@@ -834,7 +938,9 @@ export const useWorkshop = (prefillData?: WorkshopPrefillData) => {
     hasSyncError: sync.hasSyncError,
     syncFailureReason: sync.syncFailureReason,
     acceptIncomingUpdate: sync.acceptIncomingUpdate,
-    forkSession: sync.forkSession,
+    setHasPendingFormEdits: sync.setHasPendingFormEdits,
+    legacyMigrationStatus: sync.legacyMigrationStatus,
+    migrateLegacySession,
     createLocalCopy: sync.createLocalCopy,
     resetSyncState: sync.resetSyncState,
     getHasUnsavedCloseRisk: sync.getHasUnsavedCloseRisk,

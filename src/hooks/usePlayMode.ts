@@ -3,12 +3,13 @@
  *
  * Role: Runtime companion to useWorkshop. Reads WorkshopData but manages its own
  *       timer (ticks every 5 s). Auto-activates when the scheduled start time is
- *       reached; supports manual start/stop with a guard that prevents auto-restart
- *       after explicit stop.
+ *       reached; supports manual start/stop with a guard that keeps a stopped
+ *       scheduled window off, while a later window starts again.
  * Used by: WorkshopPlanner (live bar rendering + timeline highlighting)
  */
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { WorkshopData } from '@/types/workshop';
+import { timeToMinutes } from '@/lib/clock-time';
 import {
   flattenTimeline,
   computePlayStates,
@@ -20,7 +21,6 @@ import { PLAY_MODE_TICK_MS } from '@/lib/timing';
 
 export interface PlayModeState {
   isActive: boolean;
-  canActivate: boolean;
   currentDisplay: CurrentDisplay | null;
   blockPlayStates: Map<string, PlayState>;
   /** Minutes elapsed since the live session started (clamped to ≥ 0).
@@ -42,8 +42,8 @@ export function usePlayMode(
   // When the user manually pressed "Live", we record the timestamp so that
   // elapsed is calculated from that moment (not from the scheduled sessionStart).
   const [manualStartedAt, setManualStartedAt] = useState<Date | null>(null);
-  // Set to true when the user explicitly presses Stop — prevents auto re-activation.
-  const [manuallyStopped, setManuallyStopped] = useState(false);
+  // Start of the scheduled window the user explicitly stopped — prevents its auto re-activation.
+  const [stoppedWindow, setStoppedWindow] = useState<number | null>(null);
   const [soundPulse, setSoundPulse] = useState(0);
 
   useEffect(() => {
@@ -51,14 +51,12 @@ export function usePlayMode(
     return () => clearInterval(interval);
   }, []);
 
+  const { date, startTime } = workshop.workshop;
+
   const sessionStart = useMemo(() => {
-    const { date, startTime } = workshop.workshop;
     if (!date || !startTime) return null;
     return new Date(`${date}T${startTime}`);
-  }, [workshop.workshop.date, workshop.workshop.startTime]);
-
-  // Can always activate manually (even without a date set).
-  const canActivate = true;
+  }, [date, startTime]);
 
   // Elapsed from scheduled session start (for auto mode)
   const autoElapsedMinutes = useMemo(() => {
@@ -72,11 +70,13 @@ export function usePlayMode(
     return autoElapsedMinutes >= 0 && autoElapsedMinutes <= totalDuration;
   }, [sessionStart, autoElapsedMinutes, totalDuration]);
 
+  const scheduledWindow = isAutoActive ? sessionStart?.getTime() ?? null : null;
+
   // Active when:
   //  - manually started (overrides everything), OR
-  //  - auto condition is met AND the user hasn't manually stopped it
+  //  - auto condition is met AND the user hasn't manually stopped this window
   const isActive =
-    manualStartedAt !== null || (!manuallyStopped && isAutoActive);
+    manualStartedAt !== null || (isAutoActive && stoppedWindow !== scheduledWindow);
 
   // Effective elapsed minutes:
   //  - Manual mode: from the moment the button was pressed
@@ -89,12 +89,9 @@ export function usePlayMode(
   }, [manualStartedAt, now, autoElapsedMinutes]);
 
   const flatBlocks = useMemo(() => {
-    const { startTime } = workshop.workshop;
-    const sessionStartMinutes = startTime
-      ? (() => { const [h, m] = startTime.split(':').map(Number); return h * 60 + m; })()
-      : undefined;
+    const sessionStartMinutes = startTime ? timeToMinutes(startTime) : undefined;
     return flattenTimeline(workshop.items, 0, sessionStartMinutes);
-  }, [workshop.items, workshop.workshop]);
+  }, [workshop.items, startTime]);
 
   const blockPlayStates = useMemo((): Map<string, PlayState> => {
     if (!isActive) return new Map();
@@ -116,6 +113,17 @@ export function usePlayMode(
       currentBlockEffectiveDuration: Math.max(1, current.endMin - current.startMin),
     };
   }, [currentDisplay, elapsedMinutes]);
+
+  const activate = useCallback(() => {
+    // Start immediately from now, independent of scheduled time
+    setManualStartedAt(new Date());
+    setStoppedWindow(null);
+  }, []);
+
+  const deactivate = useCallback(() => {
+    setManualStartedAt(null);
+    setStoppedWindow(scheduledWindow);
+  }, [scheduledWindow]);
 
   const previousAudioState = useRef<{
     isActive: boolean;
@@ -168,7 +176,6 @@ export function usePlayMode(
 
   return {
     isActive,
-    canActivate,
     currentDisplay,
     blockPlayStates,
     // Surface the total elapsed minutes (clamped) so consumers like the time-
@@ -178,14 +185,7 @@ export function usePlayMode(
     elapsedInCurrentBlock,
     currentBlockEffectiveDuration,
     soundPulse,
-    activate: () => {
-      // Start immediately from now, independent of scheduled time
-      setManualStartedAt(new Date());
-      setManuallyStopped(false);
-    },
-    deactivate: () => {
-      setManualStartedAt(null);
-      setManuallyStopped(true);
-    },
+    activate,
+    deactivate,
   };
 }

@@ -14,7 +14,9 @@ export const POLLING_AGE_THRESHOLDS = {
 export const DEBOUNCE_TIMES = {
   HASH_WRITE: 500,
   SERVER_PUT: 1_000,
-  TEMP_SAVE: 350,
+  /** Upper bound for postponing a PUT while the user keeps editing. */
+  SERVER_PUT_MAX_WAIT: 5_000,
+  SESSION_SAVE: 350,
   EDIT_DEBOUNCE: 1_000,
   FOCUS_FIXED_START: 150,
   /**
@@ -33,9 +35,10 @@ export const DEBOUNCE_TIMES = {
 export const EDIT_EVENT_THROTTLE_MS = 30_000;
 
 // Delay before re-attempting a failed PUT (network/server error, not a
-// conflict). Retries repeat until the PUT succeeds, a conflict occurs, or the
-// session changes. The native beforeunload dialog handles the worst case.
+// conflict). The delay doubles per consecutive failure up to the maximum.
+// Retries repeat until the PUT succeeds, a conflict occurs, or the session
+// changes. The native beforeunload dialog handles the worst case.
 export const SERVER_PUT_RETRY_MS = 5_000;
+export const SERVER_PUT_RETRY_MAX_MS = 60_000;
 
 export const RECENT_INDICATOR_MS = 10 * 60_000;
-export const SESSION_HISTORY_RETENTION_MS = 3 * 30 * 24 * 60 * 60_000;

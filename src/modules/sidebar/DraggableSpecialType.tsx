@@ -1,12 +1,14 @@
 import { useDraggable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
+import type { ShortcutId } from '@/lib/keyboard-shortcuts';
+import { useShortcutLabels } from '@/hooks/useShortcutLabels';
 
 interface DraggableSpecialTypeProps {
   dragType: 'new-group' | 'new-breakout';
   icon: React.ElementType;
   label: string;
   onAdd: () => void;
-  shortcut?: string;
+  shortcutId: ShortcutId;
 }
 
 export const DraggableSpecialType = ({
@@ -14,8 +16,9 @@ export const DraggableSpecialType = ({
   icon: Icon,
   label,
   onAdd,
-  shortcut,
+  shortcutId,
 }: DraggableSpecialTypeProps) => {
+  const { withHint, hintAttrs } = useShortcutLabels();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `special-${dragType}`,
     data: { type: dragType },
@@ -30,7 +33,8 @@ export const DraggableSpecialType = ({
         e.stopPropagation();
         onAdd();
       }}
-      title={shortcut ? `${label} (${shortcut.toUpperCase()})` : undefined}
+      title={withHint(label, shortcutId)}
+      {...hintAttrs(shortcutId)}
       className={cn(
         'sidebar-item cursor-grab active:cursor-grabbing lg:cursor-grab cursor-pointer',
         isDragging && 'opacity-50'

@@ -4,15 +4,14 @@
  * Role: Lists all template landing pages; entry point to the template gallery.
  *       Content loaded via templatesIndexLoader from public/data/templates/index.json (locale-aware).
  */
-import { Link, useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TemplateHub, TemplateSummary } from '@/lib/routeLoaders';
 import { PageFooter } from '@/components/layout/PageFooter';
 import { TemplateHeader } from '@/components/layout/TemplateHeader';
 import { HubFilter } from '@/components/atoms/HubFilter';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
-import { Button } from '@/components/primitives/button';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
+import { TemplateCard } from '@/components/sections/TemplateCard';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocaleRoot, getLocalizedPath, createSymmetricAlternates } from '@/lib/localeUtils';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
@@ -76,23 +75,7 @@ const Templates = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {templates.map((template) => (
-                <Card key={template.slug}>
-                  <CardHeader>
-                    <CardTitle className="text-2xl">
-                      <Link to={getLocalizedPath(locale, `/templates/${template.slug}`)} className="hover:underline">
-                        {decodeHtmlEntities(template.title)}
-                      </Link>
-                    </CardTitle>
-                    <CardDescription className="text-base line-clamp-3">
-                      {decodeHtmlEntities(template.excerpt)}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter>
-                    <Button asChild variant="outline">
-                      <Link to={getLocalizedPath(locale, `/templates/${template.slug}`)}>{t('templates.openTemplate')}</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
+                <TemplateCard key={template.slug} template={template} />
               ))}
             </div>
           )}

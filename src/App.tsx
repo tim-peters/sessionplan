@@ -5,7 +5,7 @@ import { createBrowserRouter, RouterProvider, useLocation, Outlet, useNavigation
 import { HelmetProvider } from "react-helmet-async";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { lazyPage } from "./lib/lazyRoute";
-import { resetPrerenderReady, signalPrerenderReady, isPrerendering } from "./lib/prerender";
+import { resetPrerenderReady, signalPrerenderReadyAfterPaint, isPrerendering } from "./lib/prerender";
 import { LibraryProvider } from "./contexts/LibraryContext";
 import { LocaleProvider } from "./contexts/LocaleContext";
 import { LoadingScreen } from "./components/states/LoadingScreen";
@@ -71,20 +71,7 @@ function RootLayout() {
       return;
     }
 
-    let secondFrame: number | undefined;
-
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        signalPrerenderReady();
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      if (secondFrame !== undefined) {
-        window.cancelAnimationFrame(secondFrame);
-      }
-    };
+    return signalPrerenderReadyAfterPaint();
   }, [location.pathname, navigation.state]);
   
   return (
@@ -97,7 +84,7 @@ function RootLayout() {
           <LanguageHint />
         </LocaleProvider>
       </WorkshopPageContext.Provider>
-      <SiteFeedback />
+      <SiteFeedback key={location.pathname} />
     </>
   );
 }

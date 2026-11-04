@@ -19,7 +19,7 @@
 import { LoaderFunctionArgs } from 'react-router-dom';
 import { fetchJsonOrThrow } from './routeLoaders';
 import { getContentDataPath, getLocaleFromPathname, type Locale } from './i18n';
-import { filterPublishedBlogPosts } from './blog-publication.js';
+import { filterVisibleBlogPosts } from './blog-visibility';
 import type { Hub } from '@/types/hub';
 
 /** Shape of `<contentType>/hubs/index.json`. */
@@ -94,7 +94,7 @@ async function resolveBlogItems(
     `${base}index.json`,
     'Blog index not found',
   );
-  const published = filterPublishedBlogPosts(index.posts ?? []);
+  const published = filterVisibleBlogPosts(index.posts ?? []);
   return published.filter((post) => post.category === hub.slug);
 }
 

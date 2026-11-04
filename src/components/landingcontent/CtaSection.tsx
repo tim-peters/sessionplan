@@ -8,12 +8,12 @@ interface CtaSectionProps {
 }
 
 export const CtaSection = ({ section, onAddBlock }: CtaSectionProps) => (
-  <section className="bg-primary text-primary-foreground -mx-6 py-20 md:py-28">
+  <section className="bg-primary text-primary-foreground [--ring:var(--primary-foreground)] -mx-6 py-20 md:py-28">
     <div className="mx-auto max-w-3xl px-6 sm:px-6 text-center">
       <h2 className="text-3xl md:text-5xl font-bold tracking-tight">{section.title}</h2>
       {section.content && (
         <p
-          className="mx-auto mt-4 max-w-2xl text-base md:text-lg opacity-90 [&_a]:underline [&_a:hover]:opacity-80"
+          className="mx-auto mt-4 max-w-2xl text-base md:text-lg [&_a]:underline [&_a:hover]:decoration-2"
           dangerouslySetInnerHTML={{ __html: section.content }}
         />
       )}
@@ -23,7 +23,7 @@ export const CtaSection = ({ section, onAddBlock }: CtaSectionProps) => (
           size="lg"
           onClick={onAddBlock}
           data-add-block="true"
-          className="gap-2 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+          className="gap-2 bg-primary-foreground text-primary-text hover:bg-primary-foreground/90 active:bg-primary-foreground"
         >
           <Plus className="h-4 w-4" />
           {section.buttonText}
@@ -31,7 +31,7 @@ export const CtaSection = ({ section, onAddBlock }: CtaSectionProps) => (
       </div>
       {section.buttonNote && (
         <p
-          className="mt-4 text-xs opacity-80 [&_a]:underline [&_a:hover]:opacity-80"
+          className="mt-4 text-xs [&_a]:underline [&_a:hover]:decoration-2"
           dangerouslySetInnerHTML={{ __html: section.buttonNote }}
         />
       )}

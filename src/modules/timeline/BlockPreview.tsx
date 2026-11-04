@@ -1,3 +1,4 @@
+import { Button } from '@/components/primitives/button';
 import { useEffect, useRef, useState } from 'react';
 import { Package, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +49,7 @@ const InlineEditableField = ({
       <p
         ref={previewRef}
         className={cn(
-          'editable-field cursor-text px-1 -mx-1',
+          'editable-field editable-field-no-fill cursor-text px-1 -mx-1',
           showFullText ? 'whitespace-pre-wrap break-words' : 'line-clamp-2',
           align === 'right' && 'text-right',
         )}
@@ -118,23 +119,23 @@ const FieldPlaceholder = ({
 }) => {
   if (variant === 'compact') {
     return (
-      <button
+      <Button variant="plain" size="none"
         type="button"
         title={label}
         onClick={(e) => { e.stopPropagation(); onActivate(); }}
-        className="w-8 h-5 shrink-0 flex items-center justify-center text-muted-foreground rounded"
+        className="w-8 h-5 shrink-0 flex items-center justify-center text-muted-foreground rounded hover:bg-transparent active:bg-transparent"
       >
         <Plus className="h-3.5 w-3.5 opacity-0 transition-opacity delay-0 group-hover:opacity-100 group-hover:delay-300" />
-      </button>
+      </Button>
     );
   }
 
   return (
-    <button
+    <Button variant="plain" size="none"
       type="button"
       onClick={(e) => { e.stopPropagation(); onActivate(); }}
       className={cn(
-        'relative h-7 flex-1 flex items-center gap-1',
+        'relative h-7 flex-1 flex items-center gap-1 hover:bg-transparent active:bg-transparent',
         align === 'right' ? 'justify-end' : 'justify-start',
       )}
     >
@@ -148,7 +149,7 @@ const FieldPlaceholder = ({
         <Plus className="h-3 w-3 shrink-0" />
         <span className="truncate">{label}</span>
       </span>
-    </button>
+    </Button>
   );
 };
 
@@ -202,32 +203,32 @@ const EmptyFieldsPlaceholders = ({
 
   return (
     <div className={cn('relative transition-[height] duration-150', wrapperHeight)}>
-      <button
+      <Button variant="plain" size="none"
         type="button"
         onMouseEnter={revealAfterDelay(setNotesRevealed, notesTimeoutRef)}
         onMouseLeave={hideNow(setNotesRevealed, notesTimeoutRef)}
         onClick={(e) => { e.stopPropagation(); onActivateNotes(); }}
-        className="absolute -top-1 left-0 h-7 w-1/2 flex items-center justify-start gap-1"
+        className="absolute -top-1 left-0 h-7 w-1/2 flex items-center justify-start gap-1 hover:bg-transparent active:bg-transparent"
       >
         {!notesRevealed && <HoverIndicator align="left" />}
         <span className={cn('flex items-center gap-1 text-xs text-muted-foreground transition-opacity', notesRevealed ? 'opacity-100' : 'opacity-0')}>
           <Plus className="h-3 w-3 shrink-0" />
           <span className="truncate">{notesLabel}</span>
         </span>
-      </button>
-      <button
+      </Button>
+      <Button variant="plain" size="none"
         type="button"
         onMouseEnter={revealAfterDelay(setMaterialRevealed, materialTimeoutRef)}
         onMouseLeave={hideNow(setMaterialRevealed, materialTimeoutRef)}
         onClick={(e) => { e.stopPropagation(); onActivateMaterial(); }}
-        className="absolute -top-1 right-0 h-7 w-1/2 flex items-center justify-end"
+        className="absolute -top-1 right-0 h-7 w-1/2 flex items-center justify-end hover:bg-transparent active:bg-transparent"
       >
         {!materialRevealed && <HoverIndicator align="right" />}
         <span className={cn('flex items-center gap-1 text-xs text-muted-foreground text-right transition-opacity', materialRevealed ? 'opacity-100' : 'opacity-0')}>
           <Plus className="h-3 w-3 shrink-0" />
           <span className="truncate">{materialLabel}</span>
         </span>
-      </button>
+      </Button>
     </div>
   );
 };

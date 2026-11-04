@@ -27,8 +27,8 @@
  * (not subject to auto-hide) and is z-20 so it stays above both the segments
  * and the scroll indicator.
  *
- * Role: pure rendering module — derives everything from props. No state,
- *       no DnD, no business logic.
+ * Role: display and scroll navigation only. Holds interaction state, but
+ *       derives its content from props. No DnD, no business logic.
  * Used by: src/components/states/WorkshopPlanner.tsx (lazy-loaded)
  */
 import {
@@ -517,7 +517,7 @@ export const TimeVisualizationStrip = ({
           // right-4 keeps the strip clear of classic ~17px scrollbars (macOS
           // overlay scrollbars are auto-hidden anyway).
           'fixed right-4 z-20 hidden lg:block print:hidden',
-          'pointer-events-none',
+          'pointer-events-none fade-in',
           'flex flex-col items-center justify-end',
         )}
         style={{ top: topPx, bottom: BOTTOM_OFFSET_PX, width: 10 }}
@@ -694,9 +694,11 @@ export const TimeVisualizationStrip = ({
                 className={cn(
                   'absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-20',
                   'w-8 h-0.5 rounded-full bg-primary pointer-events-none',
+                  'transition-[top] ease-linear',
                 )}
                 style={{
                   top: `${liveLineTopPct}%`,
+                  transitionDuration: '250ms',
                   boxShadow:
                     '0 0 4px hsl(var(--primary) / 0.65), 0 0 1px hsl(var(--primary) / 0.9)',
                 }}

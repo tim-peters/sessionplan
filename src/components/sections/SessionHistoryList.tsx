@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { EyeOff, Link, Link2Off, SquareChartGantt, Trash2 } from 'lucide-react';
+import { CalendarRange, EyeOff, Link, Link2Off, ScrollText, SquareChartGantt, Trash2 } from 'lucide-react';
 import { SessionHistoryEntry } from '@/types/sessionHistory';
 import { getSessionHistory, removeSessionFromHistory, upsertSessionToHistory } from '@/lib/workshopLocalStorage';
-import { deleteServerSession, fetchServerSessionStatus, getServerSessionAccess } from '@/lib/workshopServer';
+import { deleteServerSession, fetchServerSessionStatus, getServerSessionAccess, isLegacyServerKey } from '@/lib/workshopServer';
+import { getLocaleRoot } from '@/lib/localeUtils';
+import { useLocale } from '@/contexts/LocaleContext';
+import { getPlanStats } from '@/lib/workshop-days';
 import { Button } from '@/components/primitives/button';
 import { RECENT_INDICATOR_MS } from '@/lib/timing';
 import {
@@ -43,6 +46,7 @@ const SCROLL_EDGE_TOLERANCE = 8;
 
 export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryListProps) => {
   const { t, i18n } = useTranslation('common');
+  const { locale } = useLocale();
   const [sessions, setSessions] = useState<SessionHistoryEntry[]>(() =>
     getSessionHistory().sort((a, b) => b.lastOpenedAt - a.lastOpenedAt)
   );
@@ -99,8 +103,7 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
           updatedAt: result.data.workshop.lastModified
             ? Date.parse(result.data.workshop.lastModified) || entry.updatedAt
             : entry.updatedAt,
-          itemCount: result.data.items.length,
-          totalDuration: result.data.items.reduce((sum, item) => sum + (item.duration ?? 0), 0),
+          ...getPlanStats(result.data),
           unavailable: false,
           lastOpenedAt: entry.lastOpenedAt,
         };
@@ -193,7 +196,7 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
         <div ref={contentRef} className="flex flex-col gap-2">
         {sessions.map((entry, idx) => {
           const href = entry.type === 'dynamic' && entry.serverKey
-            ? `/?id=${entry.serverKey}${entry.serverHash ?? ''}`
+            ? `${getLocaleRoot(locale)}?id=${entry.serverKey}${entry.serverHash ?? ''}`
             : entry.type === 'local' && entry.urlHash
               ? `#data=${entry.urlHash}`
               : null;
@@ -205,7 +208,9 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
                 {entry.type === 'dynamic' ? (
                   entry.unavailable
                     ? <Link2Off className="h-4 w-4" aria-label={t('sessionHistory.unavailable')} />
-                    : <Link className="h-4 w-4" />
+                    : entry.serverKey && isLegacyServerKey(entry.serverKey)
+                      ? <ScrollText className="h-4 w-4" />
+                      : <Link className="h-4 w-4" />
                 ) : (
                   <SquareChartGantt className="h-4 w-4" />
                 )}
@@ -215,6 +220,12 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="font-medium text-sm truncate">{entry.title || t('sessionHistory.untitled')}</span>
+                  {(entry.dayCount ?? 1) > 1 && (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-text">
+                      <CalendarRange className="h-3 w-3" aria-hidden />
+                      {t('sessionHistory.daysCount', { count: entry.dayCount })}
+                    </span>
+                  )}
                   {idx === 0 && !entry.unavailable && Date.now() - entry.lastOpenedAt < RECENT_INDICATOR_MS && (
                     <span className="inline-block h-2 w-2 rounded-full bg-primary shrink-0" />
                   )}
@@ -234,11 +245,11 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
             return (
               <div
                 key={entry.id}
-                className={`group relative flex items-start gap-3 rounded-xl border border-border bg-card p-3 shadow-sm transition-shadow no-underline text-left w-full ${
+                className={`group relative flex items-start gap-3 rounded-xl border border-border bg-card p-3 transition-colors no-underline text-left w-full ${
                   entry.unavailable
                     ? 'text-muted-foreground opacity-60 cursor-default'
                     : canOpen
-                      ? 'text-foreground hover:shadow-md cursor-pointer'
+                      ? 'session-history-card text-foreground cursor-pointer'
                       : 'text-foreground cursor-default'
                 }`}
               >
@@ -267,7 +278,7 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive-text"
                           title={t('sessionHistory.deleteServer')}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -283,7 +294,7 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
                         <AlertDialogFooter>
                           <AlertDialogCancel>{t('sessionHistory.deleteConfirmCancel')}</AlertDialogCancel>
                           <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
                             onClick={() => handleDeleteServer(entry)}
                           >
                             {t('sessionHistory.deleteConfirmAction')}
@@ -338,7 +349,7 @@ export const SessionHistoryList = ({ onReopenSession, onEmpty }: SessionHistoryL
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 p-0 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 p-0 px-3 text-xs text-muted-foreground hover:text-foreground"
               >
                 {t('sessionHistory.hideAll')}
               </Button>

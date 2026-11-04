@@ -39,12 +39,31 @@ export interface WorkshopMetadata {
   lastModified?: string;
 }
 
+/**
+ * One day of a multi-day plan. `days[0]` describes the root day: it carries
+ * only `id` and `title`, while its items, description, date, start time and
+ * target live in the regular `items` / `workshop` fields. `days[1..]` carry their own values.
+ * Only `src/lib/workshop-days.ts` should rely on this convention.
+ */
+export interface WorkshopDay {
+  id: string;
+  title?: string;
+  description?: string;
+  date?: string | null;
+  startTime?: string | null;
+  targetDuration?: number;
+  durationLocked?: boolean;
+  items?: WorkshopItem[];
+}
+
 export interface WorkshopData {
   version: string;
   workshop: WorkshopMetadata;
   blockTypes: BlockType[];
   persons: Person[];
   items: WorkshopItem[];
+  /** Optional; absent or a single entry means a regular single-day plan. */
+  days?: WorkshopDay[];
 }
 
 export interface WorkshopPrefillData {
@@ -57,9 +76,13 @@ export interface WorkshopPrefillData {
   blockTypes?: BlockType[];
   persons?: Person[];
   items?: WorkshopItem[];
+  /** Same layout as `WorkshopData.days`: the fields above are the first day. */
+  days?: WorkshopDay[];
 }
 
 export const DEFAULT_WORKSHOP_TITLE = 'Neuer Workshop';
+
+export const MAX_DAYS = 14;
 
 export const DEFAULT_BLOCK_TYPES: BlockType[] = [
   { id: 'input', name: '🎤 Vortrag/Input', color: '#2C8DFE' },

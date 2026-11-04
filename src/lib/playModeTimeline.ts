@@ -1,5 +1,6 @@
 /** @file playModeTimeline — Flattens the workshop item tree into time-indexed FlatBlocks. */
 import { WorkshopItem } from '@/types/workshop';
+import { timeToMinutes } from '@/lib/clock-time';
 
 export interface FlatBlock {
   id: string;
@@ -10,11 +11,7 @@ export interface FlatBlock {
   type: 'block' | 'group' | 'breakout';
 }
 
-/** Converts an "HH:MM" string to absolute minutes. */
-export function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
+export { timeToMinutes };
 
 /**
  * Flattens the workshop timeline into a list of FlatBlocks with absolute start/end times

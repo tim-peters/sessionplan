@@ -4,9 +4,9 @@ import {
   decodeWorkshopFromUrl,
   getWorkshopFromHash,
   setWorkshopToHash,
-  hasWorkshopItems,
   copyShareLink,
 } from '@/lib/workshopUrl';
+import { hasAnyItems } from '@/lib/workshop-days';
 import { makeWorkshop, installClipboardMock, setHash } from './test-helpers';
 
 describe('encodeWorkshopToUrl / decodeWorkshopFromUrl roundtrip', () => {
@@ -65,6 +65,25 @@ describe('encodeWorkshopToUrl / decodeWorkshopFromUrl roundtrip', () => {
     expect(decodeWorkshopFromUrl('v2:!!not-base64-encoded-payload!!')).toBeNull();
   });
 
+  it.each([
+    ['days of the wrong type', { days: 'xy' }],
+    ['empty day entries', { days: [null, null] }],
+    ['days without an ID', { days: [{}, {}] }],
+    ['duplicate day IDs', { days: [{ id: 'a' }, { id: 'a' }] }],
+    ['day items of the wrong type', { days: [{ id: 'a' }, { id: 'b', items: 'x' }] }],
+    ['an empty item in a later day', { days: [{ id: 'a' }, { id: 'b', items: [null] }] }],
+    ['an empty nested item', { days: [{ id: 'a' }, { id: 'b', items: [{ id: 'c', children: [null] }] }] }],
+    ['an empty item in the first day', { items: [null] }],
+  ])('refuses a plan with %s', (_name, overrides) => {
+    const encoded = encodeWorkshopToUrl({ ...makeWorkshop({ items: [] }), ...overrides } as never);
+    expect(decodeWorkshopFromUrl(encoded)).toBeNull();
+  });
+
+  it('keeps a plan whose optional fields are missing or empty', () => {
+    const data = { ...makeWorkshop({ items: [] }), days: [{ id: 'a' }, { id: 'b', items: null }] };
+    expect(decodeWorkshopFromUrl(encodeWorkshopToUrl(data as never))).toEqual(data);
+  });
+
   it('returns an empty string when encoding fails', () => {
     const circular: Record<string, unknown> = {};
     circular.self = circular;
@@ -119,17 +138,17 @@ describe('getWorkshopFromHash / setWorkshopToHash', () => {
   });
 });
 
-describe('hasWorkshopItems', () => {
+describe('hasAnyItems', () => {
   it('returns false for null / undefined', () => {
-    expect(hasWorkshopItems(null)).toBe(false);
-    expect(hasWorkshopItems(undefined)).toBe(false);
+    expect(hasAnyItems(null)).toBe(false);
+    expect(hasAnyItems(undefined)).toBe(false);
   });
   it('returns false when items is empty', () => {
-    expect(hasWorkshopItems(makeWorkshop())).toBe(false);
+    expect(hasAnyItems(makeWorkshop())).toBe(false);
   });
   it('returns true when items is non-empty', () => {
     expect(
-      hasWorkshopItems(
+      hasAnyItems(
         makeWorkshop({
           items: [
             {
@@ -147,7 +166,7 @@ describe('hasWorkshopItems', () => {
     ).toBe(true);
   });
   it('returns false when items is not an array', () => {
-    expect(hasWorkshopItems({ ...makeWorkshop(), items: undefined as never })).toBe(false);
+    expect(hasAnyItems({ ...makeWorkshop(), items: undefined as never })).toBe(false);
   });
 });
 

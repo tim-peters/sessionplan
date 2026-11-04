@@ -6,7 +6,7 @@
  *       via landingPagesLoader.
  */
 import { Suspense, useEffect } from 'react';
-import { Link, useLoaderData, Await } from 'react-router-dom';
+import { useLoaderData, Await } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { PageFooter } from '@/components/layout/PageFooter';
@@ -14,7 +14,8 @@ import { TemplateHeader } from '@/components/layout/TemplateHeader';
 import { HubFilter } from '@/components/atoms/HubFilter';
 import { LandingPageContent } from '@/types/landingPage';
 import type { Hub } from '@/types/hub';
-import { signalPrerenderReady } from '@/lib/prerender';
+import { signalPrerenderReadyAfterPaint } from '@/lib/prerender';
+import { LandingPageCard } from '@/components/sections/LandingPageCard';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalePrefix, getLocaleRoot, createSymmetricAlternates } from '@/lib/localeUtils';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
@@ -34,43 +35,17 @@ interface LandingPagesGridProps {
 }
 
 const LandingPagesGrid = ({ pages, localePrefix }: LandingPagesGridProps) => {
-  const { t } = useTranslation('common');
-
-  useEffect(() => {
-    let secondFrame: number | undefined;
-
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        signalPrerenderReady();
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      if (secondFrame !== undefined) {
-        window.cancelAnimationFrame(secondFrame);
-      }
-    };
-  }, []);
+  useEffect(() => signalPrerenderReadyAfterPaint(), []);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
       {pages.map((page) => (
-        <Link
+        <LandingPageCard
           key={page.slug}
           to={`${localePrefix}/${page.slug}`}
-          className="group block p-6 border rounded-lg hover:border-primary hover:shadow-lg transition-all bg-card"
-        >
-          <h2 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
-            {decodeHtmlEntities(page.title)}
-          </h2>
-          <p className="text-muted-foreground text-sm line-clamp-3">
-            {decodeHtmlEntities(page.metaDescription || page.heroDescription)}
-          </p>
-          <span className="inline-block mt-4 text-primary text-sm font-medium">
-            {t('landingPages.learnMore')} →
-          </span>
-        </Link>
+          title={page.title}
+          description={page.metaDescription || page.heroDescription}
+        />
       ))}
     </div>
   );

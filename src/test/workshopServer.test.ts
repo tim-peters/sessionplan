@@ -287,8 +287,13 @@ describe('updateServerSession', () => {
 
   it('returns ok=false (no conflict) on other non-2xx', async () => {
     mockFetchResponse({ body: { error: 'bad' }, status: 400 });
-    const result = await updateServerSession('abcdef012345', makeWorkshop(), 1);
-    expect(result).toEqual({ ok: false, conflict: false, reason: 'server' });
+    expect(await updateServerSession('abcdef012345', makeWorkshop(), 1)).toEqual({ ok: false, conflict: false, reason: 'rejected' });
+    mockFetchResponse({ body: { error: 'gone' }, status: 404 });
+    expect(await updateServerSession('abcdef012345', makeWorkshop(), 1)).toEqual({ ok: false, conflict: false, reason: 'deleted' });
+    mockFetchResponse({ body: { error: 'slow down' }, status: 429 });
+    expect(await updateServerSession('abcdef012345', makeWorkshop(), 1)).toEqual({ ok: false, conflict: false, reason: 'server' });
+    mockFetchResponse({ body: { error: 'down' }, status: 503 });
+    expect(await updateServerSession('abcdef012345', makeWorkshop(), 1)).toEqual({ ok: false, conflict: false, reason: 'server' });
   });
 
   it('returns ok=false on network error', async () => {

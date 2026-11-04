@@ -20,6 +20,8 @@ export interface SessionHistoryEntry {
   itemCount: number;
   /** Total duration of all top-level items in minutes at last save. */
   totalDuration: number;
+  /** Number of days for multi-day plans; absent for single-day plans. */
+  dayCount?: number;
   /** Session type. */
   type: 'local' | 'dynamic';
   /**

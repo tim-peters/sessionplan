@@ -1,6 +1,7 @@
 import { Copy, Library, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/primitives/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ interface ItemActionsMenuProps {
   onDuplicate: () => void;
   onSaveToLibrary: () => void;
   onDelete: () => void;
+  className?: string;
 }
 
 /**
@@ -25,6 +27,7 @@ export const ItemActionsMenu = ({
   onDuplicate,
   onSaveToLibrary,
   onDelete,
+  className,
 }: ItemActionsMenuProps) => {
   const { t } = useTranslation('common');
 
@@ -34,10 +37,10 @@ export const ItemActionsMenu = ({
   };
 
   return (
-  <div className="print:hidden">
+  <div className={cn('print:hidden', className)}>
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 print:hidden">
+        <Button aria-label={t('actions.menu')} variant="ghost" size="icon" className="h-8 w-8 shrink-0 print:hidden">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -57,7 +60,7 @@ export const ItemActionsMenu = ({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={stop(onDelete)}
-          className="text-destructive focus:text-destructive"
+          className="text-destructive-text focus:text-destructive-text"
         >
           <Trash2 className="h-4 w-4 mr-2" />
           {t('actions.delete')}

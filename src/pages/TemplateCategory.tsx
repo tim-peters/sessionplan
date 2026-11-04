@@ -6,12 +6,10 @@
  *       `createHubLoader('templates')` so we can drop in the same
  *       `{ items, hub, hubs }` shape with no extra mapping.
  */
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TemplateSummary } from '@/lib/routeLoaders';
 import { HubCollection, type HubCollectionConfig } from '@/components/sections/HubCollection';
-import { Button } from '@/components/primitives/button';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
+import { TemplateCard } from '@/components/sections/TemplateCard';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalizedPath } from '@/lib/localeUtils';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
@@ -39,25 +37,7 @@ const TemplateCategory = () => {
   return (
     <HubCollection
       config={config}
-      renderCard={(template) => (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">
-              <Link to={getLocalizedPath(locale, `/templates/${template.slug}`)} className="hover:underline">
-                {decodeHtmlEntities(template.title)}
-              </Link>
-            </CardTitle>
-            <CardDescription className="text-base line-clamp-3">
-              {decodeHtmlEntities(template.excerpt)}
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button asChild variant="outline">
-              <Link to={getLocalizedPath(locale, `/templates/${template.slug}`)}>{t('templates.openTemplate')}</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
+      renderCard={(template) => <TemplateCard template={template} />}
     />
   );
 };

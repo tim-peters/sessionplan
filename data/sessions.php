@@ -18,6 +18,12 @@
 
 declare(strict_types=1);
 
+// Load .env before any getenv() call so SP_PUBLIC_BASE_URL,
+// SP_TRUSTED_CLIENT_IP_HEADER, SP_ENV and SP_SESSIONS_DIR can come from it.
+// Real environment variables (FPM env, SetEnv) always win.
+require_once __DIR__ . '/_shared/env.php';
+backend_env_load();
+
 // ── CORS ─────────────────────────────────────────────────────────────────────
 
 $allowedOrigins = [
@@ -207,8 +213,8 @@ function validate_workshop_data(array $data): void
 }
 
 /**
- * The encrypted format is intentionally allowlisted. This stays after the
- * temporary escrow removal so request-only fields can never reach session JSON.
+ * The encrypted format is intentionally allowlisted so request-only fields can
+ * never reach session JSON.
  *
  * @return array<string, mixed>
  */
@@ -229,6 +235,19 @@ function encrypted_session_payload(array $data, ?string $writeCapabilityHash = n
 function generate_key(): string
 {
     return bin2hex(random_bytes(6)); // 12 hex chars
+}
+
+/**
+ * Server-stamped creation timestamp (UTC, ISO-8601). Set on POST and carried
+ * unchanged through PUT, so the client can never inject or shift it. Falls back
+ * to "now" if the stored value is absent or malformed (legacy sessions).
+ */
+function session_created_at(?array $stored = null): string
+{
+    $existing = is_array($stored) ? ($stored['createdAt'] ?? null) : null;
+    return is_string($existing) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $existing)
+        ? $existing
+        : gmdate('Y-m-d\TH:i:s\Z');
 }
 
 function bearer_token(): ?string
@@ -643,7 +662,7 @@ switch ($method) {
             json_error(500, 'Session data is corrupted.');
         }
 
-        unset($data['writeCapabilityHash'], $data['temporaryAdminKey']);
+        unset($data['writeCapabilityHash']);
         json_success(['data' => $data]);
 
     // ── POST: create a new session ────────────────────────────────────────────
@@ -654,9 +673,25 @@ switch ($method) {
 
         check_rate_limit('post');
         ensure_sessions_dir();
+
+        // Read and fully validate the request before touching the inventory
+        // counters. read_body()/validate_workshop_data() and the schema checks
+        // below can exit with json_error(); doing so before the reservation
+        // means those client errors never leave a dangling reservation behind.
+        $body = read_body();
+        validate_workshop_data($body);
+        $encrypted = ($body['format'] ?? null) === 'encrypted-v1';
+        if ($encrypted && (!isset($body['writeCapabilityHash']) || !is_string($body['writeCapabilityHash']) || !preg_match('/^[A-Za-z0-9_-]{43}$/', $body['writeCapabilityHash']))) {
+            json_error(422, 'Invalid write capability hash.');
+        }
+        if ($encrypted && (!isset($body['id']) || !is_string($body['id']) || !preg_match('/^[A-Za-z0-9_-]{22}$/', $body['id']))) {
+            json_error(422, 'Encrypted sessions require a 128-bit ID.');
+        }
+
         // Reserve a global counter slot and a per-IP slot under their
         // respective locks. The reservation is durable on disk from this
-        // point on; every early-fail path below MUST call
+        // point on; the only remaining early-fail paths are the key-generation
+        // failure and the write failure below, and each of them MUST call
         // inventory_record_rolled_back() so the counters do not drift above
         // the number of session files actually present.
         $clientIp = session_client_ip();
@@ -665,20 +700,6 @@ switch ($method) {
             json_error(503, 'Inventory storage unavailable.');
         }
         [$globalFp, $perIpFp] = $reservation;
-
-        $body = read_body();
-        validate_workshop_data($body);
-        $encrypted = ($body['format'] ?? null) === 'encrypted-v1';
-        $temporaryAdminKey = $body['temporaryAdminKey'] ?? null;
-        if ($encrypted && (!isset($body['writeCapabilityHash']) || !is_string($body['writeCapabilityHash']) || !preg_match('/^[A-Za-z0-9_-]{43}$/', $body['writeCapabilityHash']))) {
-            json_error(422, 'Invalid write capability hash.');
-        }
-        if ($encrypted && (!isset($body['id']) || !is_string($body['id']) || !preg_match('/^[A-Za-z0-9_-]{22}$/', $body['id']))) {
-            json_error(422, 'Encrypted sessions require a 128-bit ID.');
-        }
-        if ($encrypted && $temporaryAdminKey !== null && (!is_string($temporaryAdminKey) || !preg_match('/^[A-Za-z0-9_-]{43}$/', $temporaryAdminKey))) {
-            json_error(422, 'Invalid temporary admin key.');
-        }
 
         // Generate a collision-free key: check that both the live file and trash
         // file are free, then atomic fopen('x') prevents TOCTOU.
@@ -701,15 +722,20 @@ switch ($method) {
         }
 
         if ($newKey === null) {
+            inventory_record_rolled_back($globalFp, $perIpFp);
             json_error(500, 'Could not generate a unique session key. Please try again.');
         }
 
 
         // Stamp initial version and retain only the public encrypted envelope.
+        $requestOnlyFields = ['id' => true];
         $body = $encrypted
             ? encrypted_session_payload($body, $body['writeCapabilityHash'])
-            : array_diff_key($body, ['id' => true, 'temporaryAdminKey' => true]);
+            : array_diff_key($body, $requestOnlyFields);
         $body['_v'] = 1;
+        // Server-authoritative creation stamp, independent of client clock
+        // and never shipped from the request body.
+        $body['createdAt'] = session_created_at();
 
         flock($fp, LOCK_EX);
         $written = fwrite($fp, json_encode($body));
@@ -771,7 +797,7 @@ switch ($method) {
             if ($clientVersion === null) json_error(400, 'Encrypted sessions require a version.');
             $body = encrypted_session_payload($body, $stored['writeCapabilityHash']);
         } else {
-            unset($body['temporaryAdminKey'], $body['id']);
+            unset($body['id']);
         }
 
         $serverVersion = (int) ($stored['_v'] ?? 0);
@@ -787,6 +813,9 @@ switch ($method) {
         }
 
         $body['_v'] = $serverVersion + 1;
+        // Preserve the server-stamped creation date across updates; any
+        // client-supplied createdAt is ignored.
+        $body['createdAt'] = session_created_at($stored);
         $serialized = json_encode($body);
         $temporaryPath = tempnam(SESSIONS_DIR, '.session-');
         $written = $temporaryPath !== false && $serialized !== false ? file_put_contents($temporaryPath, $serialized) : false;

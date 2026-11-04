@@ -28,6 +28,7 @@ interface PlannerDialogsProps {
   onShowDisableServerDialogChange: (open: boolean) => void;
   onConfirmDisableServer: () => void;
   showCloseConfirmDialog: boolean;
+  isOpeningMigratedSession?: boolean;
   onShowCloseConfirmDialogChange: (open: boolean) => void;
   onConfirmCloseSession: () => void;
 }
@@ -42,6 +43,7 @@ export const PlannerDialogs = ({
   onShowDisableServerDialogChange,
   onConfirmDisableServer,
   showCloseConfirmDialog,
+  isOpeningMigratedSession = false,
   onShowCloseConfirmDialogChange,
   onConfirmCloseSession,
 }: PlannerDialogsProps) => {
@@ -87,7 +89,7 @@ export const PlannerDialogs = ({
           <AlertDialogFooter>
             <AlertDialogCancel>{t('planner.disableServerModeCancel')}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
               onClick={onConfirmDisableServer}
             >
               {t('planner.disableServerModeAction')}
@@ -99,7 +101,7 @@ export const PlannerDialogs = ({
       <AlertDialog open={showCloseConfirmDialog} onOpenChange={onShowCloseConfirmDialogChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('planner.closeSessionConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogTitle>{t(isOpeningMigratedSession ? 'planner.openMigratedConfirmTitle' : 'planner.closeSessionConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('planner.closeSessionConfirmText')}
             </AlertDialogDescription>
@@ -109,12 +111,12 @@ export const PlannerDialogs = ({
               {t('planner.closeSessionConfirmCancel')}
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive-hover"
               onClick={() => {
                 onConfirmCloseSession();
               }}
             >
-              {t('planner.closeSessionConfirmAction')}
+              {t(isOpeningMigratedSession ? 'planner.openMigratedConfirmAction' : 'planner.closeSessionConfirmAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

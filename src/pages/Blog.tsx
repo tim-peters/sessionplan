@@ -4,7 +4,7 @@
  * Role: Lists all blog posts sorted newest-first. Posts are loaded at route
  *       level via blogIndexLoader from public/data/blog/index.json (locale-aware).
  */
-import { Link, useLoaderData } from 'react-router-dom';
+import { useLoaderData } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlogIndex } from '@/types/blog';
@@ -12,10 +12,7 @@ import { PageFooter } from '@/components/layout/PageFooter';
 import { TemplateHeader } from '@/components/layout/TemplateHeader';
 import { HubFilter } from '@/components/atoms/HubFilter';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
-import { Button } from '@/components/primitives/button';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
-import { Calendar } from 'lucide-react';
-import { formatDate } from '@/lib/formatDate';
+import { BlogPostCard } from '@/components/sections/BlogPostCard';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocaleRoot, getLocalizedPath, createSymmetricAlternates } from '@/lib/localeUtils';
@@ -92,27 +89,7 @@ const Blog = () => {
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {sortedPosts.map((post) => (
-                  <Card key={post.slug} className="group hover:border-primary hover:shadow-lg transition-all">
-                    <CardHeader>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Calendar className="h-4 w-4" />
-                        <time dateTime={post.publishedDate}>{formatDate(post.publishedDate)}</time>
-                      </div>
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                        <Link to={getLocalizedPath(locale, `/blog/${post.slug}`)} className="hover:underline">
-                          {decodeHtmlEntities(post.title)}
-                        </Link>
-                      </CardTitle>
-                      <CardDescription className="text-sm line-clamp-3">
-                        {decodeHtmlEntities(post.excerpt)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardFooter>
-                      <Button asChild variant="outline" className="w-full">
-                        <Link to={getLocalizedPath(locale, `/blog/${post.slug}`)}>{t('blog.readArticle')}</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                <BlogPostCard key={post.slug} post={post} />
               ))}
             </div>
           )}

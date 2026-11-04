@@ -1,3 +1,4 @@
+import { Button } from '@/components/primitives/button';
 import { Library, FileText, Save, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { WorkshopTemplate, BlockTemplate } from '@/lib/workshopStorage';
@@ -25,10 +26,10 @@ export const LibraryPanel = ({
 
   return (
     <>
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide ml-1 mt-4 mb-1 px-3 pt-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide sidebar-library-label ml-1 mb-1 px-3">
         {t('sidebar.library')}
       </p>
-      <div className="p-4">
+      <div className="sidebar-panel">
         <SidebarSectionHeader
           icon={Library}
           label={
@@ -94,7 +95,7 @@ export const TemplatesPanel = ({
   const { t } = useTranslation('common');
 
   return (
-    <div className="p-4">
+    <div className="sidebar-panel">
       <SidebarSectionHeader
         icon={FileText}
         label={
@@ -132,27 +133,29 @@ export const TemplatesPanel = ({
                 {template.isDefault ? (
                   <span className="h-3.5 w-3.5 text-muted-foreground/60" />
                 ) : (
-                  <button
+                  <Button variant="plain" size="none"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteTemplate(template.id);
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 rounded transition-opacity"
+                    aria-label={t('actions.delete')}
+                    title={t('actions.delete')}
+                    className="sidebar-action p-1 hover:bg-destructive/10 rounded transition-opacity"
                   >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </button>
+                    <Trash2 className="h-3 w-3 text-destructive-text" />
+                  </Button>
                 )}
               </div>
             ))
           )}
           {onSaveAsTemplate && (
-            <button
+            <Button variant="plain" size="none"
               onClick={onSaveAsTemplate}
               className="sidebar-item text-muted-foreground hover:text-foreground"
             >
               <Save className="h-4 w-4" />
               <span>{t('dialog.saveAsTemplate')}</span>
-            </button>
+            </Button>
           )}
         </div>
       )}

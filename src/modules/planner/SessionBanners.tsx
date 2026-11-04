@@ -1,7 +1,7 @@
 /**
  * SessionBanners — status banners for server-synced (dynamic-link) sessions.
  *
- * All three banners share the same chrome (position, padding, print
+ * All banners share the same chrome (position, padding, print
  * behaviour) and are rendered in the same slot above the planner grid by
  * WorkshopPlanner. Only the tone (info/warning/error) and the layout of
  * message and actions differ.
@@ -20,15 +20,15 @@ const toneClasses: Record<BannerTone, string> = {
 };
 
 const toneTitleClasses: Record<BannerTone, string> = {
-  info: 'text-primary',
+  info: 'text-primary-text',
   warning: 'text-amber-800 dark:text-amber-300',
-  error: 'text-destructive',
+  error: 'text-destructive-text',
 };
 
 const toneIconClasses: Record<BannerTone, string> = {
-  info: 'text-primary',
+  info: 'text-primary-text',
   warning: 'text-amber-700 dark:text-amber-400',
-  error: 'text-destructive',
+  error: 'text-destructive-text',
 };
 
 const toneIcons: Record<BannerTone, typeof Info> = {
@@ -49,7 +49,7 @@ interface BannerShellProps {
 const BannerShell = ({ tone, alert = false, className, children }: BannerShellProps) => (
   <div
     role={alert ? 'alert' : undefined}
-    className={`mx-4 mt-2 mb-1 rounded-lg backdrop-blur px-4 py-3 text-sm print:hidden ${toneClasses[tone]}${className ? ` ${className}` : ''}`}
+    className={`mx-4 mt-2 mb-1 rounded-lg fade-in backdrop-blur px-4 py-3 text-sm print:hidden ${toneClasses[tone]}${className ? ` ${className}` : ''}`}
   >
     {children}
   </div>
@@ -74,16 +74,15 @@ const BannerMessage = ({ tone, title, hint }: { tone: BannerTone; title: string;
  * IncomingUpdateBanner — notification banner for collaborative session updates.
  *
  * Shown when another participant has pushed changes to a shared session.
- * Offers "Accept" (overwrite local) or "Fork" (create independent copy).
+ * Offers "Accept" (overwrite local) or a local copy of the current edits.
  */
 interface IncomingUpdateBannerProps {
   onAccept: () => void;
-  onFork: () => void;
-  isForking: boolean;
+  onCreateLocalCopy: () => void;
   serverKey?: string | null;
 }
 
-export const IncomingUpdateBanner = ({ onAccept, onFork, isForking, serverKey }: IncomingUpdateBannerProps) => {
+export const IncomingUpdateBanner = ({ onAccept, onCreateLocalCopy, serverKey }: IncomingUpdateBannerProps) => {
   const { t } = useTranslation('common');
 
 
@@ -95,11 +94,10 @@ export const IncomingUpdateBanner = ({ onAccept, onFork, isForking, serverKey }:
           variant="outline"
           size="sm"
           onClick={() => {
-            onFork();
+            onCreateLocalCopy();
           }}
-          disabled={isForking}
         >
-          {isForking ? t('planner.incomingUpdateForking') : t('planner.incomingUpdateFork')}
+          {t('planner.incomingUpdateLocalCopy')}
         </Button>
         <Button
           variant="default"
@@ -143,15 +141,15 @@ export const UnsyncedChangesBanner = ({ onDownload }: UnsyncedChangesBannerProps
       <p className="font-medium">
         <span className={toneTitleClasses.error}>{t('planner.unsyncedChangesBanner')}</span>{' '}
         {t('planner.unsyncedChangesHintBefore')}
-        <button
+        <Button variant="plain" size="none"
           type="button"
           onClick={() => {
             onDownload();
           }}
-          className="font-semibold underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-destructive rounded-sm"
+          className="font-semibold underline underline-offset-4 hover:decoration-2 focus-visible:outline-2 focus-visible:outline-destructive rounded-sm"
         >
           {t('planner.unsyncedChangesLink')}
-        </button>
+        </Button>
         {t('planner.unsyncedChangesHintAfter')}
       </p>
     </BannerShell>
@@ -180,6 +178,44 @@ export const ReadOnlyChangesBanner = ({ onCreateLocalCopy }: ReadOnlyChangesBann
         className="shrink-0"
       >
         {t('planner.readOnlyChangesCopy')}
+      </Button>
+    </BannerShell>
+  );
+};
+
+/** SessionDeletedBanner — the session no longer exists on the server. */
+interface SessionDeletedBannerProps {
+  onCreateLocalCopy: () => void;
+}
+
+export const SessionDeletedBanner = ({ onCreateLocalCopy }: SessionDeletedBannerProps) => {
+  const { t } = useTranslation('common');
+
+
+  return (
+    <BannerShell tone="warning" alert className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <BannerMessage tone="warning" title={t('planner.sessionDeletedBanner')} hint={t('planner.sessionDeletedHint')} />
+      <Button type="button" variant="outline" size="sm" onClick={onCreateLocalCopy} className="shrink-0">
+        {t('planner.readOnlyChangesCopy')}
+      </Button>
+    </BannerShell>
+  );
+};
+
+/** SyncRejectedBanner — the server refuses this plan, retrying cannot help. */
+interface SyncRejectedBannerProps {
+  onDownload: () => void;
+}
+
+export const SyncRejectedBanner = ({ onDownload }: SyncRejectedBannerProps) => {
+  const { t } = useTranslation('common');
+
+
+  return (
+    <BannerShell tone="error" alert className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <BannerMessage tone="error" title={t('planner.syncRejectedBanner')} hint={t('planner.syncRejectedHint')} />
+      <Button type="button" variant="outline" size="sm" onClick={onDownload} className="shrink-0">
+        {t('planner.syncRejectedDownload')}
       </Button>
     </BannerShell>
   );

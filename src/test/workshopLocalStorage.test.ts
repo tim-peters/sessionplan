@@ -5,15 +5,6 @@ import {
   upsertSessionToHistory,
   removeSessionFromHistory,
   updateSessionLastOpened,
-  saveTempWorkshopWithId,
-  getTempWorkshopStore,
-  getTempWorkshop,
-  saveTempWorkshop,
-  clearTempWorkshop,
-  clearTempWorkshopItems,
-  markTempWorkshopForRouteRestore,
-  shouldRestoreTempWorkshopOnEntry,
-  clearTempWorkshopRestoreMarker,
   getTemplates,
   saveTemplate,
   deleteTemplate,
@@ -32,6 +23,7 @@ import {
   setTimeVisualizationStrip,
   exportWorkshopAsJson,
   importWorkshopFromJson,
+  parseWorkshopJson,
   cleanImportedJson,
   normalizeImportedWorkshop,
   BlockTemplate,
@@ -39,7 +31,7 @@ import {
 } from '@/lib/workshopLocalStorage';
 import { makeWorkshop, makeBlock } from './test-helpers';
 import { vi } from 'vitest';
-import type { WorkshopData } from '@/types/workshop';
+import { MAX_DAYS, type WorkshopData } from '@/types/workshop';
 
 describe('LLM JSON import helpers', () => {
   it('removes JSON Markdown code fences and surrounding whitespace', () => {
@@ -98,17 +90,14 @@ describe('migrateStorageKeys', () => {
     expect(localStorage.getItem('library-initialized-de')).toBeNull();
   });
 
-  it('migrates temp-current-workshop into the new wrapper format with a session id', () => {
-    const data = makeWorkshop();
-    localStorage.setItem('temp-current-workshop', JSON.stringify(data));
-
+  it('removes the former temp workshop keys, also after the migration guard is set', () => {
+    localStorage.setItem('temp-current-workshop', '{not json}');
     migrateStorageKeys();
-
-    const stored = getTempWorkshopStore();
-    expect(stored).not.toBeNull();
-    expect(stored?.data).toEqual(data);
-    expect(stored?.sessionId).toBeTruthy();
     expect(localStorage.getItem('temp-current-workshop')).toBeNull();
+
+    localStorage.setItem('sp:temp', '{"data":{},"sessionId":"x"}');
+    migrateStorageKeys();
+    expect(localStorage.getItem('sp:temp')).toBeNull();
   });
 
   it('migrates UI prefs and removes the legacy keys', () => {
@@ -125,18 +114,10 @@ describe('migrateStorageKeys', () => {
       showFullPreviewText: false,
       playModeSounds: false,
       timeVisualizationStrip: false,
+      keyboardShortcutsEnabled: true,
     });
     expect(localStorage.getItem('sidebarCollapsed')).toBeNull();
     expect(localStorage.getItem('showFullPreviewText')).toBeNull();
-  });
-
-  it('migrates the sessionStorage restore-pending flag', () => {
-    sessionStorage.setItem('workshop-temp-restore-pending', '1');
-
-    migrateStorageKeys();
-
-    expect(sessionStorage.getItem('sp:restore-pending')).toBe('1');
-    expect(sessionStorage.getItem('workshop-temp-restore-pending')).toBeNull();
   });
 
   it('removes bare legacy keys even when no localised variants exist', () => {
@@ -162,13 +143,6 @@ describe('migrateStorageKeys', () => {
       sidebarCollapsed: true,
       showFullPreviewText: true,
     });
-  });
-
-  it('discards corrupt temp-current-workshop data without throwing', () => {
-    localStorage.setItem('temp-current-workshop', '{not json}');
-    expect(() => migrateStorageKeys()).not.toThrow();
-    expect(localStorage.getItem('temp-current-workshop')).toBeNull();
-    expect(getTempWorkshopStore()).toBeNull();
   });
 });
 
@@ -274,66 +248,6 @@ describe('session history', () => {
   });
 });
 
-// ── Temp workshop ─────────────────────────────────────────────────────────────
-
-describe('temp workshop', () => {
-  it('round-trips a workshop via saveTempWorkshopWithId / getTempWorkshopStore', () => {
-    const data = makeWorkshop();
-    saveTempWorkshopWithId(data, 'sess-1');
-    const store = getTempWorkshopStore();
-    expect(store?.data).toEqual(data);
-    expect(store?.sessionId).toBe('sess-1');
-  });
-
-  it('getTempWorkshop returns just the data (backwards-compat)', () => {
-    const data = makeWorkshop();
-    saveTempWorkshopWithId(data, 'sess-2');
-    expect(getTempWorkshop()).toEqual(data);
-  });
-
-  it('saveTempWorkshop re-uses the stored sessionId when not provided', () => {
-    const data = makeWorkshop();
-    saveTempWorkshopWithId(data, 'existing-id');
-    saveTempWorkshop(makeWorkshop({ workshop: { ...makeWorkshop().workshop, title: 'Updated' } }));
-    expect(getTempWorkshopStore()?.sessionId).toBe('existing-id');
-  });
-
-  it('saveTempWorkshop generates a new sessionId when none is stored', () => {
-    saveTempWorkshop(makeWorkshop());
-    expect(getTempWorkshopStore()?.sessionId).toBeTruthy();
-  });
-
-  it('clearTempWorkshop removes the entry', () => {
-    saveTempWorkshopWithId(makeWorkshop(), 'x');
-    clearTempWorkshop();
-    expect(getTempWorkshopStore()).toBeNull();
-  });
-
-  it('clearTempWorkshopItems keeps the sessionId and zeroes the items', () => {
-    const data = makeWorkshop();
-    saveTempWorkshopWithId(data, 'sess-3');
-    clearTempWorkshopItems();
-    const store = getTempWorkshopStore();
-    expect(store?.sessionId).toBe('sess-3');
-    expect(store?.data.items).toEqual([]);
-  });
-});
-
-describe('route-restore marker', () => {
-  it('defaults to no-restore', () => {
-    expect(shouldRestoreTempWorkshopOnEntry()).toBe(false);
-  });
-  it('markTempWorkshopForRouteRestore sets the marker', () => {
-    markTempWorkshopForRouteRestore();
-    expect(shouldRestoreTempWorkshopOnEntry()).toBe(true);
-  });
-  it('clearTempWorkshopRestoreMarker removes it again', () => {
-    markTempWorkshopForRouteRestore();
-    clearTempWorkshopRestoreMarker();
-    expect(shouldRestoreTempWorkshopOnEntry()).toBe(false);
-  });
-});
-
 // ── Templates and library ─────────────────────────────────────────────────────
 
 describe('templates & library', () => {
@@ -380,7 +294,6 @@ describe('templates & library', () => {
   it('clearAllData wipes everything and re-initialises the library', async () => {
     const tpl = await saveTemplate('Keep me', makeWorkshop());
     const block = await saveBlockToLibrary('Block', makeBlock());
-    saveTempWorkshopWithId(makeWorkshop(), 'sess-4');
     upsertSessionToHistory({
       id: 's1', title: 'X', createdAt: Date.now(), updatedAt: Date.now(),
       lastOpenedAt: Date.now(), itemCount: 1, totalDuration: 1, type: 'local',
@@ -389,7 +302,6 @@ describe('templates & library', () => {
 
     await clearAllData();
 
-    expect(getTempWorkshopStore()).toBeNull();
     expect(getSessionHistory()).toEqual([]);
     // Note: clearAllData re-initialises the library, so the keys may be present
     // again, but user-created entries must be gone.
@@ -517,5 +429,47 @@ describe('exportWorkshopAsJson / importWorkshopFromJson', () => {
 
     expect(parseWorkshopJson(JSON.stringify(data))).toEqual(data);
     expect(parseWorkshopJson(JSON.stringify(JSON.stringify(data)))).toEqual(data);
+  });
+
+  describe('multi-day plans', () => {
+    const multiDay = (overrides: Record<string, unknown> = {}) => ({
+      ...makeWorkshop(),
+      items: [],
+      days: [
+        { id: 'day-1', title: 'Kick-off' },
+        { id: 'day-2', date: '2026-11-11', startTime: null, items: [{ id: 'b', type: 'block', title: 'Second', duration: 20 }] },
+      ],
+      ...overrides,
+    });
+    const parse = (data: unknown) => parseWorkshopJson(JSON.stringify(data));
+
+    it('keeps the days and fills optional item fields on later days', () => {
+      const parsed = parse(multiDay());
+      expect(parsed.days?.[0]).toEqual({ id: 'day-1', title: 'Kick-off' });
+      expect(parsed.days?.[1].items?.[0]).toMatchObject({ id: 'b', blockTypeId: null, notes: '', material: '' });
+    });
+
+    it('does not add a days field to single-day plans', () => {
+      expect(parse(makeWorkshop())).not.toHaveProperty('days');
+    });
+
+    it.each([
+      ['days is not an array', { days: 'x' }],
+      ['days is null', { days: null }],
+      ['a day is not an object', { days: [{ id: 'day-1' }, 'x'] }],
+      ['a day has no ID', { days: [{ id: 'day-1' }, { title: 'No ID' }] }],
+      ['day IDs repeat', { days: [{ id: 'day-1' }, { id: 'day-1' }] }],
+      ['a day field has the wrong type', { days: [{ id: 'day-1' }, { id: 'day-2', date: 5 }] }],
+      ['day items are not an array', { days: [{ id: 'day-1' }, { id: 'day-2', items: {} }] }],
+      ['a day holds an invalid item', { days: [{ id: 'day-1' }, { id: 'day-2', items: [{ id: 'b' }] }] }],
+      ['the first day holds items', { days: [{ id: 'day-1', items: [] }, { id: 'day-2' }] }],
+      ['there are too many days', { days: Array.from({ length: MAX_DAYS + 1 }, (_, i) => ({ id: `day-${i}` })) }],
+      ['an item ID repeats across days', {
+        items: [{ id: 'b', type: 'block', title: 'First', duration: 20 }],
+        days: [{ id: 'day-1' }, { id: 'day-2', items: [{ id: 'b', type: 'block', title: 'Second', duration: 20 }] }],
+      }],
+    ])('rejects a plan when %s', (_case, overrides) => {
+      expect(() => parse(multiDay(overrides))).toThrow('Invalid workshop data');
+    });
   });
 });

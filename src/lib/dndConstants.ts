@@ -8,6 +8,9 @@ export const isContainerId = (id: string | number | null | undefined): boolean =
 
 export const containerId = (id: string): string => `${CONTAINER_PREFIX}${id}`;
 
+/** The item ID behind a `containerId()`. */
+export const getContainedItemId = (id: string): string => id.slice(CONTAINER_PREFIX.length);
+
 export const isDropZoneId = (
   id: string | number | null | undefined,
 ): id is 'drop-zone-top' | 'drop-zone-bottom' =>
@@ -19,13 +22,3 @@ export const isLaneId = (id: string | number | null | undefined): boolean =>
 export const buildLaneId = (parentId: string, laneIndex: number): string =>
   `${parentId}${LANE_ID_DELIMITER}${laneIndex}`;
 
-export const parseLaneId = (
-  id: string,
-): { parentId: string; laneIndex: number } | null => {
-  const idx = id.lastIndexOf(LANE_ID_DELIMITER);
-  if (idx === -1) return null;
-  const parentId = id.slice(0, idx);
-  const laneIndex = Number(id.slice(idx + LANE_ID_DELIMITER.length));
-  if (!Number.isFinite(laneIndex)) return null;
-  return { parentId, laneIndex };
-};

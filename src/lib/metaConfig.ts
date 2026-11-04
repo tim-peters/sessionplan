@@ -7,7 +7,7 @@
  * Used by: DocumentMeta (useDocumentMeta.tsx)
  */
 
-import { siteAuthor } from '@/integrations/site';
+import { siteAuthor, siteFounderId, siteOrganizationSameAs } from '@/integrations/site';
 import { type Locale, LOCALES, LOCALE_OG, LOCALE_PREFIX } from './i18n';
 
 const PRODUCTION_BASE_URL = 'https://sessionplan.de';
@@ -196,7 +196,7 @@ export const formatTitle = (title?: string): string => {
  * getOrganizationSchema().
  */
 export const ORGANIZATION_ID = `${PRODUCTION_BASE_URL}/#organization`;
-export const WEBSITE_ID = `${PRODUCTION_BASE_URL}/#website`;
+const WEBSITE_ID = `${PRODUCTION_BASE_URL}/#website`;
 
 /** The canonical Organization node — include once in a page's structuredData array. */
 export const getOrganizationSchema = () => ({
@@ -209,6 +209,19 @@ export const getOrganizationSchema = () => ({
     '@type': 'ImageObject',
     url: getCanonicalUrl('/pwa/icon-512.png'),
   },
+  ...(siteFounderId ? { founder: { '@id': siteFounderId } } : {}),
+  ...(siteOrganizationSameAs.length ? { sameAs: siteOrganizationSameAs } : {}),
+});
+
+/** The canonical WebSite node — included on the home pages alongside the Organization. */
+export const getWebSiteSchema = () => ({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': WEBSITE_ID,
+  url: META_CONFIG.baseUrl,
+  name: META_CONFIG.siteName,
+  inLanguage: [...LOCALES],
+  publisher: { '@id': ORGANIZATION_ID },
 });
 
 /**

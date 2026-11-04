@@ -41,6 +41,14 @@
         "$ref": "#/$defs/item"
       },
       "description": "Ordered top-level blocks, groups or breakouts. The complete tree may contain at most 500 items."
+    },
+    "days": {
+      "type": "array",
+      "maxItems": 14,
+      "items": {
+        "$ref": "#/$defs/day"
+      },
+      "description": "Optional, only for plans spanning several days. Omit it for single-day plans. days[0] describes the first day and contains only id and optional title; the first day's items, description, date, startTime and target stay in 'items' and 'workshop'. Every further entry is a complete day with its own items. Item IDs must be unique across all days, and all days together may contain at most 500 items."
     }
   },
   "$defs": {
@@ -91,6 +99,62 @@
           "description": "Optional timestamp with T separator, seconds 00–59 and a time zone (Z or ±HH:MM), e.g. 2026-09-15T09:00:00.000Z.",
           "format": "date-time",
           "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]+)?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$(?![\\s\\S])"
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique day ID."
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional day label, e.g. 'Kick-off'. Defaults to 'Day n' when omitted."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description or facilitator notes for this day. Omit in days[0]; the first day's description stays in workshop.description."
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional calendar date of this day (YYYY-MM-DD). Omit in days[0].",
+          "format": "date",
+          "pattern": "^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}$(?![\\s\\S])"
+        },
+        "startTime": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional local start time of this day (HH:MM). Omit in days[0].",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$(?![\\s\\S])"
+        },
+        "targetDuration": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional target duration of this day in minutes. Omit in days[0]."
+        },
+        "durationLocked": {
+          "type": "boolean",
+          "description": "Whether this day's target duration is locked. Omit in days[0]."
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/item"
+          },
+          "description": "Ordered top-level blocks, groups or breakouts of this day. Omit in days[0]."
         }
       }
     },

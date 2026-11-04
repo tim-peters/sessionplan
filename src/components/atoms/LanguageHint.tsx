@@ -28,7 +28,7 @@
  * the English-facing strings, the EN file the German-facing ones. This is
  * intentional — the hint always speaks the visitor's preferred language.
  *
- * Accessibility: real <button>/<a> elements only, no focus stealing, labelled
+ * Accessibility: real <Button variant="plain" size="none">/<a> elements only, no focus stealing, labelled
  * close action, subtle fade/slide-in that is disabled for reduced motion.
  */
 import { useEffect, useState } from 'react';
@@ -47,12 +47,10 @@ import {
 import { isPrerendering } from '@/lib/prerender';
 import {
   getWorkshopFromHash,
-  hasWorkshopItems,
+  SESSION_URL_CHANGED_EVENT,
 } from '@/lib/workshopUrl';
-import {
-  getTempWorkshop,
-  TEMP_WORKSHOP_CHANGED_EVENT,
-} from '@/lib/workshopLocalStorage';
+import { hasAnyItems } from '@/lib/workshop-days';
+import { getKeyFromSearch } from '@/lib/workshopServer';
 import { Button } from '@/components/primitives/button';
 import { cn } from '@/lib/utils';
 
@@ -87,16 +85,13 @@ const getMismatchTarget = (locale: Locale): Locale | null => {
 };
 
 /**
- * True when the CURRENT page carries a filled session (>= 1 block) that a
- * locale switch could lose: either the session lives in the URL hash (the
- * hint's <Link> drops the hash) or it is the planner home page relying on the
- * temp save (which the hint's navigation would not mark for restore).
+ * True when the CURRENT page carries a session that a locale switch would
+ * interrupt: a filled session in the URL hash (the hint's <Link> drops the
+ * hash) or a Dynamic Link.
  */
-const hasFilledSessionOnPage = (pathname: string): boolean => {
+const hasSessionOnPage = (): boolean => {
   if (typeof window === 'undefined') return false;
-  if (hasWorkshopItems(getWorkshopFromHash())) return true;
-  const isPlannerHome = pathname === '/' || pathname === '/en';
-  return isPlannerHome && hasWorkshopItems(getTempWorkshop());
+  return hasAnyItems(getWorkshopFromHash()) || getKeyFromSearch() !== null;
 };
 
 export const LanguageHint = () => {
@@ -112,15 +107,15 @@ export const LanguageHint = () => {
 
   const [visible, setVisible] = useState(false);
   const [entered, setEntered] = useState(false);
-  // Bumped whenever the temp workshop changes so a hint that is already
+  // Bumped whenever the session in the URL changes so a hint that is already
   // visible hides itself as soon as session content appears (or reappears
   // when it is cleared again).
-  const [tempWorkshopVersion, setTempWorkshopVersion] = useState(0);
+  const [sessionUrlVersion, setSessionUrlVersion] = useState(0);
 
   useEffect(() => {
-    const onTempWorkshopChanged = () => setTempWorkshopVersion((v) => v + 1);
-    window.addEventListener(TEMP_WORKSHOP_CHANGED_EVENT, onTempWorkshopChanged);
-    return () => window.removeEventListener(TEMP_WORKSHOP_CHANGED_EVENT, onTempWorkshopChanged);
+    const onSessionUrlChanged = () => setSessionUrlVersion((v) => v + 1);
+    window.addEventListener(SESSION_URL_CHANGED_EVENT, onSessionUrlChanged);
+    return () => window.removeEventListener(SESSION_URL_CHANGED_EVENT, onSessionUrlChanged);
   }, []);
 
   // Decided in a passive effect so the bubble mounts only after the initial
@@ -134,9 +129,9 @@ export const LanguageHint = () => {
       !isPrerendering() && // never bake the hint into prerendered HTML
       !hasSessionLanguageChoice() && // explicit choice beats browser language
       !isLanguageHintDismissed(direction) && // fresh "stay" decision for this direction
-      !hasFilledSessionOnPage(pathname); // never risk losing filled session content
+      !hasSessionOnPage(); // never interrupt an open session
     setVisible(eligible);
-  }, [target, alternateUrl, direction, ready, pathname, tempWorkshopVersion]);
+  }, [target, alternateUrl, direction, ready, pathname, sessionUrlVersion]);
 
   // Subtle slide-up + fade after mount; reduced-motion users get an instant
   // appearance (motion-reduce:transition-none below).

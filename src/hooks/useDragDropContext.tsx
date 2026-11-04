@@ -33,14 +33,10 @@ export const DragDropProvider = ({
   children: ReactNode;
   value: DragDropContextValue;
 }) => {
+  const { activeId, activeData, activeParentId, dropIndicator } = value;
   const memoizedValue = useMemo(
-    () => value,
-    [
-      value.activeId,
-      value.activeData,
-      value.activeParentId,
-      value.dropIndicator,
-    ],
+    () => ({ activeId, activeData, activeParentId, dropIndicator }),
+    [activeId, activeData, activeParentId, dropIndicator],
   );
   return (
     <DragDropContext.Provider value={memoizedValue}>

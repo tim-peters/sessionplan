@@ -1,6 +1,8 @@
+import { Button } from '@/components/primitives/button';
 import { Palette, Plus, FolderPlus, SquareSplitHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BlockType } from '@/types/workshop';
+import { getBlockTypeName } from '@/lib/workshopUtils';
 import { SidebarSectionHeader } from './SidebarSectionHeader';
 import { DraggableBlockType } from './DraggableBlockType';
 import { DraggableSpecialType } from './DraggableSpecialType';
@@ -44,7 +46,7 @@ export const BlockTypesPanel = ({
   const { t } = useTranslation('common');
 
   return (
-    <div className="p-4">
+    <div className="sidebar-panel">
       <SidebarSectionHeader
         icon={Palette}
         label={t('sidebar.blockTypes')}
@@ -58,10 +60,13 @@ export const BlockTypesPanel = ({
             editingBlockTypeId === type.id ? (
               <InlineEntityForm
                 key={type.id}
-                initialName={type.name}
+                initialName={getBlockTypeName(type, t)}
                 initialColor={type.color}
                 namePlaceholder={t('sidebar.addType')}
-                onSave={(name, color) => onUpdateBlockType(type.id, name, color)}
+                // An unchanged name keeps the stored one, so translations never get persisted.
+                onSave={(name, color) =>
+                  onUpdateBlockType(type.id, name === getBlockTypeName(type, t) ? type.name : name, color)
+                }
                 onCancel={() => onStartEditBlockType(type.id)}
                 onDelete={() => onRequestDeleteBlockType(type.id, type.name)}
               />
@@ -71,7 +76,7 @@ export const BlockTypesPanel = ({
                 type={type}
                 onModify={() => onStartEditBlockType(type.id)}
                 onAdd={() => onAddBlock(type.id)}
-                shortcutKey={index < 9 ? String(index + 1) : undefined}
+                shortcutDigit={index < 9 ? index + 1 : undefined}
               />
             )
           )}
@@ -85,13 +90,13 @@ export const BlockTypesPanel = ({
               onCancel={onHideNewTypeForm}
             />
           ) : (
-            <button
+            <Button variant="plain" size="none"
               onClick={onShowNewTypeForm}
               className="sidebar-item text-muted-foreground hover:text-foreground"
             >
               <Plus className="h-4 w-4" />
               <span>{t('sidebar.addType')}</span>
-            </button>
+            </Button>
           )}
 
           <DraggableSpecialType
@@ -99,7 +104,7 @@ export const BlockTypesPanel = ({
             icon={FolderPlus}
             label={t('sidebar.group')}
             onAdd={onAddGroup}
-            shortcut="g"
+            shortcutId="addGroup"
           />
 
           <DraggableSpecialType
@@ -107,7 +112,7 @@ export const BlockTypesPanel = ({
             icon={SquareSplitHorizontal}
             label={t('sidebar.breakout')}
             onAdd={onAddBreakout}
-            shortcut="b"
+            shortcutId="addBreakout"
           />
         </div>
       )}

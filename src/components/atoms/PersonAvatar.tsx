@@ -1,5 +1,7 @@
+import { Button } from '@/components/primitives/button';
 import { getInitials } from '@/lib/people';
 import { cn } from '@/lib/utils';
+import { getContrastingTextColor } from '@/lib/color-contrast';
 
 interface PersonAvatarProps {
   name: string;
@@ -30,31 +32,32 @@ export const PersonAvatar = ({
   className,
 }: PersonAvatarProps) => {
   const baseClasses = cn(
-    'rounded-full flex items-center justify-center font-medium text-white shrink-0',
+    'rounded-full flex items-center justify-center font-medium shrink-0',
     SIZE_CLASSES[size],
   );
 
-  const styleProps = { backgroundColor: color };
+  const styleProps = { backgroundColor: color, color: getContrastingTextColor(color) };
 
   if (onClick) {
     return (
-      <button
+      <Button variant="plain" size="none"
         onClick={onClick}
         title={title ?? name}
+        aria-pressed={selected}
         className={cn(
           baseClasses,
           'transition-all',
           selected
-            ? 'ring-2 ring-offset-1 ring-primary scale-110 mx-1'
+            ? 'selection-outline'
             : dimmed
-              ? 'opacity-40 hover:opacity-70'
-              : 'hover:opacity-80',
+              ? 'outline outline-1 outline-dashed outline-muted-foreground hover:outline-2'
+              : 'hover:outline hover:outline-2 hover:outline-muted-foreground',
           className,
         )}
         style={styleProps}
       >
         {getInitials(name)}
-      </button>
+      </Button>
     );
   }
 

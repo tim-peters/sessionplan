@@ -39,7 +39,7 @@ import { FormatRegion } from './textFormatting';
 /** Result of a formatting action. See file header for contract. */
 export type FormattingActionResult = string | null;
 
-const tryExecInsertText = (textarea: HTMLTextAreaElement, replacement: string): boolean => {
+const tryExecInsertText = (replacement: string): boolean => {
   if (typeof document === 'undefined' || typeof document.execCommand !== 'function') {
     return false;
   }
@@ -79,7 +79,7 @@ export const wrapSelection = (
   // the collapsed post-insert caret, so any state derived from selection
   // in handleChange must be deferred (setTimeout 0) — see the flicker
   // prevention note in the file header.
-  if (tryExecInsertText(textarea, replacement)) {
+  if (tryExecInsertText(replacement)) {
     if (selectedText) {
       textarea.setSelectionRange(
         start + marker.length,
@@ -137,7 +137,7 @@ export const insertLink = (
     textarea.setSelectionRange(start, end);
   }
 
-  if (tryExecInsertText(textarea, replacement)) {
+  if (tryExecInsertText(replacement)) {
     // Caret collapses just past the closing paren; 4 = '[', ']', '(', ')'.
     const caret = start + selectedText.length + url.length + 4;
     textarea.setSelectionRange(caret, caret);
@@ -204,7 +204,7 @@ export const removeFormatting = (
     textarea.setSelectionRange(region.regionStart, region.regionEnd);
   }
 
-  if (tryExecInsertText(textarea, region.content)) {
+  if (tryExecInsertText(region.content)) {
     if (collapsed) {
       const target = mappedCaret(start);
       textarea.setSelectionRange(target, target);

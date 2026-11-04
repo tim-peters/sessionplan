@@ -12,10 +12,10 @@
  *       excerpt, "Learn more" CTA). The grid + SEO wiring is owned by
  *       `HubCollection`.
  */
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { LandingPageHubMember } from '@/lib/routeLoaders';
 import { HubCollection, type HubCollectionConfig } from '@/components/sections/HubCollection';
+import { LandingPageCard } from '@/components/sections/LandingPageCard';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalizedPath } from '@/lib/localeUtils';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
@@ -44,20 +44,12 @@ const LandingPageHub = () => {
     <HubCollection<LandingPageHubMember>
       config={config}
       renderCard={(page) => (
-        <Link
+        <LandingPageCard
           to={getLocalizedPath(locale, `/${page.slug}`)}
-          className="group block p-6 border rounded-lg hover:border-primary hover:shadow-lg transition-all bg-card h-full"
-        >
-          <h2 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
-            {decodeHtmlEntities(page.title)}
-          </h2>
-          <p className="text-muted-foreground text-sm line-clamp-3">
-            {decodeHtmlEntities(page.metaDescription || page.heroDescription)}
-          </p>
-          <span className="inline-block mt-4 text-primary text-sm font-medium">
-            {t('landingPages.learnMore')} →
-          </span>
-        </Link>
+          title={page.title}
+          description={page.metaDescription || page.heroDescription}
+          className="h-full"
+        />
       )}
     />
   );

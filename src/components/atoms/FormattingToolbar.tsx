@@ -1,3 +1,4 @@
+import { Button } from '@/components/primitives/button';
 import { CSSProperties, PointerEvent, forwardRef } from 'react';
 import { Bold, Italic, Link, type LucideIcon } from 'lucide-react';
 import type { FormatKind } from '@/lib/textFormatting';
@@ -79,7 +80,7 @@ export const FormattingToolbar = forwardRef<HTMLDivElement, FormattingToolbarPro
     const iconClass = ICON_SIZE[size];
     const buttonClass =
       'p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent';
-    const activeButtonClass = cn(buttonClass, 'bg-primary/10 text-primary hover:text-primary');
+    const activeButtonClass = cn(buttonClass, 'bg-primary/10 text-primary-text hover:bg-primary/15 hover:text-primary-text active:bg-primary/20');
 
     const isActive = (kind: FormatKind) => active.includes(kind);
 
@@ -92,6 +93,7 @@ export const FormattingToolbar = forwardRef<HTMLDivElement, FormattingToolbarPro
     return (
       <div
         ref={ref}
+        data-vaul-no-drag=""
         className={cn('flex items-center gap-0.5', className)}
         style={style}
         // Prevent the mousedown/pointerdown default of moving focus onto the
@@ -108,7 +110,7 @@ export const FormattingToolbar = forwardRef<HTMLDivElement, FormattingToolbarPro
           const buttonActive = isActive(kind);
           const disabled = useLinkDisabled && linkDisabled;
           return (
-            <button
+            <Button variant="plain" size="none"
               key={kind}
               type="button"
               title={title}
@@ -121,7 +123,7 @@ export const FormattingToolbar = forwardRef<HTMLDivElement, FormattingToolbarPro
               className={buttonActive ? activeButtonClass : buttonClass}
             >
               <Icon className={iconClass} />
-            </button>
+            </Button>
           );
         })}
       </div>

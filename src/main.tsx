@@ -21,7 +21,6 @@ const app = (
 		enableSystem
 		storageKey={KEYS.theme}
 		disableTransitionOnChange
-		metaThemeColor={{ light: "#ffffff", dark: "#0f172a" }}
 	>
 		<App />
 	</ThemeProvider>

@@ -35,7 +35,7 @@ export const StatsSection = ({ section }: StatsSectionProps) => {
                 key={idx}
                 className="rounded-2xl border border-primary/20 bg-card p-6 text-center shadow-sm"
               >
-                <dt className="text-3xl md:text-4xl font-bold tracking-tight text-primary">
+                <dt className="text-3xl md:text-4xl font-bold tracking-tight text-primary-text">
                   {item.value}
                 </dt>
                 <dd className="mt-2 text-sm md:text-base font-semibold text-foreground">

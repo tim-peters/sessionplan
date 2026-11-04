@@ -190,11 +190,6 @@
           "@id": "https://sessionplan.de/#person",
           "name": "Sessionplan",
           "url": "https://sessionplan.de/"
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "5",
-          "ratingCount": "3"
         }
       }
     ]

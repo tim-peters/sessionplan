@@ -4,8 +4,9 @@
  * Storage keys use the `sp:` namespace prefix to avoid collisions.
  * Call `migrateStorageKeys()` once on app startup to migrate pre-v2 keys.
  */
-import { WorkshopData, WorkshopItem, generateId } from '@/types/workshop';
+import { MAX_DAYS, WorkshopData, WorkshopDay, WorkshopItem, generateId } from '@/types/workshop';
 import { SessionHistoryEntry } from '@/types/sessionHistory';
+import { withoutNegativeDurations } from '@/lib/workshopUtils';
 
 // ── Default library loader ────────────────────────────────────────────────────
 
@@ -27,10 +28,8 @@ const loadDefaultLibrary = async () => {
 export const KEYS = {
   /** Session history list. */
   sessions: 'sp:sessions',
-  /** Temporary current workshop incl. session id. */
-  temp: 'sp:temp',
-  /** sessionStorage flag to restore temp workshop on route entry. */
-  restorePending: 'sp:restore-pending',
+  /** Legacy ID to encrypted link; independent of the history registry. */
+  legacyMigrations: 'sp:legacy-migrations',
   /** Per-locale workshop template library. */
   templates: (locale: string) => `sp:templates:${locale}`,
   /** Per-locale block library. */
@@ -56,6 +55,10 @@ const getLocale = () => (window.location.pathname.startsWith('/en') ? 'en' : 'de
  */
 export const migrateStorageKeys = (): void => {
   try {
+    // The former auto-save copy of the open session, now covered by `sp:sessions`.
+    // Dynamic Link content in it was stored decrypted.
+    localStorage.removeItem('sp:temp');
+
     if (localStorage.getItem(KEYS.migrated)) return;
 
     for (const locale of ['de', 'en']) {
@@ -87,18 +90,7 @@ export const migrateStorageKeys = (): void => {
       localStorage.removeItem(oldKey);
     }
 
-    // Migrate temp workshop to the new wrapper format.
-    const oldTemp = localStorage.getItem('temp-current-workshop');
-    if (oldTemp) {
-      try {
-        const data = JSON.parse(oldTemp) as WorkshopData;
-        const wrapper: TempWorkshopStore = { data, sessionId: generateId() };
-        localStorage.setItem(KEYS.temp, JSON.stringify(wrapper));
-      } catch {
-        // Corrupt data — discard.
-      }
-      localStorage.removeItem('temp-current-workshop');
-    }
+    localStorage.removeItem('temp-current-workshop');
 
     // Migrate UI prefs.
     const sidebarOld = localStorage.getItem('sidebarCollapsed');
@@ -112,13 +104,6 @@ export const migrateStorageKeys = (): void => {
       localStorage.setItem(KEYS.prefs, JSON.stringify(prefs));
       localStorage.removeItem('sidebarCollapsed');
       localStorage.removeItem('showFullPreviewText');
-    }
-
-    // sessionStorage restore flag.
-    const oldFlag = sessionStorage.getItem('workshop-temp-restore-pending');
-    if (oldFlag) {
-      sessionStorage.setItem(KEYS.restorePending, oldFlag);
-      sessionStorage.removeItem('workshop-temp-restore-pending');
     }
 
     localStorage.setItem(KEYS.migrated, '1');
@@ -187,77 +172,35 @@ export const updateSessionLastOpened = (id: string): void => {
   }
 };
 
-// ── Temp workshop ─────────────────────────────────────────────────────────────
-
-/** Shape stored under `sp:temp`. */
-export interface TempWorkshopStore {
-  data: WorkshopData;
-  /** ID of the SessionHistoryEntry this temp data belongs to. */
-  sessionId: string;
+/** Secrets stay in this browser, just like the session history's serverHash. */
+export interface LegacyMigrationTarget {
+  serverKey: string;
+  serverHash: string;
 }
 
-/**
- * Dispatched on `window` whenever the temp workshop in localStorage changes
- * (saved or cleared). Lets UI outside the planner tree (e.g. LanguageHint)
- * react to session content appearing/disappearing without a prop drill.
- */
-export const TEMP_WORKSHOP_CHANGED_EVENT = 'sessionplan:temp-workshop-changed';
-
-const notifyTempWorkshopChanged = (): void => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(TEMP_WORKSHOP_CHANGED_EVENT));
-  }
-};
-
-export const saveTempWorkshopWithId = (data: WorkshopData, sessionId: string): void => {
+export const getLegacyMigration = (legacyKey: string): LegacyMigrationTarget | null => {
   try {
-    const wrapper: TempWorkshopStore = { data, sessionId };
-    localStorage.setItem(KEYS.temp, JSON.stringify(wrapper));
-    notifyTempWorkshopChanged();
-  } catch (error) {
-    console.error('Failed to save temp workshop:', error);
-  }
-};
-
-export const getTempWorkshopStore = (): TempWorkshopStore | null => {
-  try {
-    const stored = localStorage.getItem(KEYS.temp);
-    return stored ? (JSON.parse(stored) as TempWorkshopStore) : null;
-  } catch (error) {
-    console.error('Failed to load temp workshop:', error);
+    const entry = JSON.parse(localStorage.getItem(KEYS.legacyMigrations) ?? '{}')[legacyKey];
+    if (!/^[a-f0-9]{12}$/.test(legacyKey) || !entry ||
+        !/^[A-Za-z0-9_-]{22}$/.test(entry.serverKey) || typeof entry.serverHash !== 'string') return null;
+    const params = new URLSearchParams(entry.serverHash.slice(1));
+    if (!entry.serverHash.startsWith('#') ||
+        !/^[A-Za-z0-9_-]{43}$/.test(params.get('k') ?? '') ||
+        !/^[A-Za-z0-9_-]{43}$/.test(params.get('w') ?? '')) return null;
+    return { serverKey: entry.serverKey, serverHash: entry.serverHash };
+  } catch {
     return null;
   }
 };
 
-/** Convenience wrapper — returns just the WorkshopData (for backwards-compat). */
-export const getTempWorkshop = (): WorkshopData | null => getTempWorkshopStore()?.data ?? null;
-
-/** Save workshop data, re-using the existing sessionId if available. */
-export const saveTempWorkshop = (data: WorkshopData, sessionId?: string): void => {
-  const id = sessionId ?? getTempWorkshopStore()?.sessionId ?? generateId();
-  saveTempWorkshopWithId(data, id);
-};
-
-export const clearTempWorkshop = (): void => {
-  localStorage.removeItem(KEYS.temp);
-  notifyTempWorkshopChanged();
-};
-
-export const clearTempWorkshopItems = (): void => {
-  const store = getTempWorkshopStore();
-  if (!store) return;
-  saveTempWorkshopWithId({ ...store.data, items: [] }, store.sessionId);
-};
-
-export const markTempWorkshopForRouteRestore = (): void => {
-  sessionStorage.setItem(KEYS.restorePending, '1');
-};
-
-export const shouldRestoreTempWorkshopOnEntry = (): boolean =>
-  sessionStorage.getItem(KEYS.restorePending) === '1';
-
-export const clearTempWorkshopRestoreMarker = (): void => {
-  sessionStorage.removeItem(KEYS.restorePending);
+export const saveLegacyMigration = (legacyKey: string, target: LegacyMigrationTarget): void => {
+  let entries: Record<string, LegacyMigrationTarget> = {};
+  try {
+    const stored = JSON.parse(localStorage.getItem(KEYS.legacyMigrations) ?? '{}');
+    if (stored && typeof stored === 'object' && !Array.isArray(stored)) entries = stored;
+  } catch { /* Replace corrupt metadata without affecting the sessions. */ }
+  // Propagate storage failures: callers retain an in-memory mapping as well.
+  localStorage.setItem(KEYS.legacyMigrations, JSON.stringify({ ...entries, [legacyKey]: target }));
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -369,11 +312,10 @@ export const clearAllData = async (): Promise<void> => {
     localStorage.removeItem(KEYS.lib(locale));
     localStorage.removeItem(KEYS.libInit(locale));
   }
-  localStorage.removeItem(KEYS.temp);
   localStorage.removeItem(KEYS.sessions);
+  localStorage.removeItem(KEYS.legacyMigrations);
   localStorage.removeItem(KEYS.prefs);
   localStorage.removeItem(KEYS.theme);
-  sessionStorage.removeItem(KEYS.restorePending);
   await initializeLibraryIfNeeded();
 };
 
@@ -386,6 +328,7 @@ interface UIPrefs {
   /** Off by default — opt-in to render the slim time-distribution strip on
    *  the right edge of the planner. */
   timeVisualizationStrip: boolean;
+  keyboardShortcutsEnabled: boolean;
 }
 
 const DEFAULT_PREFS: UIPrefs = {
@@ -393,6 +336,7 @@ const DEFAULT_PREFS: UIPrefs = {
   showFullPreviewText: true,
   playModeSounds: false,
   timeVisualizationStrip: false,
+  keyboardShortcutsEnabled: true,
 };
 
 export const getDefaultPrefs = (): UIPrefs => DEFAULT_PREFS;
@@ -447,6 +391,12 @@ export const setTimeVisualizationStrip = (value: boolean): void => {
   savePrefs({ timeVisualizationStrip: value });
 };
 
+export const getKeyboardShortcutsEnabled = (): boolean => getPrefs().keyboardShortcutsEnabled;
+
+export const setKeyboardShortcutsEnabled = (value: boolean): void => {
+  savePrefs({ keyboardShortcutsEnabled: value });
+};
+
 // ── Export / Import ───────────────────────────────────────────────────────────
 
 export const exportWorkshopAsJson = (data: WorkshopData): void => {
@@ -490,7 +440,7 @@ export const parseWorkshopJson = (value: string): WorkshopData => {
   if (!isWorkshopData(data)) {
     throw new Error('Invalid workshop data');
   }
-  return data;
+  return withoutNegativeDurations(data);
 };
 
 /** Removes the Markdown fence users commonly copy from an LLM response. */
@@ -518,7 +468,14 @@ export const normalizeImportedWorkshop = (value: unknown): unknown => {
     ...value,
     workshop,
     items: Array.isArray(value.items) ? value.items.map(normalizeImportedItem) : value.items,
+    ...(Array.isArray(value.days) ? { days: value.days.map(normalizeImportedDay) } : {}),
   };
+};
+
+const normalizeImportedDay = (value: unknown): unknown => {
+  if (!isRecord(value) || !Array.isArray(value.items)) return value;
+
+  return { ...value, items: value.items.map(normalizeImportedItem) };
 };
 
 const normalizeImportedItem = (value: unknown): unknown => {
@@ -554,6 +511,39 @@ const isWorkshopItem = (value: unknown): boolean => {
     (Array.isArray(value.children) && value.children.every(isWorkshopItem));
 };
 
+const isWorkshopDay = (value: unknown): boolean => {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.id === 'string' &&
+    value.id.length > 0 &&
+    (value.title === undefined || typeof value.title === 'string') &&
+    (value.description === undefined || typeof value.description === 'string') &&
+    (value.date === undefined || value.date === null || typeof value.date === 'string') &&
+    (value.startTime === undefined || value.startTime === null || typeof value.startTime === 'string') &&
+    (value.targetDuration === undefined || typeof value.targetDuration === 'number') &&
+    (value.durationLocked === undefined || typeof value.durationLocked === 'boolean') &&
+    (value.items === undefined || (Array.isArray(value.items) && value.items.every(isWorkshopItem)))
+  );
+};
+
+const collectItemIds = (items: WorkshopItem[]): string[] =>
+  items.flatMap((item) => [item.id, ...collectItemIds(item.children ?? [])]);
+
+/** Mirrors the backend rules for `days`, so an import cannot lose or mix up items. */
+const hasValidDays = (data: Record<string, unknown>): boolean => {
+  if (data.days === undefined) return true;
+  if (!Array.isArray(data.days) || data.days.length > MAX_DAYS || !data.days.every(isWorkshopDay)) return false;
+
+  const days = data.days as WorkshopDay[];
+  // The first day's items live in `items`; any here would be dropped silently.
+  if (days[0]?.items !== undefined) return false;
+  if (new Set(days.map((day) => day.id)).size !== days.length) return false;
+
+  const itemIds = [data.items as WorkshopItem[], ...days.map((day) => day.items ?? [])].flatMap(collectItemIds);
+  return new Set(itemIds).size === itemIds.length;
+};
+
 const isWorkshopData = (value: unknown): value is WorkshopData => {
   if (!isRecord(value) || !isRecord(value.workshop)) return false;
 
@@ -567,6 +557,7 @@ const isWorkshopData = (value: unknown): value is WorkshopData => {
     Array.isArray(value.blockTypes) &&
     Array.isArray(value.persons) &&
     Array.isArray(value.items) &&
-    value.items.every(isWorkshopItem)
+    value.items.every(isWorkshopItem) &&
+    hasValidDays(value)
   );
 };

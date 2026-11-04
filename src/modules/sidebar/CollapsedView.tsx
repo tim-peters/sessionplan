@@ -1,3 +1,4 @@
+import { Button } from '@/components/primitives/button';
 import { FolderPlus, MoreHorizontal, SquareSplitHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BlockType } from '@/types/workshop';
@@ -31,7 +32,7 @@ export const CollapsedView = ({
             key={type.id}
             type={type}
             onAdd={() => onAddBlock(type.id)}
-            shortcutKey={index < 9 ? String(index + 1) : undefined}
+            shortcutDigit={index < 9 ? index + 1 : undefined}
           />
         ))}
         <DraggableSpecialTypeIcon
@@ -39,23 +40,23 @@ export const CollapsedView = ({
           icon={FolderPlus}
           label={t('sidebar.group')}
           onAdd={onAddGroup}
-          shortcut="g"
+          shortcutId="addGroup"
         />
         <DraggableSpecialTypeIcon
           dragType="new-breakout"
           icon={SquareSplitHorizontal}
           label={t('sidebar.breakout')}
           onAdd={onAddBreakout}
-          shortcut="b"
+          shortcutId="addBreakout"
         />
         <div className="w-6 border-t my-1" />
-        <button
+        <Button variant="plain" size="none"
           onClick={onExpand}
           className="icon-button mx-auto"
           title={t('settings.expand')}
         >
           <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-        </button>
+        </Button>
       </div>
     </TooltipProvider>
   );

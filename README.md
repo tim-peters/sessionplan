@@ -7,11 +7,14 @@
 ## Features
 
 - **Visual timeline** — Drag & drop blocks to build your agenda
+- **Multi-day plans** — Up to 14 days in one plan, each with its own date, start time and agenda
 - **Automatic time calculation** — Start times and durations update instantly
 - **Live mode** — Follow your plan in real-time during sessions
 - **Block types & templates** — Custom categories, default library, reusable templates
 - **Grouping & breakouts** — Parallel sessions, configurable lanes, per-lane facilitators
-- **Share & export** — Snapshot links, JSON export/import, print-ready PDF
+- **Share & export** — Snapshot links, end-to-end encrypted Dynamic Links, JSON export/import, CSV export, print-ready PDF
+- **Keyboard shortcuts** — Help dialog and on-screen hints; character keys can be switched off in the settings
+- **AI assistants** — Generate plans with a copyable prompt or connect ChatGPT and Claude
 - **Offline-first** — Works fully offline after first load (PWA)
 - **No registration** — All data stays in your browser by default
 
@@ -29,7 +32,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) (or the port Vite assigns) in your browser.
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ## Self-Hosting
 
@@ -43,8 +46,9 @@ The public distribution ships a single PHP API at `data/sessions.php` plus the
 `_shared` modules it needs. The API is **strictly server-blind** — every
 Dynamic Link is encrypted in the browser before upload; the server stores only
 the encrypted envelope, the title, technical metadata and a hash of the write
-capability, never the encryption key. There is no recovery-key escrow and no
-server-side analytics or event logging integration in this build.
+capability, never the encryption key. The key and the write capability stay in
+the URL fragment, which browsers do not send to the server. This build has no
+server-side analytics or event logging integration.
 
 Self-hosters who want persistent Dynamic Links need a PHP runtime that can
 serve the `data/` directory:
@@ -63,12 +67,16 @@ serve the `data/` directory:
 Additional optional environment variables (both default to safe values and
 can be left unset for direct-internet deployments):
 
-- `SP_PUBLIC_BASE_URL` — overrides the base URL used when reconstructing a
-  tracked dynamic-link URL for analytics. Defaults to `https://sessionplan.de`.
+- `SP_PUBLIC_BASE_URL` — overrides the canonical base URL the API uses for
+  Dynamic Links. Defaults to `https://sessionplan.de`.
 - `SP_TRUSTED_CLIENT_IP_HEADER` — when set to a safe header name
   (e.g. `CF-Connecting-IP`, `X-Real-IP`), the rate-limit + per-IP capacity
   counters use that header's value instead of `REMOTE_ADDR`. Only enable
   this when a trusted front-end proxy sits in front of the API.
+
+Server variables can also come from a `.env` file. The API reads the first file
+it finds: one directory above the deployed root, then `data/_shared/.env`. Real
+environment variables always win.
 
 A reference Apache configuration is provided in `public/.htaccess`. Without
 the PHP runtime, the planner continues to work locally and shares plans via
@@ -86,8 +94,8 @@ To work on the planner together with the sessions API locally:
 3. CORS: `dev:api` sets `SP_ENV=development`, which additionally allows
    `localhost`/`127.0.0.1` origins (any port). For a non-localhost staging
    check, set `SP_ALLOWED_ORIGIN` instead.
-4. Storage: sessions default to `sessions_data/` in the repository root
-   (gitignored). Point `SP_SESSIONS_DIR` at a directory outside any served
+4. Storage: sessions default to `sessions_data/` next to the checkout, in its
+   parent directory. Point `SP_SESSIONS_DIR` at a directory outside any served
    document root for anything beyond local experiments.
 
 Run the two servers separately with `npm run dev` and `npm run dev:api` if
@@ -111,10 +119,10 @@ See [SECURITY.md](./SECURITY.md) for reporting vulnerabilities.
 
 ## Public distribution
 
-This repository contains the frontend application and neutral sample content.
-It has no analytics integration, operator-specific contact details, legal pages
-or server implementation. Static sample content in `public/data/` is independent
-of production content.
+This repository contains the frontend application, the optional Dynamic-Link
+sessions API and neutral sample content. It has no analytics integration, legal
+pages or operator-specific configuration. Static sample content in `public/data/`
+is independent of production content.
 
 `.public-export.json` lists the files generated in this export and carries a
 content-derived `publicRevision` marker plus a `generated` date. It identifies

@@ -175,7 +175,7 @@ export function HubCollection<TItem>({
           <div className="mb-8">
             <Link
               to={getLocalizedPath(locale, config.backPath)}
-              className="text-sm font-medium text-primary hover:underline"
+              className="text-sm font-medium text-primary-text hover:underline"
             >
               {config.backLabel}
             </Link>

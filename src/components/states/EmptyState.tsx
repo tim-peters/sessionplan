@@ -10,6 +10,7 @@ import { LandingPageContent } from '@/types/landingPage';
 import { SessionHistoryEntry } from '@/types/sessionHistory';
 import { getSessionHistory } from '@/lib/workshopLocalStorage';
 import { SessionHistoryList } from '@/components/sections/SessionHistoryList';
+import { SocialProofBadge } from '@/components/atoms/SocialProofBadge';
 import { DropZone } from '@/modules/timeline/DropZone';
 import { parseFormatting } from '@/lib/textFormatting';
 
@@ -21,7 +22,7 @@ interface EmptyStateHeroProps {
 
 const renderWithPrimary = (text: string) =>
   text.split(/\*([^*]+)\*/).map((part, i) =>
-    i % 2 === 1 ? <span key={i} className="text-primary">{part}</span> : part
+    i % 2 === 1 ? <span key={i} className="text-primary-text">{part}</span> : part
   );
 
 export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession }: EmptyStateHeroProps) => {
@@ -55,14 +56,15 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
   }, [resolvedTheme]);
 
   return (
-    <div id="hero-planner" className="relative mx-auto min-h-[calc(100vh-210px)] p-6 pt-10 lg:pt-[10vh]">    
+    <div id="hero-planner" className="relative mx-auto min-h-[calc(100vh-210px)] p-6 pt-10 lg:pt-[6vh]">    
+      <DropZone id="drop-zone-top" position="top" />
       {/* Content */}
       <div className="relative z-10 mx-auto lg:px-10 flex items-center justify-center gap-8 md:gap-16 flex-col md:flex-row">
         <div className="flex-1 max-w-md">
           <div className="flex flex-wrap gap-2 mb-3 -ml-2">
-            <Badge variant="secondary" className="text-primary">{t('emptyState.freeTier')}</Badge>
-            <Badge variant="secondary" className="text-primary">{t('emptyState.noRegistration')}</Badge>
-            <Badge variant="secondary" className="text-primary">{t('emptyState.privateByDesign')}</Badge>
+            <Badge variant="secondary" className="text-primary-text">{t('emptyState.freeTier')}</Badge>
+            <Badge variant="secondary" className="text-primary-text">{t('emptyState.noRegistration')}</Badge>
+            <Badge variant="secondary" className="text-primary-text">{t('emptyState.privateByDesign')}</Badge>
           </div>
           <h1 className="text-4xl leading-10 xl:text-5xl xl:leading-[3.5rem] font-bold my-6">
             {renderWithPrimary(heroTitle)}
@@ -87,6 +89,9 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
             </Button>
             </>
           )}
+          {landingPageContent?.siteStats && (
+            <SocialProofBadge stats={landingPageContent.siteStats} className="mt-5" />
+          )}
         </div>
         <div className="w-full flex-1 max-w-md overflow-hidden">
           {hasSessions && onReopenSession ? (
@@ -104,7 +109,6 @@ export const EmptyStateHero = ({ onAddBlock, landingPageContent, onReopenSession
           )}
         </div>
       </div>
-      <DropZone id="drop-zone-bottom" position="bottom" />
     </div>
   );
 };

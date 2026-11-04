@@ -16,10 +16,9 @@ ErrorDocument 404 /404/index.html
     # links to. .htaccess context does not permit <DirectoryMatch>, so we use
     # mod_rewrite's [F] (forbidden) flag instead. Must run before the SPA
     # fallback below so an attacker cannot rewrite into /index.html.
-    #   sessions/ — recovery-key escrow storage (private deployments only);
-    #               the public overlay ships no escrow and the directory is
-    #               never created, but the rule still rejects the path so a
-    #               future misconfiguration cannot expose it.
+    #   sessions/ — not used by this distribution, session data lives outside
+    #               the webroot. The rule still rejects the path so a future
+    #               misconfiguration cannot expose it.
     #   _shared/   — internal API support modules (require_once'd by sessions.php);
     #               not meant to be served as standalone URLs.
     #   trash/     — admin trash directory; deleted sessions live here until

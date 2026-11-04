@@ -1,3 +1,4 @@
+import { Button } from '@/components/primitives/button';
 import { useRouteError, isRouteErrorResponse, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -49,12 +50,9 @@ function NotFoundError() {
             <p className="text-muted-foreground mb-8">
               {t('errors.notFoundDesc')}
             </p>
-            <Link
-              to="/"
-              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              {t('errors.backHome')}
-            </Link>
+            <Button asChild className="h-auto px-6 py-3">
+              <Link to="/">{t('errors.backHome')}</Link>
+            </Button>
           </div>
         </main>
         <div className="mx-6 md:mx-0">
@@ -102,18 +100,15 @@ function GenericError({ error }: { error: unknown }) {
               </details>
             )}
             <div className="mt-8 flex gap-4 justify-center">
-              <button
+              <Button
                 onClick={() => window.location.reload()}
-                className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="h-auto px-6 py-3"
               >
                 {t('errors.reload')}
-              </button>
-              <Link
-                to="/"
-                className="inline-flex items-center justify-center rounded-md border border-input bg-background px-6 py-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                {t('errors.toHome')}
-              </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto px-6 py-3">
+                <Link to="/">{t('errors.toHome')}</Link>
+              </Button>
             </div>
           </div>
         </main>

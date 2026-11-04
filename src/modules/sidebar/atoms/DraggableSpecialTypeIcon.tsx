@@ -1,17 +1,14 @@
-import { useDraggable } from '@dnd-kit/core';
-import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/primitives/tooltip';
+import type { ElementType } from 'react';
+import type { ShortcutId } from '@/lib/keyboard-shortcuts';
+import { useShortcutLabels } from '@/hooks/useShortcutLabels';
+import { CollapsedDraggableItem } from './CollapsedDraggableItem';
 
 interface DraggableSpecialTypeIconProps {
   dragType: 'new-group' | 'new-breakout';
-  icon: React.ElementType;
+  icon: ElementType;
   label: string;
   onAdd: () => void;
-  shortcut?: string;
+  shortcutId: ShortcutId;
 }
 
 export const DraggableSpecialTypeIcon = ({
@@ -19,34 +16,19 @@ export const DraggableSpecialTypeIcon = ({
   icon: Icon,
   label,
   onAdd,
-  shortcut,
+  shortcutId,
 }: DraggableSpecialTypeIconProps) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `special-${dragType}`,
-    data: { type: dragType },
-  });
+  const { withHint, hintAttrs } = useShortcutLabels();
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          ref={setNodeRef}
-          {...listeners}
-          {...attributes}
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdd();
-          }}
-          className={cn(
-            'flex items-center justify-center w-8 h-8 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted transition-colors mx-auto',
-            isDragging && 'opacity-50'
-          )}
-        >
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="right">
-        {shortcut ? `${label} (${shortcut.toUpperCase()})` : label}
-      </TooltipContent>
-    </Tooltip>
+    <CollapsedDraggableItem
+      dragId={`special-${dragType}`}
+      dragData={{ type: dragType }}
+      hintProps={hintAttrs(shortcutId)}
+      tooltip={withHint(label, shortcutId)}
+      onAdd={onAdd}
+    >
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CollapsedDraggableItem>
   );
 };

@@ -1,10 +1,39 @@
-import { DragEndEvent } from '@dnd-kit/core';
-import { BlockType, Person, WorkshopItem } from '@/types/workshop';
-import { calculateBlockTime } from '@/lib/workshopStorage';
-import { findItemById } from '@/lib/workshopUtils';
-import { PlayState } from '@/lib/playModeUtils';
+import type { BlockType, Person, WorkshopItem } from '@/types/workshop';
+import { calculateBlockTime, calculateNestedBlockTime, findItemById } from '@/lib/workshopUtils';
+import type { PlayState } from '@/lib/playModeUtils';
 
-export interface ItemProps {
+/** Callbacks a group or breakout card forwards for its children, addressed by child ID. */
+export interface ChildItemCallbacks {
+  onUpdateChild?: (childId: string, updates: Partial<WorkshopItem>) => void;
+  onDeleteChild?: (childId: string) => void;
+  onDuplicateChild?: (childId: string) => void;
+  onSaveChildToLibrary?: (childId: string) => void;
+  onEditChildDetails?: (childId: string) => void;
+  onEditChildDetailsOnTime?: (childId: string) => void;
+  onCalculateChildTime?: (parentItem: WorkshopItem, childIndex: number) => string | null;
+  onCreateBelowChild?: (childId: string) => void;
+  onDeleteChildAndFocusPrev?: (childId: string) => void;
+}
+
+/** The card-level actions of one child, bound from its parent's callbacks. */
+export const bindChildActions = (child: WorkshopItem, callbacks: ChildItemCallbacks) => ({
+  onUpdate: (updates: Partial<WorkshopItem>) => callbacks.onUpdateChild?.(child.id, updates),
+  onDelete: () => callbacks.onDeleteChild?.(child.id),
+  onDuplicate: () => callbacks.onDuplicateChild?.(child.id),
+  onSaveToLibrary: () => callbacks.onSaveChildToLibrary?.(child.id),
+  onEditDetails: () => callbacks.onEditChildDetails?.(child.id),
+  // Left undefined so that the card falls back to opening the details normally.
+  onEditDetailsOnTime: callbacks.onEditChildDetailsOnTime && (() => callbacks.onEditChildDetailsOnTime?.(child.id)),
+});
+
+/** `bindChildActions` plus the title-field keyboard actions of a block. */
+export const bindChildBlockActions = (child: WorkshopItem, callbacks: ChildItemCallbacks) => ({
+  ...bindChildActions(child, callbacks),
+  onCreateBelow: (item: WorkshopItem) => callbacks.onCreateBelowChild?.(item.id),
+  onDeleteAndFocusPrev: (item: WorkshopItem) => callbacks.onDeleteChildAndFocusPrev?.(item.id),
+});
+
+export interface ContainerCardProps extends ChildItemCallbacks {
   item: WorkshopItem;
   blockTypes: BlockType[];
   persons: Person[];
@@ -15,78 +44,47 @@ export interface ItemProps {
   onDuplicate: () => void;
   onSaveToLibrary: () => void;
   onEditDetails: () => void;
-  onEditDetailsOnTime?: () => void;
-  onCreateBelow?: (item: WorkshopItem) => void;
-  onDeleteAndFocusPrev?: (item: WorkshopItem) => void;
-  onAddChild?: (type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
-  onAddToChild?: (childId: string, type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
-  onUpdateChild?: (childId: string, updates: Partial<WorkshopItem>) => void;
-  onDeleteChild?: (childId: string) => void;
-  onDuplicateChild?: (childId: string) => void;
-  onSaveChildToLibrary?: (childId: string) => void;
-  onEditChildDetails?: (childId: string) => void;
-  onEditChildDetailsOnTime?: (childId: string) => void;
-  onCalculateChildTime?: (parentItem: WorkshopItem, childIndex: number) => string | null;
-  onCreateBelowChild?: (childId: string) => void;
-  onDeleteChildAndFocusPrev?: (childId: string) => void;
-  onMoveItem: (itemId: string, targetParentId: string | null, targetIndex?: number) => void;
-  dropIndicator: { overId: string; position: 'before' | 'after' } | null;
+  onEditDetailsOnTime: () => void;
+  onCreateBelow: (item: WorkshopItem) => void;
+  onDeleteAndFocusPrev: (item: WorkshopItem) => void;
+  onAddChild: (type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
+  onAddToChild: (childId: string, type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
   playState?: PlayState;
   childPlayStates?: Map<string, PlayState>;
-  blockPlayStates?: Map<string, PlayState>;
-  parentId?: string | null;
-  isNested?: boolean;
-  depth?: number;
 }
 
-/**
- * Bind the standard 25-item prop set to a top-level timeline item.
- * Used by the items.map() body to forward the same handlers to GroupCard /
- * BreakoutCard / BlockCard regardless of item type.
- */
-export const bindItemProps = (
+export interface TimelineItemHandlers {
+  onUpdateItem: (id: string, updates: Partial<WorkshopItem>) => void;
+  onDeleteItem: (id: string) => void;
+  onDuplicate: (item: WorkshopItem) => void;
+  onSaveToLibrary: (item: WorkshopItem) => void;
+  openEditDialog: (item: WorkshopItem, focusField?: 'fixedStartTime') => void;
+  onAddChildBlock: (parentId: string, laneIndex?: number) => void;
+  onAddChildBreakout: (parentId: string) => void;
+  onCreateBelow: (item: WorkshopItem) => void;
+  onDeleteAndFocusPrev: (item: WorkshopItem) => void;
+}
+
+/** Binds the props of a group or breakout card at the top level of the timeline. */
+export const bindContainerCardProps = (
   item: WorkshopItem,
   index: number,
   items: WorkshopItem[],
   startTime: string | null,
-  handlers: {
-    onUpdateItem: (id: string, updates: Partial<WorkshopItem>) => void;
-    onDeleteItem: (id: string) => void;
-    onDuplicate: (item: WorkshopItem) => void;
-    onSaveToLibrary: (item: WorkshopItem) => void;
-    openEditDialog: (item: WorkshopItem, focusField?: 'fixedStartTime') => void;
-    handleAddChildBlock: (parentId: string, laneIndex?: number) => void;
-    handleAddChildBreakout: (parentId: string) => void;
-    onUpdateChild: (childId: string, updates: Partial<WorkshopItem>) => void;
-    onDeleteChild: (childId: string) => void;
-    onDuplicateChild: (child: WorkshopItem) => void;
-    onSaveChildToLibrary: (child: WorkshopItem) => void;
-    onEditChildDetails: (child: WorkshopItem) => void;
-    onEditChildDetailsOnTime: (child: WorkshopItem, focusField?: 'fixedStartTime') => void;
-    calculateNestedBlockTime: (
-      parentTime: string | null,
-      parentItem: WorkshopItem,
-      childIndex: number,
-    ) => string | null;
-    handleCreateBelow: (item: WorkshopItem) => void;
-    handleDeleteAndFocusPrev: (item: WorkshopItem) => void;
-    onCreateBelowChild: (child: WorkshopItem) => void;
-    onDeleteChildAndFocusPrev: (child: WorkshopItem) => void;
-    onMoveItem: (itemId: string, targetParentId: string | null, targetIndex?: number) => void;
-  },
+  handlers: TimelineItemHandlers,
   shared: {
     blockTypes: BlockType[];
     persons: Person[];
     showFullPreviewText: boolean;
-    dropIndicator: { overId: string; position: 'before' | 'after' } | null;
     blockPlayStates?: Map<string, PlayState>;
-    childPlayStates?: Map<string, PlayState>;
   },
-): ItemProps => {
-  const parentTime = calculateBlockTime(startTime, items, index);
-  const timeDisplay = parentTime;
+): ContainerCardProps => {
+  const timeDisplay = calculateBlockTime(startTime, items, index);
 
-  const findChild = (childId: string) => findItemById(items, childId);
+  const withChild = (action: (child: WorkshopItem) => void) => (childId: string) => {
+    const child = findItemById(items, childId);
+    if (child) action(child);
+  };
 
   return {
     item,
@@ -100,54 +98,25 @@ export const bindItemProps = (
     onSaveToLibrary: () => handlers.onSaveToLibrary(item),
     onEditDetails: () => handlers.openEditDialog(item),
     onEditDetailsOnTime: () => handlers.openEditDialog(item, 'fixedStartTime'),
-    onCreateBelow: handlers.handleCreateBelow,
-    onDeleteAndFocusPrev: handlers.handleDeleteAndFocusPrev,
+    onCreateBelow: handlers.onCreateBelow,
+    onDeleteAndFocusPrev: handlers.onDeleteAndFocusPrev,
     onAddChild: (type, laneIndex) => {
-      if (type === 'block') handlers.handleAddChildBlock(item.id, laneIndex);
-      else if (type === 'breakout') handlers.handleAddChildBreakout(item.id);
+      if (type === 'block') handlers.onAddChildBlock(item.id, laneIndex);
+      else if (type === 'breakout') handlers.onAddChildBreakout(item.id);
     },
     onAddToChild: (childId, type, laneIndex) => {
-      if (type === 'block') handlers.handleAddChildBlock(childId, laneIndex);
+      if (type === 'block') handlers.onAddChildBlock(childId, laneIndex);
     },
-    onUpdateChild: handlers.onUpdateChild,
-    onDeleteChild: handlers.onDeleteChild,
-    onDuplicateChild: (childId) => {
-      const child = findChild(childId);
-      if (child) handlers.onDuplicateChild(child);
-    },
-    onSaveChildToLibrary: (childId) => {
-      const child = findChild(childId);
-      if (child) handlers.onSaveChildToLibrary(child);
-    },
-    onEditChildDetails: (childId) => {
-      const child = findChild(childId);
-      if (child) handlers.onEditChildDetails(child);
-    },
-    onEditChildDetailsOnTime: (childId) => {
-      const child = findChild(childId);
-      if (child) handlers.onEditChildDetailsOnTime(child);
-    },
-    onCalculateChildTime: (parentItem, childIndex) =>
-      handlers.calculateNestedBlockTime(parentTime, parentItem, childIndex),
-    onCreateBelowChild: (childId) => {
-      const child = findChild(childId);
-      if (child) handlers.onCreateBelowChild(child);
-    },
-    onDeleteChildAndFocusPrev: (childId) => {
-      const child = findChild(childId);
-      if (child) handlers.onDeleteChildAndFocusPrev(child);
-    },
-    onMoveItem: handlers.onMoveItem,
-    dropIndicator: shared.dropIndicator,
+    onUpdateChild: handlers.onUpdateItem,
+    onDeleteChild: handlers.onDeleteItem,
+    onDuplicateChild: withChild(handlers.onDuplicate),
+    onSaveChildToLibrary: withChild(handlers.onSaveToLibrary),
+    onEditChildDetails: withChild((child) => handlers.openEditDialog(child)),
+    onEditChildDetailsOnTime: withChild((child) => handlers.openEditDialog(child, 'fixedStartTime')),
+    onCalculateChildTime: (parentItem, childIndex) => calculateNestedBlockTime(timeDisplay, parentItem, childIndex),
+    onCreateBelowChild: withChild(handlers.onCreateBelow),
+    onDeleteChildAndFocusPrev: withChild(handlers.onDeleteAndFocusPrev),
     playState: shared.blockPlayStates?.get(item.id),
-    childPlayStates: shared.childPlayStates,
-    blockPlayStates: shared.blockPlayStates,
-    parentId: null,
-    isNested: false,
-    depth: 0,
+    childPlayStates: shared.blockPlayStates,
   };
 };
-
-// Suppress unused-imports for DragEndEvent if it becomes unused after the refactor.
-// Keeping the import so this file can grow into a typed handlers module.
-export type _UnusedDragEndEvent = DragEndEvent;

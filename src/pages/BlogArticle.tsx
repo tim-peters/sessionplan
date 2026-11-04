@@ -6,6 +6,7 @@
  *       Publishes alternate-language URLs so the Language Switcher can navigate correctly.
  */
 
+import { wrapContentTables } from '@/lib/content-html';
 import { useLoaderData, Link } from 'react-router-dom';
 import { useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -109,7 +110,7 @@ const BlogArticle = () => {
           />
 
           <header className="mb-8">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-4 [&>div]:min-w-0 [&_svg]:shrink-0">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <time dateTime={post.publishedDate}>{formatDate(post.publishedDate)}</time>
@@ -137,7 +138,7 @@ const BlogArticle = () => {
               {post.hub && (
                   <Link
                     to={getLocalizedPath(locale, `/blog/${post.hub.slug}`)}
-                    className="inline-flex items-center rounded-full bg-secondary gap-1 px-3 py-1 text-sm font-medium text-secondary-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+                    className="inline-flex max-w-full items-center rounded-full bg-secondary gap-1 px-3 py-1 text-sm font-medium text-secondary-foreground hover:bg-accent active:bg-accent-active transition-colors"
                     title={t('blog.moreOnTopic', { hub: post.hub.shortLabel ?? post.hub.title })}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -151,7 +152,7 @@ const BlogArticle = () => {
 
           <div
             className="prose prose-md prose-gray dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: wrapContentTables(post.content) }}
           />
 
           {/* Author Box */}
@@ -174,7 +175,7 @@ const BlogArticle = () => {
                     {post.author.url ? (
                       <a 
                         href={post.author.url} 
-                        className="text-foreground hover:text-primary transition-colors"
+                        className="text-foreground hover:text-primary-text transition-colors"
                         target="_blank" 
                         rel="noopener noreferrer author"
                       >
@@ -195,7 +196,7 @@ const BlogArticle = () => {
                       <p className="pt-2">
                         <a 
                           href={post.author.url}
-                          className="text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1"
+                          className="text-primary-text hover:text-primary-text/80 font-medium inline-flex items-center gap-1"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -217,7 +218,7 @@ const BlogArticle = () => {
                 {post.hub && (
                     <Link
                       to={getLocalizedPath(locale, `/blog/${post.hub.slug}`)}
-                      className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+                      className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground hover:bg-accent active:bg-accent-active transition-colors"
                       title={t('blog.moreOnTopic', { hub: post.hub.shortLabel ?? post.hub.title })}
                     >
                       {post.hub.title } →

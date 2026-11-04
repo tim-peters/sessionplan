@@ -1,24 +1,27 @@
+import { Button } from '@/components/primitives/button';
 import { useDraggable } from '@dnd-kit/core';
 import { useTranslation } from 'react-i18next';
 import { Pencil } from 'lucide-react';
 import { BlockType } from '@/types/workshop';
 import { getBlockTypeName } from '@/lib/workshopUtils';
 import { cn } from '@/lib/utils';
+import { useShortcutLabels } from '@/hooks/useShortcutLabels';
 
 interface DraggableBlockTypeProps {
   type: BlockType;
   onModify: () => void;
   onAdd: () => void;
-  shortcutKey?: string;
+  shortcutDigit?: number;
 }
 
 export const DraggableBlockType = ({
   type,
   onModify,
   onAdd,
-  shortcutKey,
+  shortcutDigit,
 }: DraggableBlockTypeProps) => {
   const { t } = useTranslation('common');
+  const { withHint, hintAttrs } = useShortcutLabels();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `blocktype-${type.id}`,
     data: { type: 'blocktype', blockType: type },
@@ -33,7 +36,8 @@ export const DraggableBlockType = ({
         e.stopPropagation();
         onAdd();
       }}
-      title={shortcutKey ? `${getBlockTypeName(type, t)} (${shortcutKey})` : undefined}
+      title={shortcutDigit ? withHint(getBlockTypeName(type, t), 'addBlockOfType', shortcutDigit) : undefined}
+      {...(shortcutDigit ? hintAttrs('addBlockOfType', shortcutDigit) : {})}
       className={cn(
         'sidebar-item group cursor-grab active:cursor-grabbing lg:cursor-grab cursor-pointer',
         isDragging && 'opacity-50'
@@ -44,17 +48,21 @@ export const DraggableBlockType = ({
         style={{ backgroundColor: type.color }}
       />
       <span className="flex-1 truncate">{getBlockTypeName(type, t)}</span>
-      <button
+      <Button variant="plain" size="none"
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+        }}
         onClick={(e) => {
           e.stopPropagation();
           onModify();
         }}
-        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted-foreground/10 rounded transition-opacity"
+        className="sidebar-action p-1 hover:bg-muted-foreground/10 rounded transition-opacity"
         title={t('sidebar.modify')}
         aria-label={t('sidebar.modify')}
       >
         <Pencil className="h-3 w-3 text-muted-foreground" />
-      </button>
+      </Button>
     </div>
   );
 };

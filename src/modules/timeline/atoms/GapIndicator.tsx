@@ -20,7 +20,7 @@ export const GapIndicator = ({ minutes, size = 'md', className }: GapIndicatorPr
       className={cn(
         sizeClass,
         'rounded font-medium text-center',
-        isOvertime ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground',
+        isOvertime ? 'bg-destructive/10 text-destructive-text' : 'bg-muted text-muted-foreground',
         className,
       )}
     >

@@ -1,10 +1,12 @@
 /** @file workshopServer — Server-side session persistence (create, fetch, update, delete). */
 import { WorkshopData } from '@/types/workshop';
+import { withoutNegativeDurations } from '@/lib/workshopUtils';
 import { createDynamicSecret, decryptWorkshop, encryptWorkshop, hashWriteCapability, type EncryptedWorkshopEnvelope } from './dynamicLinkCrypto';
 
 const SESSIONS_API = import.meta.env.VITE_SESSIONS_API || '/data/sessions.php';
 const KEY_REGEX = /^(?:[a-f0-9]{12}|[A-Za-z0-9_-]{22})$/;
 const FETCH_TIMEOUT_MS = 10_000;
+const PUT_TIMEOUT_MS = 15_000;
 
 export type SessionUnavailableReason = 'offline' | 'network' | 'server' | 'timeout' | 'missingKey' | 'invalidKey';
 export type ServerSessionAccess = { encryptionKey: string | null; writeCapability: string | null };
@@ -24,21 +26,17 @@ export const getKeyFromSearch = (): string | null => {
 };
 
 export const setKeyToUrl = (key: string, encryptionKey?: string, writeCapability?: string): void => {
-  const hadHash = window.location.hash.length > 1;
   const url = new URL(window.location.href);
   url.searchParams.set('id', key);
   url.hash = encryptionKey ? `k=${encryptionKey}${writeCapability ? `&w=${writeCapability}` : ''}` : '';
-  if (hadHash) {
-    window.history.pushState(null, '', url.toString());
-  } else {
-    window.history.replaceState(null, '', url.toString());
-  }
+  // Still the same session: its local URL is not worth a Back step.
+  window.history.replaceState(window.history.state, '', url.toString());
 };
 
 export const clearKeyFromUrl = (): void => {
   const url = new URL(window.location.href);
   url.searchParams.delete('id');
-  window.history.replaceState(null, '', url.toString());
+  window.history.replaceState(window.history.state, '', url.toString());
 };
 
 export const createServerSession = async (data: WorkshopData): Promise<{ key: string; version: number; encryptionKey: string; writeCapability: string }> => {
@@ -73,8 +71,13 @@ export const createServerSession = async (data: WorkshopData): Promise<{ key: st
   return result;
 };
 
+/**
+ * `commitId` is the IV of the stored encrypted envelope. Every encryption draws
+ * a fresh random IV, so it identifies one exact write. Legacy plaintext
+ * sessions have none.
+ */
 export type FetchServerSessionResult =
-  | { status: 'available'; data: WorkshopData; version: number }
+  | { status: 'available'; data: WorkshopData; version: number; commitId?: string }
   | { status: 'not-found' }
   | { status: 'unavailable'; reason: SessionUnavailableReason };
 
@@ -164,7 +167,7 @@ export const fetchServerSessionStatus = async (
     if (isLegacy) {
       return {
         status: 'available',
-        data: raw as WorkshopData,
+        data: withoutNegativeDurations(raw as WorkshopData),
         version: (raw?._v as number | undefined) ?? 0,
       };
     }
@@ -175,8 +178,9 @@ export const fetchServerSessionStatus = async (
       const data = await decryptWorkshop(raw as EncryptedWorkshopEnvelope, key, access.encryptionKey ?? '');
       return {
         status: 'available',
-        data,
+        data: withoutNegativeDurations(data),
         version: (raw?._v as number | undefined) ?? 0,
+        commitId: (raw as EncryptedWorkshopEnvelope).iv,
       };
     } catch (error) {
       console.warn('Failed to decrypt server session — the link key is likely invalid:', error);
@@ -201,21 +205,31 @@ export const fetchServerSession = async (
  *
  * Mirrors the SessionUnavailableReason vocabulary so the planner can render
  * the right banner: a 403 means the link has lost permission to write
- * (read-only-by-permission), every other transport/server error is treated
- * as a transient outage.
+ * (read-only-by-permission), a 404 that the session no longer exists, any other
+ * 4xx that the server refuses this payload. Transport errors, 429 and 5xx are
+ * treated as a transient outage.
  */
-export type UpdateServerFailureReason = 'forbidden' | 'server';
+export type UpdateServerFailureReason = 'forbidden' | 'deleted' | 'rejected' | 'server';
 
 export type UpdateServerSessionResult =
   | { ok: true; version: number }
-  | { ok: false; conflict: true; serverData: WorkshopData; serverVersion: number }
+  | { ok: false; conflict: true; serverData: WorkshopData; serverVersion: number; serverCommitId?: string }
   | { ok: false; conflict: false; reason: UpdateServerFailureReason };
+
+const failureReasonForStatus = (status: number | undefined): UpdateServerFailureReason => {
+  if (status === 403) return 'forbidden';
+  if (status === 404) return 'deleted';
+  if (status !== undefined && status >= 400 && status < 500 && status !== 429) return 'rejected';
+  return 'server';
+};
 
 export const updateServerSession = async (
   key: string,
   data: WorkshopData,
   version?: number,
   access: ServerSessionAccess = getServerSessionAccess(),
+  /** Reports the write's commit ID before the request leaves the client. */
+  onSend?: (commitId: string) => void,
 ): Promise<UpdateServerSessionResult> => {
   try {
     const url = version !== undefined
@@ -226,22 +240,28 @@ export const updateServerSession = async (
       return { ok: false, conflict: false, reason: 'forbidden' };
     }
     const envelope = isLegacy ? data : await encryptWorkshop(data, key, access.encryptionKey!);
+    if (!isLegacy) onSend?.((envelope as EncryptedWorkshopEnvelope).iv);
     const response = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(access.writeCapability ? { Authorization: `Bearer ${access.writeCapability}` } : {}) },
       body: JSON.stringify(envelope),
+      signal: timeoutSignal(PUT_TIMEOUT_MS),
     });
     if (response.status === 409) {
       const json = await response.json();
+      if (isLegacy) {
+        return { ok: false, conflict: true, serverData: withoutNegativeDurations(json.data as WorkshopData), serverVersion: json.serverVersion as number };
+      }
+      const serverEnvelope = json.data as EncryptedWorkshopEnvelope;
       return {
         ok: false,
         conflict: true,
-        serverData: isLegacy ? json.data as WorkshopData : await decryptWorkshop(json.data as EncryptedWorkshopEnvelope, key, access.encryptionKey!),
+        serverData: withoutNegativeDurations(await decryptWorkshop(serverEnvelope, key, access.encryptionKey!)),
         serverVersion: json.serverVersion as number,
+        serverCommitId: serverEnvelope.iv,
       };
     }
-    if (response.status === 403) return { ok: false, conflict: false, reason: 'forbidden' };
-    if (!response.ok) return { ok: false, conflict: false, reason: 'server' };
+    if (!response.ok) return { ok: false, conflict: false, reason: failureReasonForStatus(response.status) };
     const json = await response.json();
     return { ok: true, version: (json.version as number) ?? (version ?? 0) + 1 };
   } catch (error) {

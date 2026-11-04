@@ -92,6 +92,15 @@ export type SeoSection =
   | SeoCalloutSection
   | SeoStatsSection;
 
+/** Site-wide social proof figures, maintained manually in public/data/site-stats.json. */
+export interface SiteStats {
+  rating?: {
+    value: number; // average on a 1..5 scale
+    count: number;
+  };
+  monthlyUsers?: number;
+}
+
 export interface LandingPageContent {
   // Type: 'landing-page' (default) or 'template'
   // Templates are not shown in the landing pages overview
@@ -102,6 +111,10 @@ export interface LandingPageContent {
 
   // Loader-resolved fallback content for template empty states
   emptyStateFallback?: LandingPageContent;
+
+  // Loader-resolved site-wide social proof (public/data/site-stats.json).
+  // Attached to landing pages and the home page, never to templates.
+  siteStats?: SiteStats;
   
   /**
    * Alternate URLs for other language versions of this page.

@@ -1,25 +1,15 @@
 import { WorkshopItem, BlockType, Person } from '@/types/workshop';
 import { BreakoutLane } from './BreakoutLane';
 import { PlayState } from '@/lib/playModeUtils';
+import type { ChildItemCallbacks } from '@/lib/timelineItemProps';
 
-interface ParallelLanesViewProps {
+interface ParallelLanesViewProps extends ChildItemCallbacks {
   item: WorkshopItem;
   blockTypes: BlockType[];
   persons: Person[];
   showFullPreviewText?: boolean;
   timeDisplay: string | null;
-  onCalculateChildTime?: (parentItem: WorkshopItem, childIndex: number) => string | null;
-  onUpdateChild?: (childId: string, updates: Partial<WorkshopItem>) => void;
-  onDeleteChild?: (childId: string) => void;
-  onDuplicateChild?: (childId: string) => void;
-  onSaveChildToLibrary?: (childId: string) => void;
-  onEditChildDetails?: (childId: string) => void;
-  onEditChildDetailsOnTime?: (childId: string) => void;
   onAddChild?: (type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
-  onCreateBelowChild?: (childId: string) => void;
-  onDeleteChildAndFocusPrev?: (childId: string) => void;
-  depth: number;
-  dropIndicator?: { overId: string; position: 'before' | 'after' } | null;
   childPlayStates?: Map<string, PlayState>;
 }
 
@@ -29,19 +19,9 @@ export const ParallelLanesView = ({
   persons,
   showFullPreviewText,
   timeDisplay,
-  onCalculateChildTime,
-  onUpdateChild,
-  onDeleteChild,
-  onDuplicateChild,
-  onSaveChildToLibrary,
-  onEditChildDetails,
-  onEditChildDetailsOnTime,
   onAddChild,
-  onCreateBelowChild,
-  onDeleteChildAndFocusPrev,
-  depth,
-  dropIndicator,
   childPlayStates,
+  ...childCallbacks
 }: ParallelLanesViewProps) => {
   return (
     <>
@@ -53,6 +33,7 @@ export const ParallelLanesView = ({
 
         return (
           <BreakoutLane
+            {...childCallbacks}
             key={laneIndex}
             parentItem={item}
             laneIndex={laneIndex}
@@ -61,19 +42,8 @@ export const ParallelLanesView = ({
             persons={persons}
             showFullPreviewText={showFullPreviewText}
             parentTimeDisplay={timeDisplay}
-            onCalculateChildTime={onCalculateChildTime}
-            onUpdateChild={onUpdateChild}
-            onDeleteChild={onDeleteChild}
-            onDuplicateChild={onDuplicateChild}
-            onSaveChildToLibrary={onSaveChildToLibrary}
-            onEditChildDetails={onEditChildDetails}
-            onEditChildDetailsOnTime={onEditChildDetailsOnTime}
-            onAddChild={(type, laneIdx) => onAddChild?.(type, laneIdx)}
-            onCreateBelowChild={onCreateBelowChild}
-            onDeleteChildAndFocusPrev={onDeleteChildAndFocusPrev}
-            depth={depth}
-            dropIndicator={dropIndicator}
-            childPlayStates={childPlayStates as never}
+            onAddChild={onAddChild}
+            childPlayStates={childPlayStates}
           />
         );
       })}

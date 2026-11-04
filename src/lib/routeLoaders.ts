@@ -11,10 +11,10 @@
  */
 import { LoaderFunctionArgs, defer } from 'react-router-dom';
 import { BlogPost, BlogIndex } from '../types/blog';
-import { LandingPageContent } from '../types/landingPage';
+import { LandingPageContent, SiteStats } from '../types/landingPage';
 import type { Hub } from '../types/hub';
 import { getLocaleFromPathname, getContentDataPath, type Locale } from './i18n';
-import { filterPublishedBlogPosts } from './blog-publication';
+import { filterVisibleBlogPosts } from './blog-visibility';
 
 /**
  * Re-escapes raw newlines/carriage-returns inside JSON string literals so that
@@ -272,7 +272,7 @@ export async function blogIndexLoader({ request }: LoaderFunctionArgs): Promise<
 
   return {
     ...index,
-    posts: filterPublishedBlogPosts(index.posts),
+    posts: filterVisibleBlogPosts(index.posts),
     hubs: hubsResult.hubs ?? [],
   };
 }
@@ -393,7 +393,7 @@ export async function templatesIndexLoader({ request }: LoaderFunctionArgs): Pro
   const base = getContentDataPath('templates', locale);
   const [index, hubsIndex] = await Promise.all([
     fetchJsonOrThrow<{ templates: TemplateSummary[] }>(`${base}index.json`, 'Templates index not found'),
-    fetchJsonOrThrow<TemplateHubsIndex>(`${base}hubs/index.json`, 'Template hubs index not found'),
+    fetchJsonOrThrow<{ hubs: TemplateHub[] }>(`${base}hubs/index.json`, 'Template hubs index not found'),
   ]);
   return {
     templates: index.templates ?? [],
@@ -437,10 +437,18 @@ export async function templateCategoryLoader(
   };
 }
 
+/** Site stats are best-effort: a missing file only hides the social proof badge. */
+const fetchSiteStats = (): Promise<SiteStats | undefined> =>
+  fetchJsonOrThrow<SiteStats>('/data/site-stats.json', 'Site stats not found').catch(() => undefined);
+
 export async function homePageLoader({ request }: LoaderFunctionArgs): Promise<LandingPageContent> {
   const locale = getLocaleFromRequest(request);
   const base = getContentDataPath('landing', locale);
-  return fetchJsonOrThrow<LandingPageContent>(`${base}home.json`, 'Home page content not found');
+  const [content, siteStats] = await Promise.all([
+    fetchJsonOrThrow<LandingPageContent>(`${base}home.json`, 'Home page content not found'),
+    fetchSiteStats(),
+  ]);
+  return siteStats ? { ...content, siteStats } : content;
 }
 
 // ==================== LANDING PAGES ====================
@@ -454,7 +462,10 @@ export async function landingPageLoader({ params, request }: LoaderFunctionArgs)
   }
 
   const base = getContentDataPath('landing', locale);
-  const content = await fetchJsonOrThrow<LandingPageContent>(`${base}${slug}.json`, 'Landing page not found');
+  const [content, siteStats] = await Promise.all([
+    fetchJsonOrThrow<LandingPageContent>(`${base}${slug}.json`, 'Landing page not found'),
+    fetchSiteStats(),
+  ]);
 
   // Templates can define an SEO fallback used when all prefilled content is removed.
   if (content.type === 'template' && content.fallbackSlug && content.fallbackSlug !== content.slug) {
@@ -473,17 +484,12 @@ export async function landingPageLoader({ params, request }: LoaderFunctionArgs)
     }
   }
 
-  return content;
+  if (content.type === 'template') return content;
+  return siteStats ? { ...content, siteStats } : content;
 }
 
 interface LandingPagesIndex {
   landingPages: string[];
-}
-
-interface LandingPagesLoaderData {
-  index: LandingPagesIndex;
-  pages: Promise<LandingPageContent[]>;
-  hubs: Hub[];
 }
 
 /**

@@ -12,8 +12,9 @@ import {
   calculateTotalDuration,
   getBlockTypeName,
   getWorkshopTitle,
+  withDisplayNames,
 } from '@/lib/workshopUtils';
-import { WorkshopItem, BlockType } from '@/types/workshop';
+import { WorkshopItem, BlockType, DEFAULT_BLOCK_TYPES, createEmptyWorkshop } from '@/types/workshop';
 import { makeBlock, makeGroup, makeBreakout } from './test-helpers';
 
 const fakeT = ((key: string) => `t:${key}`) as unknown as Parameters<typeof getBlockTypeName>[1];
@@ -234,9 +235,39 @@ describe('calculateTotalDuration', () => {
 });
 
 describe('getBlockTypeName', () => {
-  it('returns the translated name for a built-in type', () => {
-    const result = getBlockTypeName({ id: 'input', name: 'fallback', color: '' }, fakeT);
-    expect(result).toBe('t:blockTypes.input');
+  it.each([
+    ['input', '🎤 Vortrag/Input'],
+    ['input', '🎤 Lecture/Input'],
+    ['activity', '🏃 Übung/Aktivität'],
+    ['activity', '🏃 Exercise/Activity'],
+    ['discussion', '💬 Diskussion'],
+    ['discussion', '💬 Discussion'],
+    ['break', '☕ Pause'],
+    ['break', '☕ Break'],
+    ['energizer', '⚡ Energizer'],
+  ])('translates the built-in type %s stored as %s', (id, name) => {
+    expect(getBlockTypeName({ id, name, color: '' }, fakeT)).toBe(`t:blockTypes.${id}`);
+  });
+
+  it('translates every default block type', () => {
+    for (const type of DEFAULT_BLOCK_TYPES) {
+      expect(getBlockTypeName(type, fakeT)).toBe(`t:blockTypes.${type.id}`);
+    }
+  });
+
+  it('returns the stored name for a renamed built-in type', () => {
+    const result = getBlockTypeName({ id: 'break', name: '🍔 Food & Break', color: '' }, fakeT);
+    expect(result).toBe('🍔 Food & Break');
+  });
+
+  it('does not treat a default name of another built-in type as unchanged', () => {
+    const result = getBlockTypeName({ id: 'input', name: '☕ Pause', color: '' }, fakeT);
+    expect(result).toBe('☕ Pause');
+  });
+
+  it('returns the stored name for ids that exist on Object.prototype', () => {
+    const result = getBlockTypeName({ id: 'constructor', name: 'Custom', color: '' }, fakeT);
+    expect(result).toBe('Custom');
   });
 
   it('returns the stored name for a custom block type', () => {
@@ -245,6 +276,28 @@ describe('getBlockTypeName', () => {
       fakeT,
     );
     expect(result).toBe('Custom');
+  });
+});
+
+describe('withDisplayNames', () => {
+  it('resolves the title and block type names without changing the input', () => {
+    const data = {
+      ...createEmptyWorkshop(),
+      blockTypes: [
+        { id: 'break', name: '☕ Pause', color: '#000' },
+        { id: 'input', name: 'Keynote', color: '#111' },
+      ],
+    };
+    const snapshot = structuredClone(data);
+
+    const result = withDisplayNames(data, fakeT);
+
+    expect(result.workshop.title).toBe('t:planner.defaultWorkshopTitle');
+    expect(result.blockTypes).toEqual([
+      { id: 'break', name: 't:blockTypes.break', color: '#000' },
+      { id: 'input', name: 'Keynote', color: '#111' },
+    ]);
+    expect(data).toEqual(snapshot);
   });
 });
 

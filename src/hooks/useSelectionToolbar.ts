@@ -3,7 +3,7 @@
  * for FormattedTextField.
  *
  * Owns:
- *  - focused / hasSelection / activeFormats / positionVersion /
+ *  - hasSelection / activeFormats / positionVersion /
  *    selectionVersion / toolbarPosition / toolbarHovered state.
  *  - toolbarRef.
  *  - the placement useLayoutEffect (computes toolbar position from the
@@ -47,7 +47,6 @@ const TOOLBAR_FALLBACK_WIDTH = 88;
 const TOOLBAR_FALLBACK_HEIGHT = 32;
 
 export interface UseSelectionToolbarResult {
-  focused: boolean;
   setFocused: (v: boolean) => void;
   toolbarRef: RefObject<HTMLDivElement | null>;
   toolbarPosition: { left: number; top: number; below: boolean };
@@ -154,22 +153,22 @@ export const useSelectionToolbar = ({
     const toolbarWidth = toolbar.offsetWidth || TOOLBAR_FALLBACK_WIDTH;
     const toolbarHeight = toolbar.offsetHeight || TOOLBAR_FALLBACK_HEIGHT;
 
-    // The toolbar is portaled to document.body and positioned with
-    // position:fixed, so both the anchor and the clamp/flip bounds are
-    // viewport-relative. Floating above every ancestor means
-    // overflow:hidden clipping contexts (workshop header card, title
-    // wrappers, dialogs) can never cut the toolbar off.
+    // Inline toolbars float at the viewport; modal toolbars stay inside the
+    // dialog's pointer/focus scope and must also fit its clipping bounds.
+    const modalBounds = textarea.closest('[role="dialog"]')?.getBoundingClientRect();
+    const originLeft = modalBounds?.left ?? 0;
+    const originTop = modalBounds?.top ?? 0;
     const anchorTop = textareaRect.top + cursor.top - textarea.scrollTop;
     const anchorLeft = textareaRect.left + cursor.left - textarea.scrollLeft;
 
     const placement = computeToolbarPlacement({
-      anchorTop,
-      anchorLeft,
+      anchorTop: anchorTop - originTop,
+      anchorLeft: anchorLeft - originLeft,
       lineHeight,
       toolbarWidth,
       toolbarHeight,
-      containerWidth: window.innerWidth,
-      containerHeight: window.innerHeight,
+      containerWidth: modalBounds?.width ?? window.innerWidth,
+      containerHeight: modalBounds?.height ?? window.innerHeight,
       gap: TOOLBAR_GAP,
       below,
     });
@@ -179,9 +178,9 @@ export const useSelectionToolbar = ({
     // current placement) we bail out and React skips the re-render —
     // prevents "nervous jumping" while the user drags the selection.
     setToolbarPosition((prev) =>
-      prev.left === placement.left && prev.top === placement.top && prev.below === placement.below
+      prev.left === placement.left + originLeft && prev.top === placement.top + originTop && prev.below === placement.below
         ? prev
-        : placement,
+        : { ...placement, left: placement.left + originLeft, top: placement.top + originTop },
     );
     // selectionVersion intentionally drives a re-run when the user moves
     // the selection across rows. Same-row extensions resolve to the same
@@ -204,7 +203,7 @@ export const useSelectionToolbar = ({
   }, [textareaRef]);
 
   // While the toolbar is visible, any ancestor scroll changes where the
-  // selection sits in the viewport (the toolbar is position:fixed and no
+  // selection sits in the viewport (toolbar coordinates use the viewport and no
   // longer scrolls along inside its old container). Scroll events don't
   // bubble but DO propagate in the capture phase, so a capture listener on
   // document sees every scroller — the textarea itself, dialog bodies,
@@ -268,7 +267,6 @@ export const useSelectionToolbar = ({
   }, []);
 
   return {
-    focused,
     setFocused,
     toolbarRef,
     toolbarPosition,

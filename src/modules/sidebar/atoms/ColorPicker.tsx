@@ -1,13 +1,15 @@
+import { Button } from '@/components/primitives/button';
 import { useRef } from 'react';
 import { Pen, Plus, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { getContrastingTextColor } from '@/lib/color-contrast';
 
 /**
- * Curated palette of 9 vibrant colors that work on both light and dark
+ * Curated palette of vibrant colors that work on both light and dark
  * backgrounds (used for block types and person avatars).
  */
-export const PRESET_COLORS: string[] = [
+const PRESET_COLORS: string[] = [
   '#EF4444', // red
   '#F97316', // orange
   '#EAB308', // yellow
@@ -29,9 +31,6 @@ interface ColorPickerProps {
   className?: string;
 }
 
-const isPreset = (color: string) =>
-  PRESET_COLORS.some(c => c.toLowerCase() === color.toLowerCase());
-
 export const ColorPicker = ({ value, onChange, className }: ColorPickerProps) => {
   const { t } = useTranslation('common');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,45 +44,45 @@ export const ColorPicker = ({ value, onChange, className }: ColorPickerProps) =>
       {PRESET_COLORS.map((color, i) => {
         const selected = i === activeIndex;
         return (
-          <button
+          <Button variant="plain" size="none"
             key={color}
             type="button"
             onClick={() => onChange(color)}
             className={cn(
-              'w-5 h-5 rounded-full transition-all relative flex items-center justify-center',
+              'color-swatch w-6 h-6 rounded-full transition-colors relative flex items-center justify-center',
               selected
-                ? 'ring-2 ring-offset-1 ring-primary scale-110'
-                : 'hover:scale-110 hover:ring-1 hover:ring-offset-1 hover:ring-muted-foreground/30'
+                ? 'selection-outline'
+                : 'hover:outline hover:outline-2 hover:outline-offset-2 hover:outline-muted-foreground'
             )}
-            style={{ backgroundColor: color }}
+            style={{ backgroundColor: color, color: getContrastingTextColor(color) }}
             title={color}
             aria-label={color}
             aria-pressed={selected}
           >
-            {selected && <Check className="h-2.5 w-2.5 text-white drop-shadow" />}
-          </button>
+            {selected && <Check className="h-3.5 w-3.5" />}
+          </Button>
         );
       })}
-      <button
+      <Button variant="plain" size="none"
         type="button"
         onClick={() => inputRef.current?.click()}
         className={cn(
-          'w-5 h-5 rounded-full flex items-center justify-center transition-all',
+          'color-swatch w-6 h-6 rounded-full flex items-center justify-center transition-colors',
           isCustom
-            ? 'ring-2 ring-offset-1 ring-primary scale-110'
+            ? 'selection-outline'
             : 'border-2 border-dashed border-muted-foreground/40 hover:border-primary hover:bg-muted/50'
         )}
-        style={isCustom ? { backgroundColor: value } : undefined}
+        style={isCustom ? { backgroundColor: value, color: getContrastingTextColor(value) } : undefined}
         title={isCustom ? value : t('sidebar.customColor')}
         aria-label={t('sidebar.customColor')}
         aria-pressed={isCustom}
       >
         {isCustom ? (
-          <Pen className="h-3 w-3 text-background" />
+          <Pen className="h-3 w-3" />
         ) : (
           <Plus className="h-3 w-3 text-muted-foreground" />
         )}
-      </button>
+      </Button>
       <input
         ref={inputRef}
         type="color"

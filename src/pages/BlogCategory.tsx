@@ -11,17 +11,13 @@
  *       already sorts the blog index by `publishedDate` DESC, and
  *       `resolveBlogItems` iterates that index in order.
  */
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calendar } from 'lucide-react';
-import type { BlogIndexEntry, BlogHub } from '@/lib/routeLoaders';
+import type { BlogIndexEntry } from '@/lib/routeLoaders';
 import { HubCollection, type HubCollectionConfig } from '@/components/sections/HubCollection';
-import { Button } from '@/components/primitives/button';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/primitives/card';
+import { BlogPostCard } from '@/components/sections/BlogPostCard';
 import { useLocale } from '@/contexts/LocaleContext';
 import { getLocalizedPath } from '@/lib/localeUtils';
 import { decodeHtmlEntities } from '@/lib/htmlEntities';
-import { formatDate } from '@/lib/formatDate';
 
 const BlogCategory = () => {
   const { t } = useTranslation('common');
@@ -47,33 +43,9 @@ const BlogCategory = () => {
   return (
     <HubCollection<BlogIndexEntry>
       config={config}
-      renderCard={(post) => (
-        <Card className="group hover:border-primary hover:shadow-lg transition-all h-full">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Calendar className="h-4 w-4" />
-              <time dateTime={post.publishedDate}>{formatDate(post.publishedDate)}</time>
-            </div>
-            <CardTitle className="text-xl group-hover:text-primary transition-colors">
-              <Link to={getLocalizedPath(locale, `/blog/${post.slug}`)} className="hover:underline">
-                {decodeHtmlEntities(post.title)}
-              </Link>
-            </CardTitle>
-            <CardDescription className="text-sm line-clamp-3">
-              {decodeHtmlEntities(post.excerpt)}
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button asChild variant="outline" className="w-full">
-              <Link to={getLocalizedPath(locale, `/blog/${post.slug}`)}>{t('blog.readArticle')}</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
+      renderCard={(post) => <BlogPostCard post={post} />}
     />
   );
 };
-
-export type { BlogHub };
 
 export default BlogCategory;

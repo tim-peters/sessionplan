@@ -1,5 +1,6 @@
+import { Button } from '@/components/primitives/button';
 import { useTranslation } from 'react-i18next';
-import { Settings, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Settings, ChevronDown, ChevronUp, X, PanelLeftClose } from 'lucide-react';
 import { Locale } from '@/lib/i18n';
 import { useLanguageSwitcher } from '@/hooks/useLanguageSwitcher';
 import { LanguageSwitcher } from '@/components/atoms/LanguageSwitcher';
@@ -24,19 +25,19 @@ export const SidebarBottomBar = ({
     return (
       <div className="flex flex-col items-center py-2 gap-1">
         <LanguageSwitcher locale={locale} getTargetUrl={getTargetUrl} variant="collapsed" />
-        <button
+        <Button variant="plain" size="none"
           onClick={onToggleSettings}
           className="icon-button"
           title={t('settings.sectionTitle')}
         >
           <Settings className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
     );
   }
   return (
     <div className="flex items-stretch">
-      <button
+      <Button variant="plain" size="none"
         onClick={onToggleSettings}
         className="flex-1 flex items-center gap-2 px-3 py-3 text-sm font-medium hover:bg-muted transition-colors"
       >
@@ -49,19 +50,19 @@ export const SidebarBottomBar = ({
             <ChevronUp className="h-4 w-4" />
           )}
         </span>
-      </button>
+      </Button>
       <LanguageSwitcher locale={locale} getTargetUrl={getTargetUrl} variant="sidebar" />
     </div>
   );
 };
 
 export const MobileCloseButton = ({ onClose }: { onClose: () => void }) => (
-  <button
+  <Button variant="plain" size="none"
     onClick={onClose}
     className="lg:hidden absolute top-4 right-4 p-2 hover:bg-muted rounded-lg z-20"
   >
     <X className="h-5 w-5" />
-  </button>
+  </Button>
 );
 
 export const SidebarLogo = ({ onCollapse }: { onCollapse: () => void }) => {
@@ -72,40 +73,24 @@ export const SidebarLogo = ({ onCollapse }: { onCollapse: () => void }) => {
       <div className="flex items-center justify-between gap-0">
         <div className="flex-1 min-w-0 p-5 sm:p-6 truncate">
           <h2 className="text-xl font-semibold">
-            <a href={locale === 'en' ? '/en' : '/'} className="hover:underline">
-              Sessionplan
+            <a href={locale === 'en' ? '/en' : '/'} className="inline-flex items-center gap-2 hover:underline">
+              <img src="/pwa/favicon.svg" alt="" className="h-7 w-7 shrink-0 translate-y-3 -translate-x-1" aria-hidden="true" />
+              <span>Sessionplan</span>
             </a>
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground -mt-1 pl-9">
             {t('sidebar.dragAndDrop')}
           </p>
         </div>
-        <button
+        <Button variant="ghost" size="icon"
           onClick={onCollapse}
-          className="hidden lg:flex p-2 hover:bg-muted py-[2.88rem] px-6 transition-colors shrink-0"
+          className="mr-4 hidden shrink-0 lg:inline-flex"
           title={t('settings.collapse')}
+          aria-label={t('settings.collapse')}
         >
-          <PanelLeftCloseIcon />
-        </button>
+          <PanelLeftClose className="h-5 w-5" />
+        </Button>
       </div>
     </div>
   );
 };
-
-const PanelLeftCloseIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect width="18" height="18" x="3" y="3" rx="2" />
-    <path d="M9 3v18" />
-    <path d="m16 15-3-3 3-3" />
-  </svg>
-);

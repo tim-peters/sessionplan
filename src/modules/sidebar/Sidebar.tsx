@@ -43,6 +43,7 @@ interface SidebarProps {
   timeVisualizationStrip?: boolean;
   onSetTimeVisualizationStrip?: (value: boolean) => void;
   onExport?: () => void;
+  onExportCsv?: () => void;
   onImport?: (file: File) => Promise<void>;
   onImportText?: (text: string) => Promise<void>;
   onReset?: () => void;
@@ -53,6 +54,9 @@ interface SidebarProps {
   onClose: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  /** Open the optional feedback dialog from the settings menu. */
+  onOpenFeedback?: () => void;
+  onOpenKeyboardShortcuts?: () => void;
 }
 
 export const Sidebar = ({
@@ -76,6 +80,7 @@ export const Sidebar = ({
   timeVisualizationStrip,
   onSetTimeVisualizationStrip,
   onExport,
+  onExportCsv,
   onImport,
   onImportText,
   onReset: _onReset,
@@ -86,6 +91,8 @@ export const Sidebar = ({
   onClose,
   isCollapsed,
   onToggleCollapse,
+  onOpenFeedback,
+  onOpenKeyboardShortcuts,
 }: SidebarProps) => {
   const {
     blocks: library,
@@ -232,7 +239,7 @@ export const Sidebar = ({
           'print:hidden',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
           collapsed
-            ? 'top-1/2 -translate-y-1/2 h-auto w-16'
+            ? 'top-[50dvh] -translate-y-1/2 h-auto max-h-[calc(100dvh-1.5rem)] w-16'
             : 'top-0 h-dvh w-72 lg:top-3 lg:h-[calc(100dvh-1.5rem)]',
         )}
       >
@@ -243,7 +250,7 @@ export const Sidebar = ({
 
         <div
           className={cn(
-            collapsed ? 'flex flex-col' : 'flex-1 overflow-y-auto scrollbar-thin flex flex-col',
+            collapsed ? 'min-h-0 overflow-y-auto scrollbar-thin flex flex-col' : 'flex-1 overflow-y-auto scrollbar-thin flex flex-col',
             'relative',
           )}
           data-nosnippet="true"
@@ -347,11 +354,12 @@ export const Sidebar = ({
               timeVisualizationStrip={timeVisualizationStrip}
               onSetTimeVisualizationStrip={onSetTimeVisualizationStrip}
               onExport={onExport}
+              onExportCsv={onExportCsv}
               onImport={onImport}
-              onImportText={onImportText}
+              onOpenFeedback={onOpenFeedback}
+              onOpenKeyboardShortcuts={onOpenKeyboardShortcuts}
               onOpenAiHelp={() => setShowAiHelp(true)}
               onClearAll={() => setShowClearAllDialog(true)}
-              onClose={() => closeSection('settings')}
               panelRef={settingsRef}
             />
           )}

@@ -6,8 +6,6 @@
  *   - the sidebar-specific drop handler (handleSidebarDrag)
  *   - the memoised custom collision detection
  *
- * Public API is identical to the inlined version that lived in
- * WorkshopPlanner, so the consuming component's JSX is unchanged.
  */
 import { useState, useCallback, useMemo } from 'react';
 import { TFunction } from 'i18next';
@@ -19,23 +17,34 @@ import {
 import { arrayMove } from '@dnd-kit/sortable';
 import {
   WorkshopItem,
-  BlockType,
   generateId,
 } from '@/types/workshop';
-import { findItemById, findItemAndParent, findParentId, getItemIndex, getBlockTypeName } from '@/lib/workshopUtils';
-import { createCustomCollisionDetection } from '@/lib/collisionDetection';
-import { isContainerId, isDropZoneId } from '@/lib/dndConstants';
-import type { ActiveData, DropIndicator } from '@/types/dnd';
 import {
-  DEFAULT_BLOCK_DURATION,
-  DEFAULT_BREAKOUT_DURATION,
-  DEFAULT_LANES,
-} from '@/lib/workshopDefaults';
+  createBlockOfType,
+  createItemFromLibrary,
+  createNewBlock,
+  createNewBreakout,
+  createNewGroup,
+  findItemById,
+  findItemAndParent,
+  findParentId,
+  getItemIndex,
+  getBlockTypeName,
+} from '@/lib/workshopUtils';
+import { createCustomCollisionDetection } from '@/lib/collisionDetection';
+import {
+  DROP_ZONE_BOTTOM,
+  DROP_ZONE_TOP,
+  getContainedItemId,
+  isContainerId,
+  isDropZoneId,
+  isLaneId,
+} from '@/lib/dndConstants';
+import type { ActiveData, DropIndicator } from '@/types/dnd';
 
 interface UseDragHandlersArgs {
   workshopItems: WorkshopItem[];
   addItem: (item: Omit<WorkshopItem, 'id'>, parentId?: string) => void;
-  insertItemAfter: (afterId: string, item: Omit<WorkshopItem, 'id'>) => string | null;
   updateItem: (id: string, updates: Partial<WorkshopItem>) => void;
   moveItem: (
     itemId: string,
@@ -58,84 +67,44 @@ export interface DragHandlers {
   handleDragEnd: (event: DragEndEvent) => void;
 }
 
+type SidebarDragData = Exclude<ActiveData, { type: 'breakout-lane' }>;
+
 const buildNewItem = (
-  activeDataCurrent: ActiveData,
+  data: SidebarDragData,
   t: TFunction,
 ): { newBlock: Omit<WorkshopItem, 'id'>; sidebarBlockTypeName?: string } => {
-  if (activeDataCurrent.type === 'blocktype') {
-    return {
-      newBlock: {
-        type: 'block',
-        blockTypeId: activeDataCurrent.blockType.id,
-        title: getBlockTypeName(activeDataCurrent.blockType, t),
-        duration: DEFAULT_BLOCK_DURATION,
-        notes: '',
-        material: '',
-      },
-      sidebarBlockTypeName: getBlockTypeName(activeDataCurrent.blockType, t),
-    };
+  switch (data.type) {
+    case 'blocktype':
+      return {
+        newBlock: createBlockOfType(data.blockType, t),
+        sidebarBlockTypeName: getBlockTypeName(data.blockType, t),
+      };
+    case 'new-block':
+      return { newBlock: createNewBlock(t) };
+    case 'new-group':
+      return { newBlock: createNewGroup(t) };
+    case 'new-breakout':
+      return { newBlock: createNewBreakout(t) };
+    default:
+      return { newBlock: createItemFromLibrary(data.item) };
   }
-  if (activeDataCurrent.type === 'new-block') {
-    return {
-      newBlock: {
-        type: 'block',
-        blockTypeId: null,
-        title: t('block.newBlock'),
-        duration: DEFAULT_BLOCK_DURATION,
-        notes: '',
-        material: '',
-      },
-    };
-  }
-  if (activeDataCurrent.type === 'new-group') {
-    return {
-      newBlock: {
-        type: 'group',
-        blockTypeId: null,
-        title: t('block.newGroup'),
-        duration: 0,
-        notes: '',
-        material: '',
-        children: [],
-        durationLocked: false,
-      },
-    };
-  }
-  if (activeDataCurrent.type === 'new-breakout') {
-    return {
-      newBlock: {
-        type: 'breakout',
-        blockTypeId: null,
-        title: t('block.newBreakout'),
-        duration: DEFAULT_BREAKOUT_DURATION,
-        notes: '',
-        material: '',
-        children: [],
-        parallel: true,
-        lanes: DEFAULT_LANES,
-        sameInAllBreakouts: false,
-      },
-    };
-  }
-  // 'library' — full item, drop in as-is
-  return { newBlock: activeDataCurrent.item };
 };
 
-const isSidebarDrag = (data: ActiveData | undefined): boolean => {
-  if (!data) return false;
-  return (
-    data.type === 'blocktype' ||
-    data.type === 'library' ||
-    data.type === 'new-block' ||
-    data.type === 'new-group' ||
-    data.type === 'new-breakout'
-  );
-};
+// Cards being sorted carry sortable data of their own, without one of these types.
+const SIDEBAR_DRAG_TYPES: ReadonlySet<string> = new Set<SidebarDragData['type']>([
+  'blocktype',
+  'library',
+  'new-block',
+  'new-group',
+  'new-breakout',
+]);
+
+const isSidebarDrag = (data: ActiveData | undefined): data is SidebarDragData =>
+  !!data && SIDEBAR_DRAG_TYPES.has(data.type);
 
 export const useDragHandlers = ({
   workshopItems,
   addItem,
-  insertItemAfter: _insertItemAfter,
   updateItem,
   moveItem,
   reorderItems,
@@ -166,7 +135,7 @@ export const useDragHandlers = ({
 
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
-      const { active, over } = event;
+      const { over } = event;
 
       if (!over || !activeId) {
         setDropIndicator(null);
@@ -176,10 +145,7 @@ export const useDragHandlers = ({
       const overId = over.id as string;
 
       // Skip indicator for special drop zones (they show their own visual feedback)
-      if (
-        (typeof overId === 'string' && overId.includes('-lane-')) ||
-        isDropZoneId(overId)
-      ) {
+      if (isLaneId(overId) || isDropZoneId(overId)) {
         setDropIndicator(null);
         return;
       }
@@ -209,7 +175,7 @@ export const useDragHandlers = ({
   );
 
   const handleSidebarDrag = useCallback(
-    (event: DragEndEvent, activeDataCurrent: ActiveData) => {
+    (event: DragEndEvent, activeDataCurrent: SidebarDragData) => {
       const { over } = event;
       if (!over) return;
 
@@ -233,7 +199,7 @@ export const useDragHandlers = ({
         return;
       }
 
-      if (over.id === 'drop-zone-top') {
+      if (over.id === DROP_ZONE_TOP) {
         const newItems = [...workshopItems];
         const newItemWithId = { ...newBlock, id: generateId() };
         newItems.splice(0, 0, newItemWithId);
@@ -242,14 +208,14 @@ export const useDragHandlers = ({
         return;
       }
 
-      if (over.id === 'drop-zone-bottom') {
+      if (over.id === DROP_ZONE_BOTTOM) {
         addItem(newBlock);
         trackSidebarCreated();
         return;
       }
 
       if (isContainerId(over.id)) {
-        const containerId = (over.id as string).replace('container-', '');
+        const containerId = getContainedItemId(over.id as string);
         const targetContainer = findItemById(workshopItems, containerId);
         if (newBlock.type === 'group') return;
         if (newBlock.type === 'breakout' && targetContainer?.type === 'breakout') return;
@@ -304,18 +270,18 @@ export const useDragHandlers = ({
         return;
       }
 
-      if (over.id === 'drop-zone-top') {
+      if (over.id === DROP_ZONE_TOP) {
         moveItem(active.id as string, null, 0);
         return;
       }
 
-      if (over.id === 'drop-zone-bottom') {
+      if (over.id === DROP_ZONE_BOTTOM) {
         moveItem(active.id as string, null, workshopItems.length);
         return;
       }
 
       if (isContainerId(over.id)) {
-        const containerId = (over.id as string).replace('container-', '');
+        const containerId = getContainedItemId(over.id as string);
         const targetContainer = findItemById(workshopItems, containerId);
         if (activeItem?.type === 'group') return;
         if (activeItem?.type === 'breakout' && targetContainer?.type === 'breakout') return;

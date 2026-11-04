@@ -1,8 +1,11 @@
+import { Button } from '@/components/primitives/button';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, Printer, RotateCcw, Sparkles, Upload } from 'lucide-react';
+import { Download, FileSpreadsheet, Keyboard, MessageSquare, Printer, RotateCcw, Sparkles, Upload } from 'lucide-react';
 import { Switch } from '@/components/primitives/switch';
 import { ThemeToggle } from './atoms/ThemeToggle';
+import { armFeedbackValuableAction } from '@/hooks/useFeedbackPrompt';
+
 interface SettingsPanelProps {
   showFullPreviewText?: boolean;
   onSetShowFullPreviewText?: (value: boolean) => void;
@@ -11,10 +14,13 @@ interface SettingsPanelProps {
   timeVisualizationStrip?: boolean;
   onSetTimeVisualizationStrip?: (value: boolean) => void;
   onExport?: () => void;
+  onExportCsv?: () => void;
   onImport?: (file: File) => void;
   onClearAll?: () => void;
   onOpenAiHelp?: () => void;
-  onClose: () => void;
+  /** Open the optional feedback dialog (always available; bypasses locks). */
+  onOpenFeedback?: () => void;
+  onOpenKeyboardShortcuts?: () => void;
   panelRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -26,10 +32,12 @@ export const SettingsPanel = ({
   timeVisualizationStrip,
   onSetTimeVisualizationStrip,
   onExport,
+  onExportCsv,
   onImport,
   onClearAll,
   onOpenAiHelp,
-  onClose: _onClose,
+  onOpenFeedback,
+  onOpenKeyboardShortcuts,
   panelRef,
 }: SettingsPanelProps) => {
   const { t } = useTranslation('common');
@@ -86,24 +94,45 @@ export const SettingsPanel = ({
         <ThemeToggle />
 
         <div className="border-t pt-1 mt-1">
-          <button
+          <Button variant="plain" size="none"
             onClick={() => {
+              armFeedbackValuableAction('print');
               window.print();
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
           >
             <Printer className="h-4 w-4" />
             {t('settings.exportPdf')}
-          </button>
-          <button
-            onClick={onExport}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-          >
-            <Download className="h-4 w-4" />
-            {t('settings.exportData')}
-          </button>
+          </Button>
+          {onExportCsv && (
+            <Button variant="plain" size="none"
+              onClick={onExportCsv}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {t('settings.exportCsv')}
+            </Button>
+          )}
+          {onOpenFeedback && (
+            <Button variant="plain" size="none"
+              onClick={onOpenFeedback}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+            >
+              <MessageSquare className="h-4 w-4" />
+              {t('feedback.give')}
+            </Button>
+          )}
+          {onOpenKeyboardShortcuts && (
+            <Button variant="plain" size="none"
+              onClick={onOpenKeyboardShortcuts}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors [@media(pointer:coarse)]:hidden"
+            >
+              <Keyboard className="h-4 w-4" />
+              {t('shortcuts.title')}
+            </Button>
+          )}
           {onOpenAiHelp && (
-            <button
+            <Button variant="plain" size="none"
               onClick={() => {
                 onOpenAiHelp();
               }}
@@ -111,8 +140,15 @@ export const SettingsPanel = ({
             >
               <Sparkles className="h-4 w-4" />
               {t('settings.aiHelp')}
-            </button>
+            </Button>
           )}
+          <Button variant="plain" size="none"
+            onClick={onExport}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            {t('settings.exportData')}
+          </Button>
           <label className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors cursor-pointer">
             <Upload className="h-4 w-4" />
             {t('settings.importData')}
@@ -130,13 +166,13 @@ export const SettingsPanel = ({
               className="hidden"
             />
           </label>
-          <button
+          <Button variant="plain" size="none"
             onClick={onClearAll}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-destructive/10 text-destructive transition-colors font-semibold"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-destructive/10 text-destructive-text transition-colors font-semibold"
           >
             <RotateCcw className="h-4 w-4" />
             {t('settings.clearAll')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

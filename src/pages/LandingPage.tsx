@@ -14,7 +14,8 @@ import { EmptyStateHero, EmptyStateSEO } from '@/components/states/EmptyState';
 import { LandingPageContent } from '@/types/landingPage';
 import { DocumentMeta } from '@/hooks/useDocumentMeta';
 import { useLocale } from '@/contexts/LocaleContext';
-import { deriveFaqPageSchema, mergeStructuredData } from '@/lib/landingPageSeo';
+import { deriveFaqPageSchema, mergeStructuredData, withAggregateRating, withApplicationSameAs } from '@/lib/landingPageSeo';
+import { siteApplicationSameAs } from '@/integrations/site';
 import { LOCALE_PREFIX } from '@/lib/metaConfig';
 import { getLocaleRoot } from '@/lib/localeUtils';
 
@@ -33,13 +34,19 @@ const LandingPage = () => {
 
   const structuredData = useMemo(
     () =>
-      mergeStructuredData(
-        content.structuredData,
-        deriveFaqPageSchema(
-          content.emptyStateFallback?.seoContent?.sections ?? content.seoContent?.sections,
+      withApplicationSameAs(
+        withAggregateRating(
+          mergeStructuredData(
+            content.structuredData,
+            deriveFaqPageSchema(
+              content.emptyStateFallback?.seoContent?.sections ?? content.seoContent?.sections,
+            ),
+          ),
+          content.siteStats?.rating,
         ),
+        siteApplicationSameAs,
       ),
-    [content.structuredData, content.emptyStateFallback, content.seoContent],
+    [content.structuredData, content.emptyStateFallback, content.seoContent, content.siteStats],
   );
 
   return (
@@ -56,15 +63,19 @@ const LandingPage = () => {
       <WorkshopPlanner
         key={pathname}
         prefillData={content.prefillData}
-        onReset={() => {
-          if (content.type === 'template' && content.fallbackSlug && content.fallbackSlug !== content.slug) {
-            navigate(
-              content.fallbackSlug === 'home'
-                ? getLocaleRoot(locale)
-                : `${LOCALE_PREFIX[locale]}/${content.fallbackSlug}`,
-            );
-          }
-        }}
+        onReset={
+          content.type === 'template' && content.fallbackSlug && content.fallbackSlug !== content.slug
+            ? () => {
+                // Replaces the closed template, so Back leads to where it was opened from.
+                navigate(
+                  content.fallbackSlug === 'home'
+                    ? getLocaleRoot(locale)
+                    : `${LOCALE_PREFIX[locale]}/${content.fallbackSlug}`,
+                  { replace: true },
+                );
+              }
+            : undefined
+        }
         renderEmptyState={({ onAddBlock, onReopenSession }) => (
           <>
             <EmptyStateHero

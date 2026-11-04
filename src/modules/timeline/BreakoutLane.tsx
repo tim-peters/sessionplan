@@ -11,9 +11,12 @@ import { PersonAvatar } from '@/components/atoms/PersonAvatar';
 import { useDragDropContext } from '@/hooks/useDragDropContext';
 import { useIsLg } from '@/hooks/use-lg';
 import { buildLaneId } from '@/lib/dndConstants';
+import type { PlayState } from '@/lib/playModeUtils';
+import { bindChildBlockActions, type ChildItemCallbacks } from '@/lib/timelineItemProps';
+import { calculateFixedStartGap } from '@/lib/workshopUtils';
 import { cn } from '@/lib/utils';
 
-interface BreakoutLaneProps {
+interface BreakoutLaneProps extends ChildItemCallbacks {
   parentItem: WorkshopItem;
   laneIndex: number;
   laneChildren: WorkshopItem[];
@@ -21,19 +24,8 @@ interface BreakoutLaneProps {
   persons: Person[];
   showFullPreviewText?: boolean;
   parentTimeDisplay?: string | null;
-  onCalculateChildTime?: (parentItem: WorkshopItem, childIndex: number) => string | null;
-  onUpdateChild?: (childId: string, updates: Partial<WorkshopItem>) => void;
-  onDeleteChild?: (childId: string) => void;
-  onDuplicateChild?: (childId: string) => void;
-  onSaveChildToLibrary?: (childId: string) => void;
-  onEditChildDetails?: (childId: string) => void;
-  onEditChildDetailsOnTime?: (childId: string) => void;
   onAddChild?: (type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
-  onCreateBelowChild?: (childId: string) => void;
-  onDeleteChildAndFocusPrev?: (childId: string) => void;
-  depth: number;
-  dropIndicator?: { overId: string; position: 'before' | 'after' } | null;
-  childPlayStates?: Map<string, string>;
+  childPlayStates?: Map<string, PlayState>;
 }
 
 export const BreakoutLane = ({
@@ -44,20 +36,11 @@ export const BreakoutLane = ({
   persons,
   showFullPreviewText = false,
   parentTimeDisplay,
-  onCalculateChildTime,
-  onUpdateChild,
-  onDeleteChild,
-  onDuplicateChild,
-  onSaveChildToLibrary,
-  onEditChildDetails,
-  onEditChildDetailsOnTime,
   onAddChild,
-  onCreateBelowChild,
-  onDeleteChildAndFocusPrev,
-  depth,
-  dropIndicator: _dropIndicator,
   childPlayStates,
+  ...childCallbacks
 }: BreakoutLaneProps) => {
+  const { onCalculateChildTime, onUpdateChild } = childCallbacks;
   const { activeParentId: contextActiveParentId, activeData } = useDragDropContext();
   const { t } = useTranslation('common');
   const laneId = buildLaneId(parentItem.id, laneIndex);
@@ -148,52 +131,32 @@ export const BreakoutLane = ({
           >
             <div className="space-y-2 flex-1">
               {laneChildren.map((child, laneChildIndex) => {
-                const childBlockType = blockTypes.find((bt) => bt.id === child.blockTypeId);
                 const actualChildIndex = parentItem.children?.indexOf(child) || 0;
-
-                let gapMinutes: number | null = null;
-                if (child.fixedStartTime) {
-                  if (laneChildIndex === 0 && parentTimeDisplay) {
-                    const [ph, pm] = parentTimeDisplay.split(':').map(Number);
-                    const [fh, fm] = child.fixedStartTime.split(':').map(Number);
-                    gapMinutes = fh * 60 + fm - (ph * 60 + pm);
-                  } else if (laneChildIndex > 0 && onCalculateChildTime) {
-                    const prevChild = laneChildren[laneChildIndex - 1];
-                    const prevActualIndex = parentItem.children?.indexOf(prevChild) ?? -1;
-                    const prevChildTime =
-                      prevActualIndex >= 0 ? onCalculateChildTime(parentItem, prevActualIndex) : null;
-                    if (prevChildTime) {
-                      const [ph, pm] = prevChildTime.split(':').map(Number);
-                      const [fh, fm] = child.fixedStartTime.split(':').map(Number);
-                      gapMinutes = fh * 60 + fm - (ph * 60 + pm + prevChild.duration);
-                    }
-                  }
-                }
+                const gapMinutes = laneChildIndex === 0
+                  ? calculateFixedStartGap(child.fixedStartTime, parentTimeDisplay)
+                  : calculateFixedStartGap(
+                      child.fixedStartTime,
+                      onCalculateChildTime?.(parentItem, parentItem.children!.indexOf(laneChildren[laneChildIndex - 1])),
+                      laneChildren[laneChildIndex - 1].duration,
+                    );
 
                 return (
                   <Fragment key={child.id}>
                     <GapIndicator minutes={gapMinutes ?? 0} size="sm" />
                     <BlockCard
+                      {...bindChildBlockActions(child, childCallbacks)}
                       item={child}
-                      blockType={childBlockType}
+                      blockType={blockTypes.find((bt) => bt.id === child.blockTypeId)}
                       blockTypes={blockTypes}
                       persons={persons}
                       showFullPreviewText={showFullPreviewText}
                       stackPreviewFields={true}
+                      stackTimeAboveTitle={true}
                       timeDisplay={onCalculateChildTime?.(parentItem, actualChildIndex) || null}
-                      onUpdate={(updates) => onUpdateChild?.(child.id, updates)}
-                      onDelete={() => onDeleteChild?.(child.id)}
-                      onDuplicate={() => onDuplicateChild?.(child.id)}
-                      onSaveToLibrary={() => onSaveChildToLibrary?.(child.id)}
-                      onEditDetails={() => onEditChildDetails?.(child.id)}
-                      onEditDetailsOnTime={() => onEditChildDetailsOnTime?.(child.id)}
-                      onCreateBelow={(childItem) => onCreateBelowChild?.(childItem.id)}
-                      onDeleteAndFocusPrev={(childItem) => onDeleteChildAndFocusPrev?.(childItem.id)}
                       parentId={parentItem.id}
                       parentType="breakout"
                       isNested={true}
-                      depth={depth + 1}
-                      playState={childPlayStates?.get(child.id) as never}
+                      playState={childPlayStates?.get(child.id)}
                     />
                   </Fragment>
                 );

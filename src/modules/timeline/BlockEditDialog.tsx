@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { getBlockTypeName } from '@/lib/workshopUtils';
+import { getBlockTypeName, parseDuration } from '@/lib/workshopUtils';
 import { WorkshopItem, BlockType, Person } from '@/types/workshop';
 import { useBlockFormState } from '@/hooks/useBlockFormState';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,7 +22,7 @@ import { Input } from '@/components/primitives/input';
 import { Label } from '@/components/primitives/label';
 import { Switch } from '@/components/primitives/switch';
 import { FormattedTextField } from '@/components/atoms/FormattedTextField';
-import { Lock, Unlock, Trash2, X } from 'lucide-react';
+import { Lock, Unlock, Trash2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -42,6 +42,7 @@ interface BlockEditDialogProps {
   onAutoSave?: (updates: Partial<WorkshopItem>) => void;
   onDelete?: () => void;
   focusField?: 'fixedStartTime';
+  onUnsavedChangesChange?: (hasChanges: boolean) => void;
 }
 
 export const BlockEditDialog = ({
@@ -53,11 +54,17 @@ export const BlockEditDialog = ({
   onAutoSave,
   onDelete,
   focusField,
+  onUnsavedChangesChange,
 }: BlockEditDialogProps) => {
   const isMobile = useIsMobile();
-  const { formData, setFormData, handleSave, handleTextareaBlur } =
+  const { formData, setFormData, handleSave, handleTextareaBlur, hasUnsavedChanges } =
     useBlockFormState(item, onSave);
   const { t } = useTranslation('common');
+
+  useEffect(() => {
+    onUnsavedChangesChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
+  useEffect(() => () => onUnsavedChangesChange?.(false), [onUnsavedChangesChange]);
 
   const fixedStartTimeRef = useRef<HTMLInputElement>(null);
   const durationRef = useRef<HTMLInputElement>(null);
@@ -166,9 +173,9 @@ export const BlockEditDialog = ({
       <div className="flex flex-row justify-between items-start gap-4">
         {/* Fixed start time */}
         <div className="basis-1/2 space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="dialog-field-label flex items-center justify-between gap-2">
             <Label htmlFor="fixedStartTime">{t('dialog.fixedStartTime')}</Label>
-            <button
+            <Button variant="plain" size="none"
               type="button"
               onClick={() => {
                 if (formData.fixedStartTime) {
@@ -177,15 +184,15 @@ export const BlockEditDialog = ({
                   fixedStartTimeRef.current?.focus();
                 }
               }}
-              className="flex items-center gap-1.5 text-xs hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:text-foreground transition-colors"
               title={formData.fixedStartTime ? t('dialog.clearFixedStartTime') : t('dialog.lockStartTime')}
             >
               {formData.fixedStartTime ? (
-                <><Lock className="h-3.5 w-3.5 text-primary" /><span className="text-primary">{t('dialog.fixedStartTimeActive')}</span></>
+                <><Lock className="h-3.5 w-3.5 text-primary-text" /><span className="text-primary-text">{t('dialog.fixedStartTimeActive')}</span></>
               ) : (
                 <><Unlock className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-muted-foreground">{t('dialog.lockFree')}</span></>
               )}
-            </button>
+            </Button>
           </div>
           <Input
             ref={fixedStartTimeRef}
@@ -201,25 +208,25 @@ export const BlockEditDialog = ({
 
         {/* Duration */}
         <div className="basis-1/2 space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="dialog-field-label flex items-center justify-between gap-2">
             <Label htmlFor="duration">{t('dialog.duration')}</Label>
             {(item?.type === 'group' || item?.type === 'breakout') && (
-              <button
+              <Button variant="plain" size="none"
                 type="button"
                 onClick={() => {
                   const next = !formData.durationLocked;
                   handleFieldChange('durationLocked', next);
                   if (next) setTimeout(() => durationRef.current?.focus(), 0);
                 }}
-                className="flex items-center gap-1.5 text-xs hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:text-foreground transition-colors"
                 title={formData.durationLocked ? t('dialog.unlockDuration') : t('dialog.lockDuration')}
               >
                 {formData.durationLocked ? (
-                  <><Lock className="h-3.5 w-3.5 text-primary" /><span className="text-primary">{t('dialog.lockManual')}</span></>
+                  <><Lock className="h-3.5 w-3.5 text-primary-text" /><span className="text-primary-text">{t('dialog.lockManual')}</span></>
                 ) : (
                   <><Unlock className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-muted-foreground">{t('dialog.lockAuto')}</span></>
                 )}
-              </button>
+              </Button>
             )}
           </div>
           <div
@@ -236,7 +243,7 @@ export const BlockEditDialog = ({
               id="duration"
               type="number"
               value={formData.duration || 0}
-              onChange={(e) => handleFieldChange('duration', parseInt(e.target.value) || 0)}
+              onChange={(e) => handleFieldChange('duration', parseDuration(e.target.value))}
               min={0}
               disabled={(item?.type === 'group' || item?.type === 'breakout') && !formData.durationLocked}
               className={(item?.type === 'group' || item?.type === 'breakout') && !formData.durationLocked ? 'opacity-50 pointer-events-none' : ''}
@@ -256,7 +263,7 @@ export const BlockEditDialog = ({
             {persons.map(person => {
               const isSelected = (formData.personIds || []).includes(person.id);
               return (
-                <button
+                <Button variant="plain" size="none"
                   key={person.id}
                   type="button"
                   onClick={() => {
@@ -273,7 +280,7 @@ export const BlockEditDialog = ({
                 >
                   <PersonAvatar name={person.name} color={person.color} size="xs" />
                   <span className="text-sm">{person.name}</span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -318,6 +325,17 @@ export const BlockEditDialog = ({
     </div>
   );
 
+  const deleteButton = onDelete && (
+    <Button
+      variant="ghost"
+      onClick={() => { onDelete(); onClose(); }}
+      className="text-destructive-text hover:text-destructive-text hover:bg-destructive/10"
+    >
+      <Trash2 className="h-4 w-4 mr-2" />
+      {t('dialog.delete')}
+    </Button>
+  );
+
   if (isMobile) {
     return (
       <Drawer open={!!item} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -329,16 +347,7 @@ export const BlockEditDialog = ({
             {formContent}
           </div>
           <DrawerFooter className="flex-row justify-between pt-2">
-            {onDelete && (
-              <Button
-                variant="ghost"
-                onClick={() => { onDelete(); onClose(); }}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {t('dialog.delete')}
-              </Button>
-            )}
+            {deleteButton}
             <Button className="ml-auto" onClick={onClose}>
               {t('dialog.done')}
             </Button>
@@ -350,24 +359,15 @@ export const BlockEditDialog = ({
 
   return (
     <Dialog open={!!item} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
         </DialogHeader>
 
-        {formContent}
+        <div className="min-h-0 overflow-y-auto -mx-1 px-1">{formContent}</div>
 
-        <div className="flex justify-between gap-2">
-          {onDelete && (
-            <Button
-              variant="ghost"
-              onClick={() => { onDelete(); onClose(); }}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t('dialog.delete')}
-            </Button>
-          )}
+        <div className="flex shrink-0 justify-between gap-2">
+          {deleteButton}
           <div className="flex gap-2 ml-auto">
             <Button variant="outline" onClick={onClose}>
               {t('dialog.cancel')}

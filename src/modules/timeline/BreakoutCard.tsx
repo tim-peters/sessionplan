@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { WorkshopItem, BlockType, Person } from '@/types/workshop';
-import { ChevronDown, ChevronRight, Plus, Layers, Lock, Unlock } from 'lucide-react';
-import { Button } from '@/components/primitives/button';
-import { DurationInput } from './atoms/DurationInput';
+import { Layers } from 'lucide-react';
+import { ContainerDurationInput } from './atoms/ContainerDurationInput';
 import { DragHandle } from './atoms/DragHandle';
+import { DurationInput } from './atoms/DurationInput';
+import { DurationLockButton } from './atoms/DurationLockButton';
+import { ExpandToggle } from './atoms/ExpandToggle';
+import { ItemStartTime } from './atoms/ItemStartTime';
 import { Switch } from '@/components/primitives/switch';
 import { cn } from '@/lib/utils';
 import { BlockPreview } from './BlockPreview';
@@ -16,19 +19,20 @@ import { PlayState } from '@/lib/playModeUtils';
 import { PersonAvatarList } from './atoms/PersonAvatarList';
 import { ItemActionsMenu } from './ItemActionsMenu';
 import { BlockTitleInput } from './BlockTitleInput';
-import { useIsLg } from '@/hooks/use-lg';
 import {
   DEFAULT_LANES,
   MIN_LANES,
   MAX_LANES,
 } from '@/lib/workshopDefaults';
+import { SM_BREAKPOINT } from '@/lib/constants';
 import { containerId } from '@/lib/dndConstants';
-import { BreakoutLane } from './BreakoutLane';
+import type { ChildItemCallbacks } from '@/lib/timelineItemProps';
 import { SameInAllLanesView } from './SameInAllLanesView';
 import { ParallelLanesView } from './ParallelLanesView';
 import { useIsStripHighlighted, useHoverHighlightHandlers } from '@/hooks/useHoverHighlight';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
-interface BreakoutCardProps {
+interface BreakoutCardProps extends ChildItemCallbacks {
   item: WorkshopItem;
   blockTypes: BlockType[];
   persons: Person[];
@@ -40,22 +44,10 @@ interface BreakoutCardProps {
   onSaveToLibrary: () => void;
   onEditDetails: () => void;
   onAddChild?: (type: 'block' | 'group' | 'breakout', laneIndex?: number) => void;
-  onUpdateChild?: (childId: string, updates: Partial<WorkshopItem>) => void;
-  onDeleteChild?: (childId: string) => void;
-  onDuplicateChild?: (childId: string) => void;
-  onSaveChildToLibrary?: (childId: string) => void;
-  onEditChildDetails?: (childId: string) => void;
   onEditDetailsOnTime?: () => void;
-  onEditChildDetailsOnTime?: (childId: string) => void;
-  onCalculateChildTime?: (parentItem: WorkshopItem, childIndex: number) => string | null;
   onCreateBelow?: (item: WorkshopItem) => void;
-  onCreateBelowChild?: (childId: string) => void;
   onDeleteAndFocusPrev?: (item: WorkshopItem) => void;
-  onDeleteChildAndFocusPrev?: (childId: string) => void;
   parentId?: string | null;
-  isNested?: boolean;
-  depth?: number;
-  dropIndicator?: { overId: string; position: 'before' | 'after' } | null;
   playState?: PlayState;
   childPlayStates?: Map<string, PlayState>;
 }
@@ -72,29 +64,17 @@ export const BreakoutCard = ({
   onSaveToLibrary,
   onEditDetails,
   onAddChild,
-  onUpdateChild,
-  onDeleteChild,
-  onDuplicateChild,
-  onSaveChildToLibrary,
-  onEditChildDetails,
   onEditDetailsOnTime,
-  onEditChildDetailsOnTime,
-  onCalculateChildTime,
   onCreateBelow,
-  onCreateBelowChild,
   onDeleteAndFocusPrev,
-  onDeleteChildAndFocusPrev,
   parentId = null,
-  isNested = false,
-  depth = 0,
-  dropIndicator,
   playState,
   childPlayStates,
+  ...childCallbacks
 }: BreakoutCardProps) => {
   const { t } = useTranslation('common');
   const [isExpanded, setIsExpanded] = useState(true);
   const { activeParentId: contextActiveParentId } = useDragDropContext();
-  const isLg = useIsLg();
 
   // Cross-highlight with the time-visualization strip. The breakout root
   // carries data-item-id, so the handlers live on this element — its inner
@@ -104,18 +84,7 @@ export const BreakoutCard = ({
   const isHighlighted = useIsStripHighlighted(item.id);
   const hoverHandlers = useHoverHighlightHandlers(item.id);
 
-  // Fix the pre-existing innerWidth read-on-render (hydration risk + re-renders
-  // on resize) with a useEffect-driven matchMedia for the sm: breakpoint.
-  const [isSmUp, setIsSmUp] = useState<boolean>(() =>
-    typeof window === 'undefined' ? false : window.matchMedia('(min-width: 640px)').matches,
-  );
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mql = window.matchMedia('(min-width: 640px)');
-    const onChange = () => setIsSmUp(mql.matches);
-    mql.addEventListener('change', onChange);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
+  const isSmUp = useMediaQuery(`(min-width: ${SM_BREAKPOINT}px)`);
 
   // Set up droppable for sameInAllBreakouts mode
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
@@ -126,15 +95,6 @@ export const BreakoutCard = ({
     },
   });
 
-  // Use sortable for the breakout card itself
-  const sortable = useSortable({
-    id: item.id,
-    data: {
-      parentId: parentId,
-      laneIndex: item.laneIndex,
-    },
-  });
-
   const {
     attributes,
     listeners,
@@ -142,88 +102,61 @@ export const BreakoutCard = ({
     transform,
     transition,
     isDragging,
-  } = sortable;
+  } = useSortable({
+    id: item.id,
+    data: {
+      parentId: parentId,
+      laneIndex: item.laneIndex,
+    },
+  });
 
   // Calculate total blocks across all lanes
   const totalBlocks = item.children?.length || 0;
   const blocksPerLane = item.sameInAllBreakouts
     ? item.children?.filter((c) => (c.laneIndex ?? 0) === 0).length || 0
     : null;
-  const minBlocksInLane = blocksPerLane === null && item.children && item.lanes
-    ? Math.min(
-        ...Array.from({ length: item.lanes }, (_, i) =>
-          item.children!.filter((c) => (c.laneIndex ?? 0) === i).length,
-        ),
+  const blocksInLanes = blocksPerLane === null && item.children && item.lanes
+    ? Array.from({ length: item.lanes }, (_, i) =>
+        item.children!.filter((c) => (c.laneIndex ?? 0) === i).length,
       )
     : null;
-  const maxBlocksInLane = blocksPerLane === null && item.children && item.lanes
-    ? Math.max(
-        ...Array.from({ length: item.lanes }, (_, i) =>
-          item.children!.filter((c) => (c.laneIndex ?? 0) === i).length,
-        ),
-      )
-    : null;
+  const minBlocksInLane = blocksInLanes && Math.min(...blocksInLanes);
+  const maxBlocksInLane = blocksInLanes && Math.max(...blocksInLanes);
+
+  const startTimeProps = {
+    isFixed: !!item.fixedStartTime,
+    onUnlock: () => onUpdate({ fixedStartTime: undefined }),
+    onEdit: onEditDetailsOnTime ?? onEditDetails,
+  };
+  const handleToggleDurationLock = () => onUpdate({ durationLocked: !item.durationLocked });
 
   return (
     <div
       className={cn(
         'flex gap-4',
-        isNested && 'pl-4',
-        playState === 'past' && 'opacity-50 grayscale',
+        playState === 'past' && 'is-past',
       )}
     >
       {/* Time column - left side */}
       <div className="hidden sm:flex flex-col items-end w-20 print:w-10 shrink-0 pt-4 print:flex">
         {timeDisplay && (
-          <div className="flex items-center gap-1">
-            {item.fixedStartTime && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onUpdate({ fixedStartTime: undefined }); }}
-                className="text-primary hover:text-muted-foreground transition-colors p-0.5 print:hidden"
-                title={t('block.unlockStartTime')}
-              >
-                <Lock className="h-3 w-3" />
-              </button>
-            )}
-            <span
-              className="time-badge font-medium text-primary is-clickable"
-              onClick={(e) => { e.stopPropagation(); (onEditDetailsOnTime ?? onEditDetails)(); }}
-            >{timeDisplay}</span>
-          </div>
+          <ItemStartTime
+            {...startTimeProps}
+            time={timeDisplay}
+            className="flex items-center gap-1"
+            unlockButtonClassName="inline-flex items-center justify-center rounded-md p-1.5 text-primary-text hover:text-foreground transition-colors print:hidden"
+            lockIconClassName="h-3 w-3"
+            timeButtonClassName="time-badge font-medium text-primary-text is-clickable"
+          />
         )}
         <div className="flex flex-col items-center gap-1 mt-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onUpdate({ durationLocked: !item.durationLocked });
-            }}
-            className="absolute -ml-12 mt-2 text-muted-foreground hover:text-foreground transition-colors p-0.5 print:hidden"
-            title={item.durationLocked ? t('dialog.unlockDuration') : t('planner.unlockDuration')}
-          >
-            {item.durationLocked ? (
-              <Lock className="h-3 w-3 text-primary" />
-            ) : (
-              <Unlock className="h-3 w-3" />
-            )}
-          </button>
-          <DurationInput
-            value={item.duration}
-            onChange={(e) => {
-              if (!item.durationLocked) return;
-              onUpdate({ duration: parseInt(e.target.value) || 0 });
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!item.durationLocked) {
-                onUpdate({ durationLocked: true });
-              }
-            }}
-            className={cn(
-              'duration-input w-8 h-7 print:pb-0',
-              !item.durationLocked && 'opacity-50 cursor-pointer',
-            )}
-            min={0}
+          <DurationLockButton
+            isLocked={!!item.durationLocked}
+            onToggle={handleToggleDurationLock}
+            className="absolute -ml-12 mt-2 inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground transition-colors print:hidden"
+            iconClassName="h-3 w-3"
           />
+          <ContainerDurationInput item={item} onUpdate={onUpdate} className="duration-input w-8 h-7 print:pb-0" />
           <span className="text-xs text-muted-foreground">Min.</span>
         </div>
       </div>
@@ -252,76 +185,37 @@ export const BreakoutCard = ({
             isExpanded && 'border-b border-b-block-breakout/20',
           )}
         >
-          <DragHandle attributes={attributes} listeners={listeners} />
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-            className="mt-1 text-muted-foreground hover:text-foreground transition-colors print:hidden"
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-5 w-5" />
-            ) : (
-              <ChevronRight className="h-5 w-5" />
-            )}
-          </button>
+          {/* Mobile: toggle stacked under the drag handle to free horizontal space; sm+: inline */}
+          <div className="flex flex-col items-start shrink-0 sm:contents">
+            <DragHandle label={t('actions.move')} attributes={attributes} listeners={listeners} />
+            <ExpandToggle isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} stacked />
+          </div>
 
           <div className="flex-1 min-w-0">
             <div className="sm:hidden flex items-center gap-2 mb-2 text-xs">
               {timeDisplay && (
-                <div className="flex items-center gap-1">
-                  {item.fixedStartTime && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onUpdate({ fixedStartTime: undefined }); }}
-                      className="text-primary print:hidden"
-                      title={t('block.unlockStartTime')}
-                    >
-                      <Lock className="h-3 w-3" />
-                    </button>
-                  )}
-                  <span
-                    className="font-medium text-primary time-badge is-clickable"
-                    onClick={(e) => { e.stopPropagation(); (onEditDetailsOnTime ?? onEditDetails)(); }}
-                  >{timeDisplay}</span>
-                </div>
+                <ItemStartTime
+                  {...startTimeProps}
+                  time={timeDisplay}
+                  className="flex items-center gap-1"
+                  unlockButtonClassName="inline-flex items-center justify-center rounded-md p-1.5 text-primary-text hover:text-foreground transition-colors print:hidden"
+                  lockIconClassName="h-3 w-3"
+                  timeButtonClassName="font-medium text-primary-text time-badge is-clickable"
+                />
               )}
               <div className="flex items-center gap-1">
-                <DurationInput
-                  value={item.duration}
-                  onChange={(e) => {
-                    if (!item.durationLocked) return;
-                    onUpdate({ duration: parseInt(e.target.value) || 0 });
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!item.durationLocked) {
-                      onUpdate({ durationLocked: true });
-                    }
-                  }}
-                  className={cn('w-12 h-6', !item.durationLocked && 'opacity-50 cursor-pointer')}
-                  min={0}
-                />
+                <ContainerDurationInput item={item} onUpdate={onUpdate} className="w-12 h-6" />
                 <span className="text-muted-foreground">Min.</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUpdate({ durationLocked: !item.durationLocked });
-                  }}
-                  className="ml-1 text-muted-foreground hover:text-foreground transition-colors p-0.5 print:hidden"
-                  title={item.durationLocked ? t('dialog.unlockDuration') : t('planner.unlockDuration')}
-                >
-                  {item.durationLocked ? (
-                    <Lock className="h-3.5 w-3.5 text-primary" />
-                  ) : (
-                    <Unlock className="h-3.5 w-3.5" />
-                  )}
-                </button>
+                <DurationLockButton
+                  isLocked={!!item.durationLocked}
+                  onToggle={handleToggleDurationLock}
+                  className="ml-1 inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground transition-colors print:hidden"
+                  iconClassName="h-3.5 w-3.5"
+                />
               </div>
             </div>
-            <div className="flex justify-between gap-4 items-start">
-              <div className="flex-1">
+            <div className="flex flex-wrap sm:flex-nowrap justify-between gap-2 sm:gap-4 items-start">
+              <div className="w-full sm:w-auto sm:flex-1 min-w-0">
                 <BlockTitleInput
                   item={item}
                   onUpdate={onUpdate}
@@ -331,7 +225,7 @@ export const BreakoutCard = ({
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex items-center gap-2 print:hidden" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
@@ -368,7 +262,7 @@ export const BreakoutCard = ({
                   </div>
 
                   <span
-                    className="inline-block text-xs px-2 py-0.5 rounded-full font-medium bg-block-breakout-bg text-block-breakout"
+                    className="inline-block text-xs px-2 py-0.5 rounded-full font-medium bg-block-breakout-bg text-block-breakout-foreground"
                   >
                     Breakout
                     {totalBlocks > 0 && isSmUp && (
@@ -377,7 +271,7 @@ export const BreakoutCard = ({
                         {blocksPerLane !== null
                           ? t('block.count', { count: blocksPerLane })
                           : minBlocksInLane === maxBlocksInLane
-                            ? t('block.count', { count: minBlocksInLane })
+                            ? t('block.count', { count: minBlocksInLane! })
                             : `${minBlocksInLane} – ${t('block.count_other', { count: maxBlocksInLane! })}`}
                       </>
                     )}
@@ -386,11 +280,13 @@ export const BreakoutCard = ({
 
                 <PersonAvatarList personIds={item.personIds || []} persons={persons} className="mt-1" />
 
+                {/* Actions - always pinned to the right edge */}
                 <ItemActionsMenu
                   onEditDetails={onEditDetails}
                   onDuplicate={onDuplicate}
                   onSaveToLibrary={onSaveToLibrary}
                   onDelete={onDelete}
+                  className="ml-auto"
                 />
               </div>
             </div>
@@ -405,50 +301,35 @@ export const BreakoutCard = ({
             className={cn(
               'bg-block-breakout-bg rounded-b-lg',
               item.sameInAllBreakouts && `p-4`,
-              !item.sameInAllBreakouts && `sm:p-4 grid gap-0 sm:gap-4 pt-1`,
-              !item.sameInAllBreakouts && (item.lanes === 2 ? 'grid-cols-2' : item.lanes === 3 ? 'grid-cols-3' : item.lanes === 4 ? 'grid-cols-4' : 'grid-cols-2'),
+              !item.sameInAllBreakouts && `sm:p-4 grid grid-cols-2 gap-0 sm:gap-4 pt-1`,
+              // Small screens: never more than 2 rooms side by side, extra rooms wrap
+              !item.sameInAllBreakouts && (item.lanes === 3 ? 'sm:grid-cols-3' : null),
               (!item.children || item.children.length === 0) && 'min-h-[100px]',
             )}
           >
             {item.sameInAllBreakouts ? (
               <div className={cn('-m-4 p-4 rounded-b-lg', isOver && 'bg-block-breakout/10 border-primary')}>
                 <SameInAllLanesView
+                  {...childCallbacks}
+                  // A child's time opens its details here without focusing the time field.
+                  onEditChildDetailsOnTime={undefined}
                   item={item}
                   blockTypes={blockTypes}
                   persons={persons}
                   showFullPreviewText={showFullPreviewText}
-                  onCalculateChildTime={onCalculateChildTime}
-                  onUpdateChild={onUpdateChild}
-                  onDeleteChild={onDeleteChild}
-                  onDuplicateChild={onDuplicateChild}
-                  onSaveChildToLibrary={onSaveChildToLibrary}
-                  onEditChildDetails={onEditChildDetails}
-                  onCreateBelowChild={onCreateBelowChild}
-                  onDeleteChildAndFocusPrev={onDeleteChildAndFocusPrev}
                   onAddChild={onAddChild}
-                  depth={depth}
-                  childPlayStates={childPlayStates as never}
+                  childPlayStates={childPlayStates}
                 />
               </div>
             ) : (
               <ParallelLanesView
+                {...childCallbacks}
                 item={item}
                 blockTypes={blockTypes}
                 persons={persons}
                 showFullPreviewText={showFullPreviewText}
                 timeDisplay={timeDisplay}
-                onCalculateChildTime={onCalculateChildTime}
-                onUpdateChild={onUpdateChild}
-                onDeleteChild={onDeleteChild}
-                onDuplicateChild={onDuplicateChild}
-                onSaveChildToLibrary={onSaveChildToLibrary}
-                onEditChildDetails={onEditChildDetails}
-                onEditChildDetailsOnTime={onEditChildDetailsOnTime}
                 onAddChild={onAddChild}
-                onCreateBelowChild={onCreateBelowChild}
-                onDeleteChildAndFocusPrev={onDeleteChildAndFocusPrev}
-                depth={depth}
-                dropIndicator={dropIndicator}
                 childPlayStates={childPlayStates}
               />
             )}

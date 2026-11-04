@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, ChangeEvent, UIEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, ChangeEvent, UIEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
   tokenizeFormatting,
@@ -48,11 +48,11 @@ interface FormattedTextFieldProps {
 // are paint-only anyway.
 const TOKEN_CLASS: Record<FormatToken['kind'], string> = {
   plain: '',
-  marker: 'opacity-40',
+  marker: 'text-muted-foreground',
   bold: 'formatting-faux-bold',
   italic: 'italic',
-  'link-text': 'text-primary underline',
-  'link-url': 'opacity-40',
+  'link-text': 'text-primary-text underline',
+  'link-url': 'text-muted-foreground',
 };
 
 // Styles applied by an ENCLOSING match (the kinds in `token.styles`). The
@@ -62,15 +62,11 @@ const TOKEN_CLASS: Record<FormatToken['kind'], string> = {
 const ENCLOSING_CLASS: Record<FormatKind, string> = {
   bold: 'formatting-faux-bold',
   italic: 'italic',
-  link: 'text-primary underline',
+  link: 'text-primary-text underline',
 };
 
 const CHROME_CLASSES = {
   inline: 'bg-transparent rounded',
-  // No focus ring: while editing, the field should blend into its context
-  // (plain text, no border/color changes) — the caret and the formatting
-  // toolbar are the editing affordances. The static border is a form-field
-  // affordance (e.g. BlockEditDialog), independent of focus.
   dialog: 'rounded-md border border-input bg-background',
 };
 
@@ -100,7 +96,6 @@ export const FormattedTextField = ({
   const backdropRef = useRef<HTMLDivElement>(null);
 
   const {
-    focused,
     setFocused,
     toolbarRef,
     toolbarPosition,
@@ -217,6 +212,15 @@ export const FormattedTextField = ({
     bumpPositionVersion();
   };
 
+  // Modal dialogs block pointer events outside their content. Keep the toolbar
+  // inside that content, and convert viewport coordinates to its padding box.
+  const modalHost = textareaRef.current?.closest<HTMLElement>('[role="dialog"]');
+  const modalBounds = toolbarVisible ? modalHost?.getBoundingClientRect() : undefined;
+  const toolbarStyle = modalHost && modalBounds ? {
+    left: toolbarPosition.left - modalBounds.left + modalHost.scrollLeft - modalHost.clientLeft,
+    top: toolbarPosition.top - modalBounds.top + modalHost.scrollTop - modalHost.clientTop,
+  } : { left: toolbarPosition.left, top: toolbarPosition.top };
+
   return (
     // text-foreground: the field is often mounted inside muted contexts
     // (notes/material previews render in text-muted-foreground containers).
@@ -235,12 +239,12 @@ export const FormattedTextField = ({
             size={toolbarSize}
             onPointerEnter={() => setToolbarHovered(true)}
             onPointerLeave={() => setToolbarHovered(false)}
-            className="fixed z-50 -translate-x-1/2 bg-background/90 backdrop-blur-sm rounded shadow-sm"
-            style={{ left: toolbarPosition.left, top: toolbarPosition.top }}
+            className={cn(modalHost ? 'absolute' : 'fixed', 'z-[60] -translate-x-1/2 bg-background/90 backdrop-blur-sm rounded shadow-sm')}
+            style={toolbarStyle}
           />,
-          document.body,
+          modalHost ?? document.body,
         )}
-      <div className={cn('relative', CHROME_CLASSES[variant])}>
+      <div className={cn('formatted-field relative', CHROME_CLASSES[variant])}>
         <div
           ref={backdropRef}
           aria-hidden

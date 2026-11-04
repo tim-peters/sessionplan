@@ -71,7 +71,7 @@ export const InlineEntityForm = ({
           placeholder={namePlaceholder}
           className="h-7 text-sm pr-7"
         />
-        <button
+        <Button variant="plain" size="none"
           type="button"
           onClick={onCancel}
           title={t('dialog.cancel')}
@@ -79,7 +79,7 @@ export const InlineEntityForm = ({
           className="rounded text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors"
         >
           <X className="h-3.5 w-3.5" />
-        </button>
+        </Button>
       </div>
       <ColorPicker value={color} onChange={setColor} />
       <div className="flex items-center gap-1">
@@ -89,7 +89,7 @@ export const InlineEntityForm = ({
             variant="ghost"
             size="sm"
             onClick={onDelete}
-            className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+            className="h-7 px-2 text-destructive-text hover:text-destructive-text hover:bg-destructive/10 gap-1"
             title={t('actions.delete')}
           >
             <Trash2 className="h-3.5 w-3.5" />

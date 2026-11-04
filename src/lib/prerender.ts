@@ -40,6 +40,27 @@ export const resetPrerenderReady = (): void => {
   currentWindow.__PRERENDER_READY__ = false;
 };
 
+/**
+ * Signals readiness two animation frames from now, once the page has painted.
+ * Returns a function that cancels it.
+ */
+export const signalPrerenderReadyAfterPaint = (): (() => void) => {
+  let secondFrame: number | undefined;
+
+  const firstFrame = window.requestAnimationFrame(() => {
+    secondFrame = window.requestAnimationFrame(() => {
+      signalPrerenderReady();
+    });
+  });
+
+  return () => {
+    window.cancelAnimationFrame(firstFrame);
+    if (secondFrame !== undefined) {
+      window.cancelAnimationFrame(secondFrame);
+    }
+  };
+};
+
 export const signalPrerenderReady = (): void => {
   const currentWindow = getPrerenderWindow();
 
